@@ -1,0 +1,5 @@
+CEPALSTAT
+
+https://statistics.cepal.org/portal/cepalstat/dashboard.html?indicator_id=4758&area_id=2454&lang=es
+
+filtrado por 6 países siepac y años disponibles (2020,2021,2022 y los anteriores para estadistica)

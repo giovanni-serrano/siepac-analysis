@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Temporales de Excel
+~$*.xlsx
+
+# Sistema operativo
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Intermedios regenerables (los CSV de processed se reconstruyen con los ETL)
+data/processed/*.csv
+
+# Respaldo manual del Paso 0 (no debe subir al repo)
+data/processed_OLD/
+
+# Documentos internos de trabajo (bitácora de la Fase B; no es parte
+# del portafolio publicado)
+GUIA_FASE_B.md

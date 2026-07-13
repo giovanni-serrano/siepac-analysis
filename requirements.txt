@@ -1,0 +1,6 @@
+# Dependencias del pipeline SIEPAC (versiones con las que se verificó
+# la reproducción completa; versiones posteriores deberían funcionar).
+# Requiere Python 3.10 o superior.
+pandas>=2.0
+openpyxl>=3.1
+plotly>=5.18
