@@ -137,6 +137,14 @@ una sola vez en `src/config_siepac.py`.
 OLADE/sieLAC, CEPALSTAT, Banco Mundial, EOR/CRIE. Detalle en los
 `Fuente.txt` de cada carpeta `data/raw/`.
 
+## Autores
+
+Proyecto desarrollado como tesis de Ingeniería Eléctrica, UNI Nicaragua.
+
+- **Luis Giovanni Serrano Bello** — pipeline de datos, dimensión económica, visualizadores
+- **Mariángeles Aracelly Olivares López** — dimensión social
+- **Jonathan Noel García Mendoza** — dimensión ambiental
+
 ## Licencia
 
 El código se distribuye bajo licencia [MIT](LICENSE). Los datos crudos
