@@ -150,3 +150,7 @@ Proyecto desarrollado como tesis de Ingeniería Eléctrica, UNI Nicaragua.
 El código se distribuye bajo licencia [MIT](LICENSE). Los datos crudos
 pertenecen a sus fuentes (OLADE, CEPAL, Banco Mundial) y se incluyen con
 fines académicos y de reproducibilidad, con atribución en los `Fuente.txt`.
+
+## Notas
+
+El aspecto gráfico es un archivo html generado
