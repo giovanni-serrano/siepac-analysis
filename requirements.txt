@@ -4,3 +4,8 @@
 pandas>=2.0
 openpyxl>=3.1
 plotly>=5.18
+
+# Exportación de los gráficos del explorador a PNG (exportar_graficos.py).
+# Tras instalarlo, descargar el navegador una sola vez con:
+#     python -m playwright install chromium
+playwright>=1.40
