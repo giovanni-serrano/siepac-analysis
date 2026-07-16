@@ -1,0 +1,4 @@
+# Los archivos HTML de graficos/ son gráficos generados por Plotly,
+# no código escrito a mano. Se excluyen del cálculo de lenguajes de GitHub
+# para que la barra "Languages" refleje el código real (Python).
+graficos/*.html linguist-generated=true
