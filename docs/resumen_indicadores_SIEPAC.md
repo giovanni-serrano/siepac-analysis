@@ -10,7 +10,7 @@ el SIEPAC — ventana 2020–2024.
 **Fuentes de datos:** SIELAC·OLADE, CEPALSTAT·CEPAL, Banco Mundial (WDI)
 y EOR (Mercado Eléctrico Regional).
 **Documento generado automáticamente** por
-`src/generar_resumen_indicadores.py` el 2026-07-17;
+`src/generar_resumen_indicadores.py` el 2026-07-21;
 los valores provienen del mismo pipeline que alimenta los visualizadores.
 
 ## Cómo leer este documento
@@ -326,11 +326,11 @@ Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, pa
 |---|---|---|---|---|---|---|
 | Costa Rica | 2.41 | 1.88 | 1.80 | 1.83 | 1.89 | -0.5 pp |
 | El Salvador | 2.06 | 2.03 | 1.87 | 1.73 | 1.76 | -0.3 pp |
-| Guatemala | 1.67 | 1.70 | 1.68 | 1.69 | 1.70 | +0.0 pp |
+| Guatemala | 2.34 | 2.39 | 2.35 | 2.37 | 2.38 | +0.0 pp |
 | Honduras | 5.10 | 5.14 | 5.88 | 6.30 | 6.55 | +1.5 pp |
 | Nicaragua | 8.71 | 7.27 | 7.08 | 6.09 | 5.31 | -3.4 pp |
-| Panamá | 0.81 | 0.75 | 0.80 | 0.78 | 0.87 | +0.1 pp |
-| **Promedio regional** | **3.46** | **3.13** | **3.19** | **3.07** | **3.01** | **-0.4 pp** |
+| Panamá | 2.60 | 2.41 | 2.58 | 2.52 | 2.79 | +0.2 pp |
+| **Promedio regional** | **3.87** | **3.52** | **3.59** | **3.47** | **3.45** | **-0.4 pp** |
 
 **SOC2_POBRE — Quintil más pobre** · Unidad: % · Fórmula: Cargo anual ÷ Ingreso anual del quintil más pobre × 100
 
@@ -338,11 +338,11 @@ Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, pa
 |---|---|---|---|---|---|---|
 | Costa Rica | 21.72 | 15.75 | 14.82 | 15.35 | 13.97 | -7.7 pp |
 | El Salvador | 7.24 | 7.55 | 7.01 | 6.91 | 7.23 | -0.0 pp |
-| Guatemala | 6.23 | 6.34 | 6.23 | 6.29 | 6.33 | +0.1 pp |
+| Guatemala | 8.65 | 8.80 | 8.66 | 8.74 | 8.79 | +0.1 pp |
 | Honduras | 49.08 | 51.34 | 61.73 | 65.87 | 73.49 | +24.4 pp |
 | Nicaragua | 22.79 | 19.02 | 18.53 | 15.92 | 13.91 | -8.9 pp |
-| Panamá | 10.47 | 9.76 | 10.13 | 8.96 | 11.05 | +0.6 pp |
-| **Promedio regional** | **19.59** | **18.29** | **19.74** | **19.88** | **21.00** | **+1.4 pp** |
+| Panamá | 30.30 | 28.09 | 28.69 | 25.62 | 30.99 | +0.7 pp |
+| **Promedio regional** | **23.30** | **21.76** | **23.24** | **23.07** | **24.73** | **+1.4 pp** |
 
 
 ### SOC3 · Hogares con acceso a energía renovable
