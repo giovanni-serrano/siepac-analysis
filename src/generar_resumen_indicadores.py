@@ -38,7 +38,7 @@ from datetime import date
 from pathlib import Path
 
 from config_siepac import RAIZ_PROYECTO, DIR_PROCESSED
-from viz_comun import (ANIOS, FICHAS, PAISES,
+from viz_comun import (ANIOS, FICHAS, PAISES, agregados_eco,
                        cargar_datos, leer_series_extra, preparar_datos)
 
 logging.basicConfig(
@@ -90,6 +90,7 @@ def _armar_datos() -> tuple[dict, dict]:
     tres dimensiones (mismo layout que los visualizadores) + imputados."""
     hojas = cargar_datos()
     df = preparar_datos(hojas)
+    agregados = agregados_eco(hojas["datos_base"])
     datos = {}
     for codigo in [c for c, f in FICHAS.items() if f["dim"] == "eco"]:
         por_pais = {}
@@ -101,7 +102,8 @@ def _armar_datos() -> tuple[dict, dict]:
         promedio = [None if math.isnan(v) else v
                     for v in df.groupby("anio")[codigo].mean().sort_index()
                     .round(6).tolist()]
-        datos[codigo] = {"paises": por_pais, "promedio": promedio}
+        datos[codigo] = {"paises": por_pais, "promedio": promedio,
+                         "agregado": agregados.get(codigo)}
     datos.update(leer_series_extra())     # series ENV/SOC + ENV6
     imputados = {
         pais: df[df["pais"] == pais].sort_values("anio")["tarifa_imputada"]
@@ -113,8 +115,11 @@ def _armar_datos() -> tuple[dict, dict]:
 
 def _tabla_md(bloque: dict, formato: str, delta_tipo: str,
               imputados: dict | None) -> list[str]:
-    """Tabla Markdown país x año con fila de promedio regional y columna
-    de variación 2020→2024. Los imputados de ECO14 llevan asterisco."""
+    """Tabla Markdown país x año con las filas resumen y columna de
+    variación 2020→2024. Cierra con el promedio de países (media
+    simple) y, cuando la serie tiene denominador disponible, el
+    agregado regional (razón de sumas). Los imputados de ECO14 llevan
+    asterisco."""
     lineas = ["| País | " + " | ".join(str(a) for a in ANIOS) +
               " | Δ 2020→2024 |",
               "|---|" + "---|" * (len(ANIOS) + 1)]
@@ -127,9 +132,14 @@ def _tabla_md(bloque: dict, formato: str, delta_tipo: str,
         lineas.append(f"| {pais} | " + " | ".join(celdas) +
                       f" | {_delta(vals[0], vals[-1], delta_tipo)} |")
     prom = bloque["promedio"]
-    lineas.append("| **Promedio regional** | " +
+    lineas.append("| **Promedio de países** (media simple) | " +
                   " | ".join(f"**{_fmt(v, formato)}**" for v in prom) +
                   f" | **{_delta(prom[0], prom[-1], delta_tipo)}** |")
+    agr = bloque.get("agregado")
+    if agr:
+        lineas.append("| **Agregado regional** (razón de sumas) | " +
+                      " | ".join(f"**{_fmt(v, formato)}**" for v in agr) +
+                      f" | **{_delta(agr[0], agr[-1], delta_tipo)}** |")
     return lineas
 
 
@@ -152,12 +162,28 @@ los valores provienen del mismo pipeline que alimenta los visualizadores.
 ## Cómo leer este documento
 
 Cada indicador incluye su ficha (unidad, fórmula, descripción y notas
-metodológicas) y su tabla de valores por país y año, con el promedio
-regional (media simple de los seis países) y la variación 2020→2024
-(relativa en % para magnitudes; en puntos porcentuales, pp, para
-indicadores que ya son porcentajes). "s.d." = sin dato.
+metodológicas) y su tabla de valores por país y año, con la variación
+2020→2024 (relativa en % para magnitudes; en puntos porcentuales, pp,
+para indicadores que ya son porcentajes). "s.d." = sin dato.
 Los indicadores con varias salidas (p. ej. per cápita y por PIB)
 presentan una tabla por sub-serie.
+
+Cada tabla cierra con dos resúmenes que responden preguntas distintas:
+
+- **Promedio de países** (media simple, peso 1/6 por país): ¿cómo está
+  el país típico del bloque? Sensible por igual a países grandes y
+  pequeños.
+- **Agregado regional** (razón de sumas, Σ numerador / Σ denominador,
+  que equivale a ponderar cada país por su denominador): ¿cómo está el
+  SIEPAC como sistema? Es el agregado correcto cuando el texto habla de
+  "la región" o "el bloque".
+
+Ambos son legítimos pero pueden divergir mucho (incluso en el signo de
+la tendencia, como en ECO15): al citar cifras regionales debe indicarse
+cuál de los dos se usa. Las series sin denominador disponible en el
+repositorio (ECO14: energía regulada vendida; SOC2: hogares e ingresos
+en USD; SOC3: población rural/urbana) solo presentan el promedio de
+países, y su nota metodológica lo advierte.
 """]
     filas_csv = []
 
@@ -224,11 +250,19 @@ presentan una tabla por sub-serie.
                     filas_csv.append([ficha["dim"], codigo, s["clave"],
                                       s["etiqueta"], ficha["nombre"], pais,
                                       anio, v, s["unidad"], fuente])
+            # Filas resumen: se conserva la etiqueta histórica "Promedio
+            # regional" (media simple) por compatibilidad y se añade el
+            # "Agregado regional" (razón de sumas) cuando existe.
             for anio, v in zip(ANIOS, bloque["promedio"]):
                 filas_csv.append([ficha["dim"], codigo, s["clave"],
                                   s["etiqueta"], ficha["nombre"],
                                   "Promedio regional", anio, v,
-                                  s["unidad"], "calculado"])
+                                  s["unidad"], "calculado_media_simple"])
+            for anio, v in zip(ANIOS, bloque.get("agregado") or []):
+                filas_csv.append([ficha["dim"], codigo, s["clave"],
+                                  s["etiqueta"], ficha["nombre"],
+                                  "Agregado regional", anio, v,
+                                  s["unidad"], "calculado_razon_sumas"])
 
     md.append("""
 ## Trazabilidad
@@ -238,8 +272,13 @@ partir de las variables base del pipeline (`data/processed/`), en
 unidades homologadas: energía en kWh, PIB y valor agregado industrial en
 USD constantes de 2015, tarifa en USD corrientes/MWh. Las mismas cifras,
 con sus tablas de datos base, pueden auditarse en los visualizadores del
-proyecto (`graficos/`). La versión máquina de esta matriz está en
-`data/processed/indicadores_consolidados_tidy.csv`.
+proyecto (`graficos/`); en los libros Excel, las filas "Agregado
+regional (razón de sumas)" llevan fórmulas SUM auditables hacia
+Datos_Base. La versión máquina de esta matriz está en
+`data/processed/indicadores_consolidados_tidy.csv` (el promedio de
+países aparece como pais = "Promedio regional" con fuente_dato =
+"calculado_media_simple"; el agregado, como "Agregado regional" con
+"calculado_razon_sumas").
 
 \\* Valor imputado vía CAGR (no observación directa de la fuente).
 """)

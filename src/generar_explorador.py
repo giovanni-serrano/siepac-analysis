@@ -304,12 +304,23 @@ function descargarCSV(nombre, columnas, filas) {{
   URL.revokeObjectURL(url);
 }}
 
-// Tarjetas resumen: promedio 2024, variacion 2020->2024, maximo y minimo.
+// Referencia regional de un bloque: el agregado (razón de sumas, el
+// bloque como sistema) cuando la serie tiene denominador disponible;
+// si no (ECO14, SOC2, SOC3), el promedio de países (media simple).
+function refRegional(bloque) {{
+  return bloque.agregado
+      ? {{ vals: bloque.agregado, nombre: "Agregado regional" }}
+      : {{ vals: bloque.promedio, nombre: "Promedio de países" }};
+}}
+
+// Tarjetas resumen: referencia regional 2024, variacion 2020->2024,
+// maximo y minimo.
 function renderKPIs(codigo) {{
   const ficha = FICHAS[codigo];
   const inf = infoSerie(codigo, ficha, SERIE);
   const bloque = DATOS[inf.clave];
-  const p0 = bloque.promedio[0], p4 = bloque.promedio[ANIOS.length - 1];
+  const ref = refRegional(bloque);
+  const p0 = ref.vals[0], p4 = ref.vals[ANIOS.length - 1];
   const dif = ficha.delta === "pp" ? (p4 - p0) : ((p4 / p0 - 1) * 100);
   const deltaTxt = (dif >= 0 ? "▲ +" : "▼ −") + Math.abs(dif).toFixed(1) +
                    (ficha.delta === "pp" ? " pp" : " %");
@@ -317,8 +328,8 @@ function renderKPIs(codigo) {{
                       .filter(x => x[1] !== null)
                       .sort((a, b) => b[1] - a[1]);
   const tarjetas = [
-    ["Promedio regional 2024", fmtNum(p4, inf.formato) + inf.sufijo],
-    ["Variación regional 2020→2024", deltaTxt],
+    [ref.nombre + " 2024", fmtNum(p4, inf.formato) + inf.sufijo],
+    ["Variación 2020→2024", deltaTxt],
     ["Máximo 2024", v2024[0][0] + " · " + fmtNum(v2024[0][1], inf.formato)],
     ["Mínimo 2024", v2024[v2024.length - 1][0] + " · " +
         fmtNum(v2024[v2024.length - 1][1], inf.formato)],
@@ -459,10 +470,14 @@ function renderTablaCalculo(dim) {{
         }});
         html += "</tr>";
       }});
-      html += "<tr><td><b>Promedio regional</b></td>" +
+      html += "<tr><td><b>Promedio de países</b> (media simple)</td>" +
           bloque.promedio.map(v => "<td><b>" + fmtNum(v, inf.formato) +
-                                   "</b></td>").join("") +
-          "</tr></tbody></table></div></div>";
+                                   "</b></td>").join("") + "</tr>";
+      if (bloque.agregado)
+        html += "<tr><td><b>Agregado regional</b> (razón de sumas)</td>" +
+            bloque.agregado.map(v => "<td><b>" + fmtNum(v, inf.formato) +
+                                     "</b></td>").join("") + "</tr>";
+      html += "</tbody></table></div></div>";
     }});
   }});
   html += "<button class='btn-descarga' onclick='descargarCSVCalculo()'>" +
@@ -577,9 +592,10 @@ function render(codigo) {{
       return traza;
     }});
 
-    // Promedio regional: linea gris discontinua, siempre al final.
+    // Referencia regional: linea gris discontinua, siempre al final.
+    const refG = refRegional(bloque);
     trazas.push({{
-      x: ANIOS, y: bloque.promedio, name: "Promedio regional",
+      x: ANIOS, y: refG.vals, name: refG.nombre,
       mode: "lines", type: "scatter",
       line: {{ color: "#6E6A63", width: 2, dash: "dash" }},
       hovertemplate: "%{{y:" + inf.formato + "}}" + inf.sufijo,

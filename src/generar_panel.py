@@ -366,6 +366,14 @@ function deltaTexto(cod, vals) {
   return (dif >= 0 ? "▲ +" : "▼ −") + Math.abs(dif).toFixed(1) +
          (f.delta === "pp" ? " pp" : " %");
 }
+// Referencia regional de un bloque: el agregado (razón de sumas, el
+// bloque como sistema) cuando la serie tiene denominador disponible;
+// si no (ECO14, SOC2, SOC3), el promedio de países (media simple).
+function refRegional(bloque) {
+  return bloque.agregado
+      ? { vals: bloque.agregado, nombre: "Agregado regional" }
+      : { vals: bloque.promedio, nombre: "Promedio de países" };
+}
 function descargarCSV(nombre, columnas, filas) {
   const esc = c => {
     const s = c === null || c === undefined ? "" : String(c);
@@ -419,14 +427,14 @@ function navegar(id) {
 // ------------------------- portada -------------------------
 function statHero() {
   const s = [];
-  if (DATOS.ECO13) s.push([fmtNum(DATOS.ECO13.promedio[IDX_FIN], ".1f") + "%",
-      "generación renovable regional · 2024"]);
+  if (DATOS.ECO13) s.push([fmtNum(refRegional(DATOS.ECO13).vals[IDX_FIN], ".1f") + "%",
+      "generación renovable del bloque · 2024"]);
   if (DATOS.ECO14) s.push([fmtNum(DATOS.ECO14.promedio[IDX_FIN], ".1f") + " USD/MWh",
-      "precio medio regional · 2024"]);
-  if (DATOS.SOC1) s.push([fmtNum(DATOS.SOC1.promedio[IDX_FIN], ".1f") + "%",
-      "población sin electricidad · 2024"]);
-  if (DATOS.ENV3) s.push([fmtNum(DATOS.ENV3.promedio[IDX_FIN], ".2f") + " g/kWh",
-      "emisiones atmosféricas · 2024"]);
+      "precio medio · promedio de países · 2024"]);
+  if (DATOS.SOC1) s.push([fmtNum(refRegional(DATOS.SOC1).vals[IDX_FIN], ".1f") + "%",
+      "población del bloque sin electricidad · 2024"]);
+  if (DATOS.ENV3) s.push([fmtNum(refRegional(DATOS.ENV3).vals[IDX_FIN], ".2f") + " g/kWh",
+      "emisiones atmosféricas del bloque · 2024"]);
   return s.map(([b, t]) => "<div class='stat-chip'><b>" + b + "</b><span>" +
       t + "</span></div>").join("");
 }
@@ -441,12 +449,12 @@ function tarjeta(cod) {
     spark = sparkline(saldoProm, COLOR_DIM[f.dim]);
   } else {
     const inf = infoSerie(cod, 0);
-    const prom = DATOS[inf.clave].promedio;
-    kpi = "<b>" + fmtNum(prom[IDX_FIN], inf.formato) + "</b><small>" +
+    const ref = refRegional(DATOS[inf.clave]);
+    kpi = "<b>" + fmtNum(ref.vals[IDX_FIN], inf.formato) + "</b><small>" +
           inf.unidad + " · 2024</small>";
-    const d = deltaTexto(cod, prom);
+    const d = deltaTexto(cod, ref.vals);
     if (d) delta = "<span class='pill'>" + d + "</span>";
-    spark = sparkline(prom, COLOR_DIM[f.dim]);
+    spark = sparkline(ref.vals, COLOR_DIM[f.dim]);
   }
   return "<button class='card' onclick=\"abrirDetalle('" + cod + "')\">" +
       "<span class='cod'><i style='background:" + COLOR_DIM[f.dim] +
@@ -574,12 +582,12 @@ function renderDetalle() {
       "' onclick=\"togglePais('" + p + "')\"><i style='background:" +
       COLORES[p] + "'></i>" + p + "</button>").join("") + "</div>";
 
-  const prom = bloque.promedio;
+  const ref = refRegional(bloque);
   const v24 = PAISES.map(p => [p, bloque.paises[p][IDX_FIN]])
       .filter(x => x[1] !== null).sort((a, b) => b[1] - a[1]);
   const kpis = [
-    ["Promedio regional 2024", fmtNum(prom[IDX_FIN], inf.formato) + inf.sufijo],
-    ["Variación 2020→2024", deltaTexto(COD, prom) || "s.d."],
+    [ref.nombre + " 2024", fmtNum(ref.vals[IDX_FIN], inf.formato) + inf.sufijo],
+    ["Variación 2020→2024", deltaTexto(COD, ref.vals) || "s.d."],
     ["Máximo 2024", v24[0][0] + " · " + fmtNum(v24[0][1], inf.formato)],
     ["Mínimo 2024", v24[v24.length - 1][0] + " · " +
         fmtNum(v24[v24.length - 1][1], inf.formato)],
@@ -648,7 +656,8 @@ function graficar(cod, inf, bloque) {
       }
       return t;
     });
-    trazas.push({ x: ANIOS, y: bloque.promedio, name: "Promedio regional",
+    const refG = refRegional(bloque);
+    trazas.push({ x: ANIOS, y: refG.vals, name: refG.nombre,
       mode: "lines", type: "scatter",
       line: { color: "#9CA3AF", width: 2, dash: "dash" },
       hovertemplate: "%{y:" + inf.formato + "}" + inf.sufijo });
@@ -769,9 +778,14 @@ function vistaDatos() {
           });
           html += "</tr>";
         });
-        html += "<tr><td><b>Promedio regional</b></td>" +
+        html += "<tr><td><b>Promedio de países</b> (media simple)</td>" +
             bloque.promedio.map(v => "<td><b>" + fmtNum(v, inf.formato) +
-                "</b></td>").join("") + "</tr></tbody></table></div></div>";
+                "</b></td>").join("") + "</tr>";
+        if (bloque.agregado)
+          html += "<tr><td><b>Agregado regional</b> (razón de sumas)</td>" +
+              bloque.agregado.map(v => "<td><b>" + fmtNum(v, inf.formato) +
+                  "</b></td>").join("") + "</tr>";
+        html += "</tbody></table></div></div>";
       });
     });
     window._filas = filas;

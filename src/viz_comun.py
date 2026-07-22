@@ -135,10 +135,59 @@ def preparar_datos(hojas: dict[str, pd.DataFrame]) -> pd.DataFrame:
     return df.sort_values(["pais", "anio"]).reset_index(drop=True)
 
 
+def media_ponderada(valores: dict, pesos: dict) -> list:
+    """Σ v·w / Σ w por año sobre {pais: [v_2020..v_2024]}; omite los
+    países sin dato ese año. Con el denominador del indicador como peso
+    es matemáticamente idéntica a la razón de sumas Σ N_i / Σ D_i."""
+    salida = []
+    for i in range(len(ANIOS)):
+        num = den = 0.0
+        for p in PAISES:
+            v, w = valores[p][i], pesos[p][i]
+            if v is None or w is None:
+                continue
+            num += v * w
+            den += w
+        salida.append(round(num / den, 6) if den else None)
+    return salida
+
+
+def agregados_eco(base: pd.DataFrame) -> dict:
+    """Agregado regional (razón de sumas) de los indicadores ECO, desde
+    la hoja Datos_Base: misma N/D que generar_matriz_indicadores (las
+    filas 'Agregado regional' del Excel llevan estas fórmulas en
+    paridad; si cambia una, cambia la otra). ECO14 devuelve None: la
+    fuente no publica la energía regulada vendida (MWh) por país, así
+    que no existe denominador con el que ponderar la tarifa."""
+    g = (base[base["pais"].isin(PAISES)]
+         .groupby("anio").sum(numeric_only=True).sort_index())
+    renovables = (g["gen_hidro_kwh"] + g["gen_geotermia_kwh"]
+                  + g["gen_eolica_kwh"] + g["gen_solar_kwh"]
+                  + g["gen_biomasa_kwh"])
+    neto = g["importaciones_kwh"] - g["exportaciones_kwh"]
+    series = {
+        "ECO1": g["consumo_final_total_kwh"] / g["poblacion_habitantes"],
+        "ECO2": g["consumo_final_total_kwh"] / g["pib_usd_const2015"],
+        "ECO3": g["consumo_final_total_kwh"] / g["produccion_bruta_kwh"] * 100,
+        "ECO6": g["consumo_industrial_kwh"] / g["vai_usd_const2015"],
+        "ECO11": g["gen_fosil_kwh"] / g["gen_total_kwh"] * 100,
+        "ECO13": renovables / g["gen_total_kwh"] * 100,
+        "ECO14": None,
+        "ECO15": neto / (g["produccion_bruta_kwh"] + neto) * 100,
+    }
+    return {cod: (None if s is None
+                  else [round(float(s.loc[a]), 6) for a in ANIOS])
+            for cod, s in series.items()}
+
+
 def leer_series_extra() -> dict:
     """Lee las hojas de los libros ENV y SOC (mismo layout que las ECO:
     fila 1 titulo, fila 2 formula, fila 3 encabezado). Devuelve
-    {clave_serie: {paises: {...}, promedio: [...]}} + ENV6 especial.
+    {clave_serie: {paises: {...}, promedio: [...], agregado: [...]}} +
+    ENV6 especial. El promedio (media simple) se recalcula aquí; el
+    agregado (razón de sumas) se lee de la fila 'Agregado regional' que
+    escribe procesar_dimensiones.py — None si la serie no la tiene
+    (SOC2: sin hogares; SOC3: sin población rural/urbana).
     Los valores faltantes (p. ej. El Salvador 2020 en SOC2) quedan como
     None para que JSON los serialice como null."""
     paquete = {}
@@ -150,13 +199,20 @@ def leer_series_extra() -> dict:
             continue
         for clave in claves:
             hoja = pd.read_excel(ruta, sheet_name=clave, skiprows=2)
+            fila_agr = hoja[hoja["País"].astype(str)
+                            .str.startswith("Agregado regional")]
             hoja = hoja[hoja["País"].isin(PAISES)].set_index("País")
             hoja.columns = [int(c) for c in hoja.columns]
             por_pais = {p: [None if pd.isna(v) else round(float(v), 6)
                             for v in hoja.loc[p, ANIOS]] for p in PAISES}
             promedio = [round(float(hoja[a].mean(skipna=True)), 6)
                         for a in ANIOS]
-            paquete[clave] = {"paises": por_pais, "promedio": promedio}
+            agregado = None
+            if not fila_agr.empty:
+                agregado = [None if pd.isna(v) else round(float(v), 6)
+                            for v in fila_agr.iloc[0, 1:1 + len(ANIOS)]]
+            paquete[clave] = {"paises": por_pais, "promedio": promedio,
+                              "agregado": agregado}
         # Hoja Datos_Base (variables de entrada) para la vista de tabla.
         try:
             b = pd.read_excel(ruta, sheet_name="Datos_Base", skiprows=2)
@@ -242,7 +298,10 @@ FICHAS = {
         formato=".1f", sufijo=" USD/MWh",
         nota="Los puntos huecos son valores imputados vía CAGR "
              "(2023–2024 en cinco países; 2022–2024 en El Salvador), "
-             "no observaciones reales."),
+             "no observaciones reales. Sin energía regulada vendida "
+             "(MWh) por país en la fuente, el agregado regional "
+             "ponderado no es calculable: se reporta el promedio de "
+             "países (media simple)."),
     "ECO15": dict(
         nombre="Dependencia de importaciones netas",
         unidad="%",
@@ -251,7 +310,10 @@ FICHAS = {
                      "(no es un error del dato).",
         formato=".1f", sufijo="%",
         nota="La línea punteada en 0 separa importadores (arriba) de "
-             "exportadores netos (abajo)."),
+             "exportadores netos (abajo). En el agregado regional los "
+             "intercambios dentro del MER se cancelan al sumar: la "
+             "cifra del bloque mide su dependencia extrarregional, no "
+             "el promedio de las dependencias nacionales."),
 }
 
 # Tipo de variación para las tarjetas resumen: 'pct' = cambio relativo (%),
@@ -359,7 +421,9 @@ FICHAS["SOC1"] = dict(
     descripcion="Porcentaje de hogares (o de población) sin electricidad "
                 "o energía comercial, o muy dependientes de energías no "
                 "comerciales.",
-    nota="",
+    nota="El agregado regional pondera cada país por su población "
+         "(razón de sumas): equivale a personas sin electricidad del "
+         "bloque ÷ población del bloque.",
     series=[
         ["SOC1", "", ".2f", "%", "%", "100 − Tasa de electrificación total"],
     ])
@@ -372,7 +436,9 @@ FICHAS["SOC2"] = dict(
                 "promedio y para el quintil de menores ingresos.",
     nota="Guatemala: valores ~1000× menores que el resto del bloque "
          "(posible inconsistencia de unidades en la fuente); verificar "
-         "con el equipo antes de interpretar.",
+         "con el equipo antes de interpretar. Solo promedio de países: "
+         "los insumos monetarios están en moneda local y no hay número "
+         "de hogares por país-año para ponderar un agregado regional.",
     series=[
         ["SOC2_PROM", "Hogar promedio", ".2f", "%", "%",
          "Cargo anual de electricidad ÷ Ingreso anual promedio × 100"],
@@ -388,7 +454,9 @@ FICHAS["SOC3"] = dict(
                 "eléctrico ponderado por la participación renovable de la "
                 "generación.",
     nota="Proxy elaborado por el equipo: asume que el mix de la red es "
-         "uniforme entre zonas.",
+         "uniforme entre zonas. Solo promedio de países: sin población "
+         "rural/urbana por país-año no puede ponderarse un agregado "
+         "regional.",
     series=[
         ["SOC3_RURAL", "Rural", ".1f", "%", "%",
          "Tasa de electrificación rural × % renovable de la generación"],
@@ -401,9 +469,14 @@ def construir_datos_json(df, base_df, extra) -> str:
     """Empaqueta los datos como JSON para incrustar en el HTML.
 
     Estructura: {ECO1: {paises: {Nicaragua: [v2020..v2024], ...},
-                        promedio: [...]},  ...,
+                        promedio: [...], agregado: [...] | null},  ...,
                  imputados: {Nicaragua: [false,false,false,true,true], ...}}
+
+    promedio = media simple de los seis países ("el país típico");
+    agregado = razón de sumas Σ N/Σ D ("el bloque como sistema"), null
+    en las series sin denominador disponible (ECO14, SOC2, SOC3).
     """
+    agregados = agregados_eco(base_df)
     paquete = {}
     for codigo in [c for c, f in FICHAS.items() if f["dim"] == "eco"]:
         por_pais = {}
@@ -413,7 +486,8 @@ def construir_datos_json(df, base_df, extra) -> str:
             por_pais[pais] = serie
         promedio = (df.groupby("anio")[codigo].mean().sort_index()
                     .round(6).tolist())
-        paquete[codigo] = {"paises": por_pais, "promedio": promedio}
+        paquete[codigo] = {"paises": por_pais, "promedio": promedio,
+                           "agregado": agregados.get(codigo)}
 
     paquete["imputados"] = {
         pais: df[df["pais"] == pais].sort_values("anio")["tarifa_imputada"]
