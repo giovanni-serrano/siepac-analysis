@@ -40,6 +40,7 @@ ORDEN = [
     "generar_explorador.py",
     "generar_panel.py",
     "exportar_graficos.py",
+    "exportar_graficos_region.py",
 ]
 
 
