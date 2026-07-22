@@ -1,0 +1,36 @@
+﻿serie,nombre,unidad,medida,2020,2021,2022,2023,2024,delta_2020_2024
+ECO1,Uso de energía per cápita,kWh/habitante,promedio_paises,1217.32414,1302.658963,1332.520146,1379.865581,1311.788509,+7.8 %
+ECO1,Uso de energía per cápita,kWh/habitante,agregado_razon_sumas,959.079786,1037.127043,1041.149714,1080.176115,1063.361268,+10.9 %
+ECO2,Uso de energía por unidad de PIB,kWh/USD const. 2015,promedio_paises,0.22495,0.222018,0.214863,0.215256,0.215519,-4.2 %
+ECO2,Uso de energía por unidad de PIB,kWh/USD const. 2015,agregado_razon_sumas,0.194847,0.192425,0.184945,0.185369,0.17863,-8.3 %
+ECO3,Eficiencia de conversión y distribución,%,promedio_paises,84.484542,85.37893,85.375677,84.616456,83.602802,-0.9 pp
+ECO3,Eficiencia de conversión y distribución,%,agregado_razon_sumas,82.44937,83.119751,84.472214,84.925301,82.631436,+0.2 pp
+ECO6,Intensidad energética de la industria,kWh/USD const. 2015,promedio_paises,0.409442,0.41621,0.459123,0.486602,0.543975,+32.9 %
+ECO6,Intensidad energética de la industria,kWh/USD const. 2015,agregado_razon_sumas,0.369619,0.379485,0.437158,0.458821,0.49677,+34.4 %
+ECO11,Fósiles en la electricidad,%,promedio_paises,25.0468,24.17618,25.3814,35.416964,34.212943,+9.2 pp
+ECO11,Fósiles en la electricidad,%,agregado_razon_sumas,24.965381,23.947696,24.301026,34.897209,32.966016,+8.0 pp
+ECO13,Renovables en la electricidad,%,promedio_paises,74.9532,75.82382,74.6186,64.583036,65.787057,-9.2 pp
+ECO13,Renovables en la electricidad,%,agregado_razon_sumas,75.034619,76.052304,75.698974,65.102791,67.033984,-8.0 pp
+ECO14,Precio medio de la electricidad,USD corrientes/MWh,promedio_paises,183.376547,176.484089,191.173094,192.78798,194.608081,+6.1 %
+ECO15,Dependencia de importaciones netas,%,promedio_paises,4.21034,4.32362,3.626831,3.169206,3.10082,-1.1 pp
+ECO15,Dependencia de importaciones netas,%,agregado_razon_sumas,1.654375,1.685664,1.757498,2.478809,2.166714,+0.5 pp
+ENV1_PC,Emisiones de GEI del sector eléctrico — Per cápita,t CO₂eq/habitante,promedio_paises,0.152458,0.16105,0.143495,0.232998,0.250056,+64.0 %
+ENV1_PC,Emisiones de GEI del sector eléctrico — Per cápita,t CO₂eq/habitante,agregado_razon_sumas,0.166086,0.174519,0.134331,0.211507,0.238027,+43.3 %
+ENV1_PIB,Emisiones de GEI del sector eléctrico — Por unidad de PIB,kg CO₂eq/USD constantes 2015,promedio_paises,0.043246,0.038559,0.036572,0.052249,0.053482,+23.7 %
+ENV1_PIB,Emisiones de GEI del sector eléctrico — Por unidad de PIB,kg CO₂eq/USD constantes 2015,agregado_razon_sumas,0.03257,0.031233,0.022967,0.034969,0.038537,+18.3 %
+ENV2_SO2_PC,Contaminantes atmosféricos urbanos — SO₂ per cápita,kg/habitante,promedio_paises,1.202776,1.184002,1.129502,1.628635,1.619493,+34.6 %
+ENV2_SO2_PC,Contaminantes atmosféricos urbanos — SO₂ per cápita,kg/habitante,agregado_razon_sumas,1.446198,1.445258,1.162884,1.669315,1.799328,+24.4 %
+ENV2_PAR_PC,Contaminantes atmosféricos urbanos — Partículas per cápita,kg/habitante,promedio_paises,0.04302,0.039927,0.045368,0.06464,0.061231,+42.3 %
+ENV2_PAR_PC,Contaminantes atmosféricos urbanos — Partículas per cápita,kg/habitante,agregado_razon_sumas,0.042665,0.037793,0.041677,0.058023,0.05791,+35.7 %
+ENV2_SO2_PIB,Contaminantes atmosféricos urbanos — SO₂ por PIB,g/USD constantes 2015,promedio_paises,0.441016,0.382494,0.355945,0.447619,0.447452,+1.5 %
+ENV2_SO2_PIB,Contaminantes atmosféricos urbanos — SO₂ por PIB,g/USD constantes 2015,agregado_razon_sumas,0.283603,0.258651,0.198823,0.275991,0.291314,+2.7 %
+ENV2_PAR_PIB,Contaminantes atmosféricos urbanos — Partículas por PIB,g/USD constantes 2015,promedio_paises,0.017137,0.014201,0.014754,0.018261,0.01764,+2.9 %
+ENV2_PAR_PIB,Contaminantes atmosféricos urbanos — Partículas por PIB,g/USD constantes 2015,agregado_razon_sumas,0.008367,0.006764,0.007126,0.009593,0.009376,+12.1 %
+ENV3,Emisiones atmosféricas del sistema — Escala eléctrica,g/kWh,promedio_paises,1.72235,1.590276,1.406307,1.793789,1.823141,+5.9 %
+ENV3,Emisiones atmosféricas del sistema — Escala eléctrica,g/kWh,agregado_razon_sumas,1.490715,1.381786,1.157869,1.626593,1.727963,+15.9 %
+SOC1,Población sin electricidad,%,promedio_paises,5.796667,5.613333,5.395,5.103333,4.9155,-0.9 pp
+SOC1,Población sin electricidad,%,agregado_razon_sumas,7.569954,7.566899,7.290058,6.949312,6.719954,-0.8 pp
+SOC2_PROM,Ingreso destinado a electricidad — Hogar promedio,%,promedio_paises,3.870832,3.518526,3.594091,3.470997,3.446813,-0.4 pp
+SOC2_POBRE,Ingreso destinado a electricidad — Quintil más pobre,%,promedio_paises,23.297733,21.760031,23.24088,23.068702,24.7301,+1.4 pp
+SOC3_RURAL,Hogares con acceso a energía renovable — Rural,%,promedio_paises,64.063834,65.800894,65.140508,57.086908,59.146172,-4.9 pp
+SOC3_URB,Hogares con acceso a energía renovable — Urbano,%,promedio_paises,74.162445,74.769919,73.523903,63.612927,64.60693,-9.6 pp
