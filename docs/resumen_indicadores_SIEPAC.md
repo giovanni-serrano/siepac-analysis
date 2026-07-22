@@ -10,18 +10,34 @@ el SIEPAC — ventana 2020–2024.
 **Fuentes de datos:** SIELAC·OLADE, CEPALSTAT·CEPAL, Banco Mundial (WDI)
 y EOR (Mercado Eléctrico Regional).
 **Documento generado automáticamente** por
-`src/generar_resumen_indicadores.py` el 2026-07-21;
+`src/generar_resumen_indicadores.py` el 2026-07-22;
 los valores provienen del mismo pipeline que alimenta los visualizadores.
 
 ## Cómo leer este documento
 
 Cada indicador incluye su ficha (unidad, fórmula, descripción y notas
-metodológicas) y su tabla de valores por país y año, con el promedio
-regional (media simple de los seis países) y la variación 2020→2024
-(relativa en % para magnitudes; en puntos porcentuales, pp, para
-indicadores que ya son porcentajes). "s.d." = sin dato.
+metodológicas) y su tabla de valores por país y año, con la variación
+2020→2024 (relativa en % para magnitudes; en puntos porcentuales, pp,
+para indicadores que ya son porcentajes). "s.d." = sin dato.
 Los indicadores con varias salidas (p. ej. per cápita y por PIB)
 presentan una tabla por sub-serie.
+
+Cada tabla cierra con dos resúmenes que responden preguntas distintas:
+
+- **Promedio de países** (media simple, peso 1/6 por país): ¿cómo está
+  el país típico del bloque? Sensible por igual a países grandes y
+  pequeños.
+- **Agregado regional** (razón de sumas, Σ numerador / Σ denominador,
+  que equivale a ponderar cada país por su denominador): ¿cómo está el
+  SIEPAC como sistema? Es el agregado correcto cuando el texto habla de
+  "la región" o "el bloque".
+
+Ambos son legítimos pero pueden divergir mucho (incluso en el signo de
+la tendencia, como en ECO15): al citar cifras regionales debe indicarse
+cuál de los dos se usa. Las series sin denominador disponible en el
+repositorio (ECO14: energía regulada vendida; SOC2: hogares e ingresos
+en USD; SOC3: población rural/urbana) solo presentan el promedio de
+países, y su nota metodológica lo advierte.
 
 
 ## Dimensión económica
@@ -41,7 +57,8 @@ Consumo final total dividido entre la población. Refleja el nivel de acceso y u
 | Honduras | 655 | 754 | 727 | 737 | 800 | +22.1 % |
 | Nicaragua | 556 | 587 | 594 | 609 | 613 | +10.2 % |
 | Panamá | 2,568 | 2,798 | 2,876 | 3,001 | 2,318 | -9.7 % |
-| **Promedio regional** | **1,217** | **1,303** | **1,333** | **1,380** | **1,312** | **+7.8 %** |
+| **Promedio de países** (media simple) | **1,217** | **1,303** | **1,333** | **1,380** | **1,312** | **+7.8 %** |
+| **Agregado regional** (razón de sumas) | **959** | **1,037** | **1,041** | **1,080** | **1,063** | **+10.9 %** |
 
 
 ### ECO2 · Uso de energía por unidad de PIB
@@ -58,7 +75,8 @@ Cuánta energía consume la economía por cada dólar de PIB real. Bajar en el t
 | Honduras | 0.2992 | 0.3110 | 0.2928 | 0.2915 | 0.3109 | +3.9 % |
 | Nicaragua | 0.2853 | 0.2760 | 0.2731 | 0.2719 | 0.2678 | -6.1 % |
 | Panamá | 0.2030 | 0.1923 | 0.1802 | 0.1778 | 0.1354 | -33.3 % |
-| **Promedio regional** | **0.2250** | **0.2220** | **0.2149** | **0.2153** | **0.2155** | **-4.2 %** |
+| **Promedio de países** (media simple) | **0.2250** | **0.2220** | **0.2149** | **0.2153** | **0.2155** | **-4.2 %** |
+| **Agregado regional** (razón de sumas) | **0.1948** | **0.1924** | **0.1849** | **0.1854** | **0.1786** | **-8.3 %** |
 
 
 ### ECO3 · Eficiencia de conversión y distribución
@@ -77,7 +95,8 @@ Porcentaje de la producción bruta que llega como consumo final. La brecha son p
 | Honduras | 66.5 | 70.8 | 68.2 | 66.2 | 68.2 | +1.7 pp |
 | Nicaragua | 95.9 | 92.8 | 93.8 | 87.0 | 87.0 | -8.8 pp |
 | Panamá | 83.7 | 87.0 | 90.0 | 91.7 | 77.8 | -5.9 pp |
-| **Promedio regional** | **84.5** | **85.4** | **85.4** | **84.6** | **83.6** | **-0.9 pp** |
+| **Promedio de países** (media simple) | **84.5** | **85.4** | **85.4** | **84.6** | **83.6** | **-0.9 pp** |
+| **Agregado regional** (razón de sumas) | **82.4** | **83.1** | **84.5** | **84.9** | **82.6** | **+0.2 pp** |
 
 
 ### ECO6 · Intensidad energética de la industria
@@ -94,7 +113,8 @@ Energía que necesita la industria por cada dólar de valor agregado industrial.
 | Honduras | 0.5792 | 0.6403 | 0.6445 | 0.6210 | 0.6888 | +18.9 % |
 | Nicaragua | 0.5823 | 0.5814 | 0.5908 | 0.5524 | 0.5810 | -0.2 % |
 | Panamá | 0.1457 | 0.1729 | 0.1033 | 0.2550 | 0.2520 | +72.9 % |
-| **Promedio regional** | **0.4094** | **0.4162** | **0.4591** | **0.4866** | **0.5440** | **+32.9 %** |
+| **Promedio de países** (media simple) | **0.4094** | **0.4162** | **0.4591** | **0.4866** | **0.5440** | **+32.9 %** |
+| **Agregado regional** (razón de sumas) | **0.3696** | **0.3795** | **0.4372** | **0.4588** | **0.4968** | **+34.4 %** |
 
 
 ### ECO11 · Fósiles en la electricidad
@@ -111,7 +131,8 @@ Participación de la generación térmica fósil en la generación total. El esp
 | Honduras | 44.2 | 38.3 | 40.2 | 47.7 | 47.7 | +3.5 pp |
 | Nicaragua | 30.2 | 30.8 | 34.4 | 41.4 | 48.2 | +18.0 pp |
 | Panamá | 35.0 | 31.5 | 32.7 | 45.3 | 26.9 | -8.0 pp |
-| **Promedio regional** | **25.0** | **24.2** | **25.4** | **35.4** | **34.2** | **+9.2 pp** |
+| **Promedio de países** (media simple) | **25.0** | **24.2** | **25.4** | **35.4** | **34.2** | **+9.2 pp** |
+| **Agregado regional** (razón de sumas) | **25.0** | **23.9** | **24.3** | **34.9** | **33.0** | **+8.0 pp** |
 
 
 ### ECO13 · Renovables en la electricidad
@@ -128,14 +149,15 @@ Hidro + geotermia + eólica + solar + biomasa como porcentaje de la generación 
 | Honduras | 55.8 | 61.7 | 59.8 | 52.3 | 52.3 | -3.5 pp |
 | Nicaragua | 69.8 | 69.2 | 65.6 | 58.6 | 51.8 | -18.0 pp |
 | Panamá | 65.0 | 68.5 | 67.3 | 54.7 | 73.1 | +8.0 pp |
-| **Promedio regional** | **75.0** | **75.8** | **74.6** | **64.6** | **65.8** | **-9.2 pp** |
+| **Promedio de países** (media simple) | **75.0** | **75.8** | **74.6** | **64.6** | **65.8** | **-9.2 pp** |
+| **Agregado regional** (razón de sumas) | **75.0** | **76.1** | **75.7** | **65.1** | **67.0** | **-8.0 pp** |
 
 
 ### ECO14 · Precio medio de la electricidad
 
 Ingresos por energía regulada vendida entre energía regulada consumida. En dólares corrientes de cada año.
 
-> Nota metodológica: Los puntos huecos son valores imputados vía CAGR (2023–2024 en cinco países; 2022–2024 en El Salvador), no observaciones reales.
+> Nota metodológica: Los puntos huecos son valores imputados vía CAGR (2023–2024 en cinco países; 2022–2024 en El Salvador), no observaciones reales. Sin energía regulada vendida (MWh) por país en la fuente, el agregado regional ponderado no es calculable: se reporta el promedio de países (media simple).
 
 **ECO14** · Unidad: USD corrientes/MWh · Fórmula: Ingresos por energía regulada (USD) ÷ Energía regulada (MWh)
 
@@ -147,14 +169,14 @@ Ingresos por energía regulada vendida entre energía regulada consumida. En dó
 | Honduras | 177.6 | 183.4 | 235.4 | 250.5\* | 266.5\* | +50.1 % |
 | Nicaragua | 218.0 | 195.3 | 196.5 | 195.4\* | 194.4\* | -10.8 % |
 | Panamá | 179.0 | 162.7 | 180.9 | 177.7\* | 174.6\* | -2.5 % |
-| **Promedio regional** | **183.4** | **176.5** | **191.2** | **192.8** | **194.6** | **+6.1 %** |
+| **Promedio de países** (media simple) | **183.4** | **176.5** | **191.2** | **192.8** | **194.6** | **+6.1 %** |
 
 
 ### ECO15 · Dependencia de importaciones netas
 
 Importaciones netas sobre la oferta total. Positivo = importador neto; negativo = EXPORTADOR neto ese año (no es un error del dato).
 
-> Nota metodológica: La línea punteada en 0 separa importadores (arriba) de exportadores netos (abajo).
+> Nota metodológica: La línea punteada en 0 separa importadores (arriba) de exportadores netos (abajo). En el agregado regional los intercambios dentro del MER se cancelan al sumar: la cifra del bloque mide su dependencia extrarregional, no el promedio de las dependencias nacionales.
 
 **ECO15** · Unidad: % · Fórmula: (Importaciones − Exportaciones) ÷ (Producción bruta + Importaciones − Exportaciones) × 100
 
@@ -166,7 +188,8 @@ Importaciones netas sobre la oferta total. Positivo = importador neto; negativo 
 | Honduras | 2.8 | 1.8 | 1.7 | 1.2 | 1.1 | -1.7 pp |
 | Nicaragua | 21.9 | 19.3 | 19.9 | 14.6 | 15.0 | -6.9 pp |
 | Panamá | -3.5 | -3.2 | -1.1 | -1.0 | -4.2 | -0.6 pp |
-| **Promedio regional** | **4.2** | **4.3** | **3.6** | **3.2** | **3.1** | **-1.1 pp** |
+| **Promedio de países** (media simple) | **4.2** | **4.3** | **3.6** | **3.2** | **3.1** | **-1.1 pp** |
+| **Agregado regional** (razón de sumas) | **1.7** | **1.7** | **1.8** | **2.5** | **2.2** | **+0.5 pp** |
 
 
 ## Dimensión ambiental
@@ -186,7 +209,8 @@ Emisiones de gases de efecto invernadero (GEI) por la producción y uso de energ
 | Honduras | 0.2268 | 0.1706 | 0.2040 | 0.2595 | 0.2834 | +24.9 % |
 | Nicaragua | 0.1288 | 0.1429 | 0.1567 | 0.2128 | 0.2106 | +63.4 % |
 | Panamá | 0.2689 | 0.3309 | 0.2740 | 0.5004 | 0.5274 | +96.1 % |
-| **Promedio regional** | **0.1525** | **0.1610** | **0.1435** | **0.2330** | **0.2501** | **+64.0 %** |
+| **Promedio de países** (media simple) | **0.1525** | **0.1610** | **0.1435** | **0.2330** | **0.2501** | **+64.0 %** |
+| **Agregado regional** (razón de sumas) | **0.1661** | **0.1745** | **0.1343** | **0.2115** | **0.2380** | **+43.3 %** |
 
 **ENV1_PIB — Por unidad de PIB** · Unidad: kg CO₂eq/USD constantes 2015 · Fórmula: Emisiones GEI (kg) ÷ PIB real (USD constantes 2015)
 
@@ -198,7 +222,8 @@ Emisiones de gases de efecto invernadero (GEI) por la producción y uso de energ
 | Honduras | 0.1022 | 0.0694 | 0.0811 | 0.1013 | 0.1085 | +6.2 % |
 | Nicaragua | 0.0684 | 0.0695 | 0.0746 | 0.0983 | 0.0952 | +39.2 % |
 | Panamá | 0.0202 | 0.0216 | 0.0163 | 0.0282 | 0.0293 | +44.9 % |
-| **Promedio regional** | **0.0432** | **0.0386** | **0.0366** | **0.0522** | **0.0535** | **+23.7 %** |
+| **Promedio de países** (media simple) | **0.0432** | **0.0386** | **0.0366** | **0.0522** | **0.0535** | **+23.7 %** |
+| **Agregado regional** (razón de sumas) | **0.0326** | **0.0312** | **0.0230** | **0.0350** | **0.0385** | **+18.3 %** |
 
 
 ### ENV2 · Contaminantes atmosféricos urbanos
@@ -215,7 +240,8 @@ Concentraciones ambientales de contaminantes atmosféricos en zonas urbanas: SO�
 | Honduras | 2.598 | 1.992 | 2.406 | 3.056 | 3.182 | +22.5 % |
 | Nicaragua | 1.513 | 1.660 | 1.703 | 1.928 | 1.921 | +27.0 % |
 | Panamá | 0.413 | 0.548 | 1.216 | 2.330 | 1.997 | +383.8 % |
-| **Promedio regional** | **1.203** | **1.184** | **1.130** | **1.629** | **1.619** | **+34.6 %** |
+| **Promedio de países** (media simple) | **1.203** | **1.184** | **1.130** | **1.629** | **1.619** | **+34.6 %** |
+| **Agregado regional** (razón de sumas) | **1.446** | **1.445** | **1.163** | **1.669** | **1.799** | **+24.4 %** |
 
 **ENV2_PAR_PC — Partículas per cápita** · Unidad: kg/habitante · Fórmula: Emisiones de partículas ÷ Población
 
@@ -227,7 +253,8 @@ Concentraciones ambientales de contaminantes atmosféricos en zonas urbanas: SO�
 | Honduras | 0.1148 | 0.0880 | 0.1062 | 0.1349 | 0.1385 | +20.7 % |
 | Nicaragua | 0.0668 | 0.0733 | 0.0753 | 0.0858 | 0.0854 | +27.9 % |
 | Panamá | 0.0182 | 0.0244 | 0.0543 | 0.1036 | 0.0873 | +378.5 % |
-| **Promedio regional** | **0.0430** | **0.0399** | **0.0454** | **0.0646** | **0.0612** | **+42.3 %** |
+| **Promedio de países** (media simple) | **0.0430** | **0.0399** | **0.0454** | **0.0646** | **0.0612** | **+42.3 %** |
+| **Agregado regional** (razón de sumas) | **0.0427** | **0.0378** | **0.0417** | **0.0580** | **0.0579** | **+35.7 %** |
 
 **ENV2_SO2_PIB — SO₂ por PIB** · Unidad: g/USD constantes 2015 · Fórmula: Emisiones SO₂ (g) ÷ PIB real
 
@@ -239,7 +266,8 @@ Concentraciones ambientales de contaminantes atmosféricos en zonas urbanas: SO�
 | Honduras | 1.1702 | 0.8105 | 0.9558 | 1.1926 | 1.2187 | +4.1 % |
 | Nicaragua | 0.8031 | 0.8073 | 0.8102 | 0.8907 | 0.8685 | +8.1 % |
 | Panamá | 0.0311 | 0.0359 | 0.0726 | 0.1314 | 0.1110 | +257.3 % |
-| **Promedio regional** | **0.4410** | **0.3825** | **0.3559** | **0.4476** | **0.4475** | **+1.5 %** |
+| **Promedio de países** (media simple) | **0.4410** | **0.3825** | **0.3559** | **0.4476** | **0.4475** | **+1.5 %** |
+| **Agregado regional** (razón de sumas) | **0.2836** | **0.2587** | **0.1988** | **0.2760** | **0.2913** | **+2.7 %** |
 
 **ENV2_PAR_PIB — Partículas por PIB** · Unidad: g/USD constantes 2015 · Fórmula: Emisiones de partículas (g) ÷ PIB real
 
@@ -251,7 +279,8 @@ Concentraciones ambientales de contaminantes atmosféricos en zonas urbanas: SO�
 | Honduras | 0.05170 | 0.03579 | 0.04220 | 0.05265 | 0.05305 | +2.6 % |
 | Nicaragua | 0.03546 | 0.03565 | 0.03585 | 0.03962 | 0.03862 | +8.9 % |
 | Panamá | 0.00137 | 0.00159 | 0.00324 | 0.00584 | 0.00485 | +253.5 % |
-| **Promedio regional** | **0.01714** | **0.01420** | **0.01475** | **0.01826** | **0.01764** | **+2.9 %** |
+| **Promedio de países** (media simple) | **0.01714** | **0.01420** | **0.01475** | **0.01826** | **0.01764** | **+2.9 %** |
+| **Agregado regional** (razón de sumas) | **0.00837** | **0.00676** | **0.00713** | **0.00959** | **0.00938** | **+12.1 %** |
 
 
 ### ENV3 · Emisiones atmosféricas del sistema
@@ -268,7 +297,8 @@ Emisiones de contaminantes atmosféricos procedentes de los sistemas energético
 | Honduras | 3.217 | 2.283 | 2.755 | 3.352 | 3.304 | +2.7 % |
 | Nicaragua | 3.181 | 3.201 | 3.281 | 3.362 | 3.329 | +4.7 % |
 | Panamá | 0.314 | 0.377 | 0.544 | 1.020 | 1.064 | +238.7 % |
-| **Promedio regional** | **1.722** | **1.590** | **1.406** | **1.794** | **1.823** | **+5.9 %** |
+| **Promedio de países** (media simple) | **1.722** | **1.590** | **1.406** | **1.794** | **1.823** | **+5.9 %** |
+| **Agregado regional** (razón de sumas) | **1.491** | **1.382** | **1.158** | **1.627** | **1.728** | **+15.9 %** |
 
 
 ### ENV6 · Biomasa vs Saldo MER (ilustrativo)
@@ -301,6 +331,8 @@ Comparativo de inyección de biomasa vs saldo neto en el Mercado Eléctrico Regi
 
 Porcentaje de hogares (o de población) sin electricidad o energía comercial, o muy dependientes de energías no comerciales.
 
+> Nota metodológica: El agregado regional pondera cada país por su población (razón de sumas): equivale a personas sin electricidad del bloque ÷ población del bloque.
+
 **SOC1** · Unidad: % · Fórmula: 100 − Tasa de electrificación total
 
 | País | 2020 | 2021 | 2022 | 2023 | 2024 | Δ 2020→2024 |
@@ -311,14 +343,15 @@ Porcentaje de hogares (o de población) sin electricidad o energía comercial, o
 | Honduras | 14.78 | 14.23 | 14.37 | 13.72 | 13.64 | -1.1 pp |
 | Nicaragua | 1.50 | 0.91 | 0.74 | 0.59 | 0.44 | -1.1 pp |
 | Panamá | 5.60 | 5.10 | 4.80 | 4.40 | 4.00 | -1.6 pp |
-| **Promedio regional** | **5.80** | **5.61** | **5.39** | **5.10** | **4.92** | **-0.9 pp** |
+| **Promedio de países** (media simple) | **5.80** | **5.61** | **5.39** | **5.10** | **4.92** | **-0.9 pp** |
+| **Agregado regional** (razón de sumas) | **7.57** | **7.57** | **7.29** | **6.95** | **6.72** | **-0.8 pp** |
 
 
 ### SOC2 · Ingreso destinado a electricidad
 
 Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, para el hogar de ingreso promedio y para el quintil de menores ingresos.
 
-> Nota metodológica: Guatemala: valores ~1000× menores que el resto del bloque (posible inconsistencia de unidades en la fuente); verificar con el equipo antes de interpretar.
+> Nota metodológica: Guatemala: valores ~1000× menores que el resto del bloque (posible inconsistencia de unidades en la fuente); verificar con el equipo antes de interpretar. Solo promedio de países: los insumos monetarios están en moneda local y no hay número de hogares por país-año para ponderar un agregado regional.
 
 **SOC2_PROM — Hogar promedio** · Unidad: % · Fórmula: Cargo anual de electricidad ÷ Ingreso anual promedio × 100
 
@@ -330,7 +363,7 @@ Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, pa
 | Honduras | 5.10 | 5.14 | 5.88 | 6.30 | 6.55 | +1.5 pp |
 | Nicaragua | 8.71 | 7.27 | 7.08 | 6.09 | 5.31 | -3.4 pp |
 | Panamá | 2.60 | 2.41 | 2.58 | 2.52 | 2.79 | +0.2 pp |
-| **Promedio regional** | **3.87** | **3.52** | **3.59** | **3.47** | **3.45** | **-0.4 pp** |
+| **Promedio de países** (media simple) | **3.87** | **3.52** | **3.59** | **3.47** | **3.45** | **-0.4 pp** |
 
 **SOC2_POBRE — Quintil más pobre** · Unidad: % · Fórmula: Cargo anual ÷ Ingreso anual del quintil más pobre × 100
 
@@ -342,14 +375,14 @@ Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, pa
 | Honduras | 49.08 | 51.34 | 61.73 | 65.87 | 73.49 | +24.4 pp |
 | Nicaragua | 22.79 | 19.02 | 18.53 | 15.92 | 13.91 | -8.9 pp |
 | Panamá | 30.30 | 28.09 | 28.69 | 25.62 | 30.99 | +0.7 pp |
-| **Promedio regional** | **23.30** | **21.76** | **23.24** | **23.07** | **24.73** | **+1.4 pp** |
+| **Promedio de países** (media simple) | **23.30** | **21.76** | **23.24** | **23.07** | **24.73** | **+1.4 pp** |
 
 
 ### SOC3 · Hogares con acceso a energía renovable
 
 Uso de energía en los hogares por grupo (rural/urbano) y combinación de combustibles: hogares con acceso eléctrico ponderado por la participación renovable de la generación.
 
-> Nota metodológica: Proxy elaborado por el equipo: asume que el mix de la red es uniforme entre zonas.
+> Nota metodológica: Proxy elaborado por el equipo: asume que el mix de la red es uniforme entre zonas. Solo promedio de países: sin población rural/urbana por país-año no puede ponderarse un agregado regional.
 
 **SOC3_RURAL — Rural** · Unidad: % · Fórmula: Tasa de electrificación rural × % renovable de la generación
 
@@ -361,7 +394,7 @@ Uso de energía en los hogares por grupo (rural/urbano) y combinación de combus
 | Honduras | 38.6 | 45.9 | 44.5 | 39.7 | 40.1 | +1.5 pp |
 | Nicaragua | 50.9 | 50.5 | 47.8 | 42.7 | 37.8 | -13.1 pp |
 | Panamá | 54.0 | 58.1 | 61.0 | 51.2 | 71.2 | +17.3 pp |
-| **Promedio regional** | **64.1** | **65.8** | **65.1** | **57.1** | **59.1** | **-4.9 pp** |
+| **Promedio de países** (media simple) | **64.1** | **65.8** | **65.1** | **57.1** | **59.1** | **-4.9 pp** |
 
 **SOC3_URB — Urbano** · Unidad: % · Fórmula: Tasa de electrificación urbana × % renovable de la generación
 
@@ -373,7 +406,7 @@ Uso de energía en los hogares por grupo (rural/urbano) y combinación de combus
 | Honduras | 54.8 | 58.4 | 56.5 | 49.3 | 49.2 | -5.6 pp |
 | Nicaragua | 69.8 | 69.2 | 65.6 | 58.6 | 51.8 | -18.0 pp |
 | Panamá | 64.8 | 68.4 | 67.2 | 54.6 | 73.0 | +8.2 pp |
-| **Promedio regional** | **74.2** | **74.8** | **73.5** | **63.6** | **64.6** | **-9.6 pp** |
+| **Promedio de países** (media simple) | **74.2** | **74.8** | **73.5** | **63.6** | **64.6** | **-9.6 pp** |
 
 
 ## Trazabilidad
@@ -383,7 +416,12 @@ partir de las variables base del pipeline (`data/processed/`), en
 unidades homologadas: energía en kWh, PIB y valor agregado industrial en
 USD constantes de 2015, tarifa en USD corrientes/MWh. Las mismas cifras,
 con sus tablas de datos base, pueden auditarse en los visualizadores del
-proyecto (`graficos/`). La versión máquina de esta matriz está en
-`data/processed/indicadores_consolidados_tidy.csv`.
+proyecto (`graficos/`); en los libros Excel, las filas "Agregado
+regional (razón de sumas)" llevan fórmulas SUM auditables hacia
+Datos_Base. La versión máquina de esta matriz está en
+`data/processed/indicadores_consolidados_tidy.csv` (el promedio de
+países aparece como pais = "Promedio regional" con fuente_dato =
+"calculado_media_simple"; el agregado, como "Agregado regional" con
+"calculado_razon_sumas").
 
 \* Valor imputado vía CAGR (no observación directa de la fuente).

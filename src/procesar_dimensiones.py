@@ -42,6 +42,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 from config_siepac import (PAISES_SIEPAC as PAISES, ANIOS_ANALISIS as ANIOS,
                             RAIZ_PROYECTO, DIR_PROCESSED)
+from viz_comun import media_ponderada
 
 logging.basicConfig(
     level=logging.INFO,
@@ -242,7 +243,11 @@ def leer_soc(ruta: Path) -> dict[str, pd.DataFrame]:
 # ESCRITURA EN FORMATO ESTANDAR (identico al libro ECO)
 # ---------------------------------------------------------------------------
 
-def hoja_serie(wb, nombre, df, titulo, formula, num_fmt):
+def hoja_serie(wb, nombre, df, titulo, formula, num_fmt, agregado=None):
+    """Hoja estandar de una serie. `agregado` (lista por anio o None) es
+    la razon de sumas Σnum/Σden — pondera cada pais por su denominador —
+    calculada en main() con los pesos de PESOS_AGREGADO; las series sin
+    denominador disponible (SOC2, SOC3) no llevan esa fila."""
     ws = wb.create_sheet(nombre)
     ws["A1"] = titulo
     ws["A1"].font = F_TIT
@@ -264,14 +269,26 @@ def hoja_serie(wb, nombre, df, titulo, formula, num_fmt):
                           value=None if pd.isna(v) else float(v))
             cel.font, cel.border, cel.number_format = F_TXT, BORDE, num_fmt
     fila_p = 4 + len(PAISES)
-    ws.cell(row=fila_p, column=1, value="Promedio regional").font = F_NEG
+    ws.cell(row=fila_p, column=1,
+            value="Promedio de países (media simple)").font = F_NEG
     ws.cell(row=fila_p, column=1).fill = FILL_P
     ws.cell(row=fila_p, column=1).border = BORDE
     for j, a in enumerate(ANIOS):
         cel = ws.cell(row=fila_p, column=2 + j, value=float(df[a].mean()))
         cel.font, cel.fill, cel.border = F_NEG, FILL_P, BORDE
         cel.number_format = num_fmt
-    ws.column_dimensions["A"].width = 20
+    if agregado is not None:
+        fila_a = fila_p + 1
+        ws.cell(row=fila_a, column=1,
+                value="Agregado regional (razón de sumas)").font = F_NEG
+        ws.cell(row=fila_a, column=1).fill = FILL_P
+        ws.cell(row=fila_a, column=1).border = BORDE
+        for j, v in enumerate(agregado):
+            cel = ws.cell(row=fila_a, column=2 + j,
+                          value=None if v is None else float(v))
+            cel.font, cel.fill, cel.border = F_NEG, FILL_P, BORDE
+            cel.number_format = num_fmt
+    ws.column_dimensions["A"].width = 30
     for c in "BCDEF":
         ws.column_dimensions[c].width = 13
     ws.freeze_panes = "B4"
@@ -321,6 +338,36 @@ def hoja_metodologia(wb, filas, titulo):
     ws.freeze_panes = "A4"
 
 
+# Peso del agregado regional (razon de sumas) por serie: el DENOMINADOR
+# del indicador, tomado de la tabla BASE de la dimension. Con ese peso,
+# la media ponderada de los valores nacionales equivale a Σnum/Σden del
+# bloque. SOC1 pondera por poblacion total (poblacion_total.csv del ETL);
+# SOC2 (faltan hogares e insumos en USD) y SOC3 (falta poblacion
+# rural/urbana) no tienen peso disponible y quedan solo con promedio.
+PESOS_AGREGADO = {
+    "ENV1_PC": "poblacion_miles",
+    "ENV1_PIB": "pib_usd_const2015",
+    "ENV2_SO2_PC": "poblacion_miles",
+    "ENV2_PAR_PC": "poblacion_miles",
+    "ENV2_SO2_PIB": "pib_usd_const2015",
+    "ENV2_PAR_PIB": "pib_usd_const2015",
+    "ENV3": "produccion_bruta_gwh",
+}
+
+
+def _valores_de(df: pd.DataFrame) -> dict:
+    """DataFrame pais x anio -> {pais: [v_2020..v_2024]} con None en NaN."""
+    return {p: [None if pd.isna(df.loc[p, a]) else float(df.loc[p, a])
+                for a in ANIOS] for p in PAISES}
+
+
+def _pesos_de(base: pd.DataFrame, col: str) -> dict:
+    """Columna de la tabla BASE (tidy pais-anio) -> {pais: [w_2020..]}."""
+    return {p: [float(base.loc[(base["pais"] == p) & (base["anio"] == a),
+                               col].iloc[0]) for a in ANIOS]
+            for p in PAISES}
+
+
 # Catalogo: (clave, titulo, unidad, formula, formato excel, nota)
 CAT_ENV = [
     ("ENV1_PC", "ENV1 — Emisiones GEI per cápita",
@@ -347,8 +394,11 @@ CAT_ENV = [
 CAT_SOC = [
     ("SOC1", "SOC1 — Población sin acceso a electricidad", "%",
      "100 − Tasa de electrificación total", "0.00",
-     "La columna TOTAL de la fuente (suma entre países) se descartó; "
-     "el promedio regional se recalcula como media simple."),
+     "La columna TOTAL de la fuente (suma entre países) se descartó. "
+     "La hoja cierra con dos resúmenes: Promedio de países (media "
+     "simple) y Agregado regional (razón de sumas, ponderado por "
+     "población: personas sin electricidad del bloque ÷ población "
+     "del bloque)."),
     ("SOC2_PROM", "SOC2 — Ingreso destinado a electricidad (hogar promedio)",
      "%", "Cargo anual de electricidad ÷ Ingreso anual del hogar promedio "
      "× 100", "0.00",
@@ -402,11 +452,25 @@ def main():
     soc = leer_soc(RUTA_SOC_RAW)
     DIR_OUT.mkdir(parents=True, exist_ok=True)
 
+    # Poblacion total (peso del agregado de SOC1), producida por el ETL.
+    ruta_pob = DIR_PROCESSED / "poblacion_total.csv"
+    pesos_pob = None
+    if ruta_pob.exists():
+        pob = pd.read_csv(ruta_pob)
+        pesos_pob = _pesos_de(pob.rename(
+            columns={"valor_habitantes": "poblacion"}), "poblacion")
+    else:
+        log.warning("Sin %s: SOC1 quedará sin fila de agregado regional.",
+                    ruta_pob.name)
+
     # ------- libro ambiental -------
     wb = Workbook(); wb.remove(wb.active)
     for clave, titulo, unidad, formula, fmt, nota in CAT_ENV:
+        agregado = media_ponderada(_valores_de(env[clave]),
+                                   _pesos_de(env["BASE"],
+                                             PESOS_AGREGADO[clave]))
         hoja_serie(wb, clave, env[clave], f"{titulo} ({unidad})",
-                   formula, fmt)
+                   formula, fmt, agregado=agregado)
     hoja_env6(wb, env["ENV6"])
     hoja_base(wb, env["BASE"],
         "Datos base — dimensión ambiental (variables de entrada)",
@@ -427,8 +491,10 @@ def main():
     # ------- libro social -------
     wb = Workbook(); wb.remove(wb.active)
     for clave, titulo, unidad, formula, fmt, nota in CAT_SOC:
+        agregado = (media_ponderada(_valores_de(soc[clave]), pesos_pob)
+                    if clave == "SOC1" and pesos_pob else None)
         hoja_serie(wb, clave, soc[clave], f"{titulo} ({unidad})",
-                   formula, fmt)
+                   formula, fmt, agregado=agregado)
     hoja_base(wb, soc["BASE"],
         "Datos base — dimensión social (variables de entrada)",
         "Todas las variables en %. Los insumos monetarios de SOC2 "

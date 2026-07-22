@@ -95,11 +95,19 @@ COLS_BASE = [
 # Datos_Base para ese pais-anio), su calculo pandas EQUIVALENTE (mismo
 # resultado que la formula, sobre la matriz wide), formato y descripcion.
 # formula y calculo deben mantenerse en paridad: si cambia una, cambia la otra.
+#
+# formula_agregado: plantilla de la fila "Agregado regional (razon de
+# sumas)" — cada {X} se expande a SUM(...) de la columna X de Datos_Base
+# sobre los 6 paises del anio. Es el agregado Σnum/Σden (pondera cada
+# pais por su denominador), en paridad con viz_comun.agregados_eco.
+# ECO14 no la tiene: sin energia regulada vendida (MWh) por pais no hay
+# denominador con el que ponderar la tarifa.
 INDICADORES = {
     "ECO1": dict(
         titulo="Uso de energía per cápita",
         unidad="kWh/habitante",
         formula="=Datos_Base!C{r}/Datos_Base!P{r}",
+        formula_agregado="={C}/{P}",
         calculo=lambda d: d["consumo_final_total_kwh"] / d["poblacion_habitantes"],
         descripcion="Consumo Final Total (kWh) ÷ Población Total (habitantes)",
         fuentes="SIELAC-OLADE (consumo); CEPAL-CELADE (población)",
@@ -109,6 +117,7 @@ INDICADORES = {
         titulo="Uso de energía por unidad de PIB",
         unidad="kWh/USD const. 2015",
         formula="=Datos_Base!C{r}/Datos_Base!O{r}",
+        formula_agregado="={C}/{O}",
         calculo=lambda d: d["consumo_final_total_kwh"] / d["pib_usd_const2015"],
         descripcion="Consumo Final Total (kWh) ÷ PIB Real (USD constantes 2015)",
         fuentes="SIELAC-OLADE (consumo); Banco Mundial NY.GDP.MKTP.KD (PIB)",
@@ -118,6 +127,7 @@ INDICADORES = {
         titulo="Eficiencia de la conversión y distribución de energía",
         unidad="%",
         formula="=Datos_Base!C{r}/Datos_Base!Q{r}*100",
+        formula_agregado="={C}/{Q}*100",
         calculo=lambda d: d["consumo_final_total_kwh"]
                           / d["produccion_bruta_kwh"] * 100,
         descripcion="(Consumo Final Total ÷ Producción Bruta Total) × 100. "
@@ -131,6 +141,7 @@ INDICADORES = {
         titulo="Intensidades energéticas de la industria",
         unidad="kWh/USD const. 2015",
         formula="=Datos_Base!D{r}/Datos_Base!T{r}",
+        formula_agregado="={D}/{T}",
         calculo=lambda d: d["consumo_industrial_kwh"] / d["vai_usd_const2015"],
         descripcion="Consumo Final Industrial (kWh) ÷ Valor Agregado Industrial "
                      "(USD constantes 2015). El VAI en USD ya fue calculado en el "
@@ -143,6 +154,7 @@ INDICADORES = {
         titulo="Porcentaje de combustibles fósiles en la electricidad",
         unidad="%",
         formula="=Datos_Base!H{r}/Datos_Base!M{r}*100",
+        formula_agregado="={H}/{M}*100",
         calculo=lambda d: d["gen_fosil_kwh"] / d["gen_total_kwh"] * 100,
         descripcion="(Generación Térmica Fósil ÷ Generación Total) × 100",
         fuentes="SIELAC-OLADE (generación por tipo de fuente)",
@@ -153,6 +165,7 @@ INDICADORES = {
         unidad="%",
         formula="=(Datos_Base!J{r}+Datos_Base!I{r}+Datos_Base!G{r}"
                 "+Datos_Base!L{r}+Datos_Base!F{r})/Datos_Base!M{r}*100",
+        formula_agregado="=({J}+{I}+{G}+{L}+{F})/{M}*100",
         calculo=lambda d: (d["gen_hidro_kwh"] + d["gen_geotermia_kwh"]
                            + d["gen_eolica_kwh"] + d["gen_solar_kwh"]
                            + d["gen_biomasa_kwh"]) / d["gen_total_kwh"] * 100,
@@ -183,6 +196,7 @@ INDICADORES = {
         unidad="%",
         formula="=(Datos_Base!N{r}-Datos_Base!E{r})/"
                 "(Datos_Base!Q{r}+Datos_Base!N{r}-Datos_Base!E{r})*100",
+        formula_agregado="=({N}-{E})/({Q}+{N}-{E})*100",
         calculo=lambda d: (d["importaciones_kwh"] - d["exportaciones_kwh"])
                           / (d["produccion_bruta_kwh"]
                              + d["importaciones_kwh"]
@@ -284,9 +298,10 @@ def hoja_indicador(wb: Workbook, codigo: str, info: dict,
             if codigo == "ECO14" and (pais, anio) in imputados:
                 cel.fill = FILL_IMPUTADO
 
-    # fila de promedio regional (formula AVERAGE sobre la propia hoja)
+    # fila de promedio de paises (formula AVERAGE sobre la propia hoja)
     fila_prom = 4 + len(PAISES)
-    cp = ws.cell(row=fila_prom, column=1, value="Promedio regional")
+    cp = ws.cell(row=fila_prom, column=1,
+                 value="Promedio de países (media simple)")
     cp.font = Font(name="Arial", size=10, bold=True)
     cp.fill, cp.border = FILL_PROMEDIO, BORDE
     for j in range(len(ANIOS)):
@@ -297,14 +312,40 @@ def hoja_indicador(wb: Workbook, codigo: str, info: dict,
         cel.fill, cel.border = FILL_PROMEDIO, BORDE
         cel.number_format = info["num_fmt"]
 
+    # fila de agregado regional (razon de sumas Σnum/Σden): formulas SUM
+    # hacia Datos_Base, tan auditables como las celdas por pais. En
+    # paridad con viz_comun.agregados_eco.
+    fila_agr = fila_prom + 1
+    if info.get("formula_agregado"):
+        ca = ws.cell(row=fila_agr, column=1,
+                     value="Agregado regional (razón de sumas)")
+        ca.font = Font(name="Arial", size=10, bold=True)
+        ca.fill, ca.border = FILL_PROMEDIO, BORDE
+        for j, anio in enumerate(ANIOS):
+            sumas = {letra: "SUM(" + ",".join(
+                         f"Datos_Base!{letra}{fila_base(p, anio)}"
+                         for p in PAISES) + ")"
+                     for letra in "CDEFGHIJKLMNOPQRST"}
+            cel = ws.cell(row=fila_agr, column=2 + j,
+                          value=info["formula_agregado"].format(**sumas))
+            cel.font = Font(name="Arial", size=10, bold=True)
+            cel.fill, cel.border = FILL_PROMEDIO, BORDE
+            cel.number_format = info["num_fmt"]
+    else:
+        nota_agr = ws.cell(row=fila_agr + 1, column=1,
+                           value="Sin agregado regional: la fuente no "
+                                 "publica la energía regulada vendida "
+                                 "(MWh) por país para ponderar la tarifa.")
+        nota_agr.font = FUENTE_SUB
+
     if codigo == "ECO14":
-        nota = ws.cell(row=fila_prom + 2, column=1,
+        nota = ws.cell(row=fila_agr + 3, column=1,
                        value="Celdas en amarillo: valores imputados vía CAGR "
                              "(no observados). Detalle en Datos_Base, columna "
                              "tarifa_fuente_dato.")
         nota.font = FUENTE_SUB
 
-    ws.column_dimensions["A"].width = 20
+    ws.column_dimensions["A"].width = 30
     for j in range(len(ANIOS)):
         ws.column_dimensions[get_column_letter(2 + j)].width = 13
     ws.freeze_panes = "B4"
@@ -318,7 +359,10 @@ def hoja_metodologia(wb: Workbook) -> None:
     ws["A2"] = ("Referencia metodológica: OIEA/NU (2005), Indicadores "
                 "energéticos del desarrollo sostenible: directrices y "
                 "metodologías. Datos base en la hoja Datos_Base; cada hoja "
-                "ECO calcula su indicador con fórmulas que referencian esa hoja.")
+                "ECO calcula su indicador con fórmulas que referencian esa "
+                "hoja. Cada hoja cierra con dos resúmenes: Promedio de "
+                "países (media simple, el país típico) y Agregado regional "
+                "(razón de sumas Σnum/Σden, el bloque como sistema).")
     ws["A2"].font = FUENTE_SUB
 
     cab = ["Indicador", "Nombre", "Unidad de salida", "Fórmula", "Fuentes", "Notas"]
