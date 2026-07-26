@@ -18,10 +18,6 @@ data/processed/*.csv
 # Respaldo manual del Paso 0 (no debe subir al repo)
 data/processed_OLD/
 
-# Documentos internos de trabajo (bitácora de la Fase B; no es parte
-# del portafolio publicado)
-GUIA_FASE_B.md
-
 # Imágenes PNG de los gráficos (uso personal; se regeneran con
 # exportar_graficos.py). Los visualizadores HTML de graficos/ SÍ se
 # versionan; solo se ignoran estas subcarpetas.

@@ -13,18 +13,37 @@ python src/generar_tablas_apa.py
 
 | Archivo | Para qué sirve |
 | --- | --- |
-| **`tablas_apa_SIEPAC.docx`** | **Documento de Word con las 49 tablas.** Es el que se usa para redactar. |
-| `tablas_apa_SIEPAC.html` | El mismo documento en HTML (del que se genera el .docx). Útil para revisarlo en el navegador. |
-| `individuales/Tabla_NN_codigo.html` | Cada tabla suelta, cuando solo se necesita una. |
+| **`tablas_apa_SIEPAC.docx`** | **Las 49 tablas con su nota metodológica.** Para el anexo y para consultar fórmulas y fuentes. |
+| **`tablas_apa_SIEPAC_sin_notas.docx`** | **Las mismas 49 tablas, solo tablas.** Para intercalar en el cuerpo del monográfico. |
+| `tablas_apa_SIEPAC*.html` | Los mismos dos documentos en HTML (de ahí se generan los .docx). Útiles para revisarlos en el navegador. |
+| `individuales/Tabla_NN_codigo.html` | Cada tabla suelta, con nota, cuando solo se necesita una. |
 | `indice_tablas.csv` | Número, sección, código y título de cada tabla. Sirve para armar el «Índice de tablas» del monográfico. |
+
+Los dos documentos tienen **la misma numeración y las mismas cifras**
+(se generan de los mismos datos en la misma corrida), así que la Tabla 29
+es la misma en ambos y se pueden usar en paralelo.
+
+### Cuál usar
+
+La versión **sin notas** lleva la unidad de medida en el título, entre
+paréntesis, para que ninguna tabla quede sin declarar en qué se expresan
+sus cifras.
+
+Aun así, el Manual APA pide que una tabla se entienda sin recurrir al
+texto. Las tablas que dependen de una advertencia —ECO14 y sus valores
+imputados, SOC2 y la inconsistencia de Guatemala, ENV6 y su carácter
+ilustrativo— deberían llevar su nota también en el cuerpo, o bien la
+aclaración en el párrafo que las presenta. Las notas completas están en
+la versión con notas.
 
 ## Cómo pasar una tabla a la tesis
 
-**Ruta normal.** Abrir `tablas_apa_SIEPAC.docx`, seleccionar la tabla que
-se necesita —desde la línea **Tabla *n*** hasta el final de la *Nota*—,
-copiar con `Ctrl+C` y pegar en el documento de la tesis con `Ctrl+V`.
-Como origen y destino son documentos de Word, la tabla llega íntegra:
-bordes, cursivas y tipografía.
+**Ruta normal.** Abrir el `.docx` que corresponda, seleccionar la tabla
+que se necesita —desde la línea **Tabla *n*** hasta el final de la tabla
+(o de la *Nota*, en la versión con notas)—, copiar con `Ctrl+C` y pegar
+en el documento de la tesis con `Ctrl+V`. Como origen y destino son
+documentos de Word, la tabla llega íntegra: bordes, cursivas y
+tipografía.
 
 Si el documento de la tesis usa otra tipografía o interlineado y se
 quiere que la tabla lo adopte, pegar con **Pegar > Combinar formato**
@@ -32,20 +51,21 @@ quiere que la tabla lo adopte, pegar con **Pegar > Combinar formato**
 
 **Otras rutas.**
 
-- El `.docx` también sirve tal cual como **anexo completo** de la tesis:
-  ya trae portada, índice de tablas y referencias de las fuentes.
+- `tablas_apa_SIEPAC.docx` también sirve tal cual como **anexo completo**
+  de la tesis: ya trae portada, índice de tablas y referencias de las
+  fuentes.
 - Desde `individuales/*.html`: abrir en el navegador, `Ctrl+C`, `Ctrl+V`
   en Word. Word conserva la estructura de la tabla al pegar HTML.
 - Word abre los `.html` de forma nativa (**Archivo > Abrir**) y los
   convierte en tablas de Word. Es exactamente lo que hace el script para
   producir el `.docx`.
 
-## Cómo se genera el .docx
+## Cómo se generan los .docx
 
-El script arma las tablas en HTML y luego le pide a Microsoft Word que lo
-convierta. Por eso el `.docx` solo aparece si hay Word instalado en la
-máquina; si no lo hay, el script avisa y deja el HTML, que sirve igual
-copiando y pegando. Para saltarse el paso:
+El script arma cada documento en HTML y luego le pide a Microsoft Word
+que lo convierta. Por eso los `.docx` solo aparecen si hay Word instalado
+en la máquina; si no lo hay, el script avisa y deja los HTML, que sirven
+igual copiando y pegando. Para saltarse el paso:
 
 ```bash
 python src/generar_tablas_apa.py --sin-docx
@@ -53,11 +73,11 @@ python src/generar_tablas_apa.py --sin-docx
 
 ## Qué se versiona
 
-En el repositorio solo viajan el documento HTML, el índice y este README.
-El `.docx` y las tablas sueltas de `individuales/` están en `.gitignore`:
-son salidas regenerables (el `.docx`, además, es un binario que git no
-puede comparar entre versiones). Al clonar el proyecto hay que ejecutar
-el script una vez para obtenerlos.
+En el repositorio solo viajan los dos documentos HTML, el índice y este
+README. Los `.docx` y las tablas sueltas de `individuales/` están en
+`.gitignore`: son salidas regenerables (los `.docx`, además, son
+binarios que git no puede comparar entre versiones). Al clonar el
+proyecto hay que ejecutar el script una vez para obtenerlos.
 
 ## Formato aplicado
 

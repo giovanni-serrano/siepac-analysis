@@ -1,4 +1,23 @@
+# Finales de línea. Sin esto el resultado depende del core.autocrlf de
+# cada máquina: quien clone el repo en otra PC puede ver archivos enteros
+# marcados como modificados solo porque cambió CRLF por LF. Con text=auto
+# git guarda siempre LF en el repositorio y entrega a cada sistema lo que
+# le corresponde (CRLF en Windows), así que los diffs muestran cambios
+# reales y no ruido.
+* text=auto
+
+# Binarios: git no debe tocarles los bytes al normalizar. text=auto suele
+# detectarlos solo, pero los libros de Excel son un producto auditable del
+# pipeline y no conviene dejarlo a la heurística.
+*.xlsx binary
+*.docx binary
+*.png  binary
+*.pdf  binary
+
 # Los archivos HTML de graficos/ son gráficos generados por Plotly,
 # no código escrito a mano. Se excluyen del cálculo de lenguajes de GitHub
 # para que la barra "Languages" refleje el código real (Python).
 graficos/*.html linguist-generated=true
+
+# Las tablas APA también son HTML generado, no código escrito a mano.
+tablas-apa/*.html linguist-generated=true

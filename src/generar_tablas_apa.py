@@ -6,9 +6,10 @@ Etapa del pipeline : presentación de resultados (posterior a
 Entradas           : data/processed/indicadores_ECO_valores.csv y los libros
                      indicadores_ECO/ENV/SOC_SIEPAC.xlsx (hojas Datos_Base y
                      de indicadores), todo vía viz_comun
-Salidas            : tablas-apa/tablas_apa_SIEPAC.docx (documento de Word con
-                     todas las tablas), tablas_apa_SIEPAC.html (el mismo
-                     documento en HTML), individuales/*.html (una tabla por
+Salidas            : tablas-apa/tablas_apa_SIEPAC.docx (todas las tablas con
+                     su nota metodológica), tablas_apa_SIEPAC_sin_notas.docx
+                     (las mismas tablas sin nota, para el cuerpo del texto),
+                     los dos en .html, individuales/*.html (una tabla por
                      archivo) e indice_tablas.csv
 Alimenta           : — (producto final para la redacción del monográfico)
 Fuente de datos    : salidas del pipeline
@@ -23,6 +24,13 @@ el formato de la 7.ª edición del Manual APA: número en negrita sobre el
 título en cursiva, encabezados centrados, SIN líneas verticales, líneas
 horizontales solo arriba y abajo de los encabezados y al cierre de la
 tabla, y una nota al pie que declara unidad, fórmula y fuente.
+
+Se producen dos versiones del mismo conjunto de tablas, con numeración y
+cifras idénticas: una con la nota metodológica al pie (para el anexo y
+para auditar fórmulas y fuentes) y otra sin ella (para intercalar en el
+cuerpo del monográfico). En la versión sin notas la unidad de medida se
+traslada al título, entre paréntesis, porque de otro modo desaparecería
+del documento.
 
 Las tablas se arman en HTML y, si la máquina tiene Microsoft Word, el
 script le pide al propio Word que convierta ese HTML en un .docx: el
@@ -82,6 +90,10 @@ DIR_SALIDA = RAIZ_PROYECTO / "tablas-apa"
 DIR_INDIVIDUALES = DIR_SALIDA / "individuales"
 RUTA_DOC = DIR_SALIDA / "tablas_apa_SIEPAC.html"
 RUTA_DOCX = DIR_SALIDA / "tablas_apa_SIEPAC.docx"
+# Segunda version: las mismas tablas sin la nota al pie, para intercalar
+# en el cuerpo del monografico. La unidad viaja en el titulo.
+RUTA_DOC_SIN_NOTAS = DIR_SALIDA / "tablas_apa_SIEPAC_sin_notas.html"
+RUTA_DOCX_SIN_NOTAS = DIR_SALIDA / "tablas_apa_SIEPAC_sin_notas.docx"
 RUTA_INDICE = DIR_SALIDA / "indice_tablas.csv"
 
 NOMBRE_DIM = {"eco": "económica", "env": "ambiental", "soc": "social"}
@@ -313,22 +325,30 @@ def _celda(contenido: str, estilo: str, etiqueta: str = "td") -> str:
     return f'<{etiqueta} style="{estilo}">{contenido}</{etiqueta}>'
 
 
-def tabla_apa(numero: int, titulo: str, encabezados: list[str],
-              filas: list[list[str]], resumen: list[list[str]],
-              nota: str, cols_izq: int = 1) -> str:
-    """Devuelve el bloque HTML de una tabla con formato APA 7.
+def tabla_apa(tabla: dict, con_nota: bool = True) -> str:
+    """Devuelve el bloque HTML de una tabla con formato APA 7 a partir
+    del diccionario que arman las funciones _bloque_*.
 
-    numero/titulo van encima (número en negrita, título en cursiva);
-    la nota, debajo. `filas` son los países y `resumen` las filas de
-    cierre (promedio, agregado o total), que se separan con una línea
-    horizontal. `cols_izq` es cuántas columnas iniciales se alinean a la
-    izquierda (1 = País; 2 = País y Serie, como en ENV6).
+    El número y el título van encima (número en negrita, título en
+    cursiva) y la nota, debajo. `filas` son los países y `resumen` las
+    filas de cierre (promedio, agregado o total), que se separan con una
+    línea horizontal. `cols_izq` es cuántas columnas iniciales se
+    alinean a la izquierda (1 = País; 2 = País y Serie, como en ENV6).
+
+    Con con_nota=False se omite la nota al pie y se usa el título que
+    lleva la unidad entre paréntesis, para que la tabla siga siendo
+    interpretable por sí sola: sin la nota, la unidad no aparecería en
+    ninguna parte.
     """
+    filas, resumen = tabla["filas"], tabla["resumen"]
+    cols_izq = tabla["cols_izq"]
+    titulo = tabla["titulo"] if con_nota else tabla["titulo_con_unidad"]
+
     partes = [f'<div style="{S_BLOQUE}">',
-              f'<p style="{S_NUMERO}">Tabla {numero}</p>',
+              f'<p style="{S_NUMERO}">Tabla {tabla["numero"]}</p>',
               f'<p style="{S_TITULO}">{titulo}</p>',
               f'<table style="{S_TABLA}"><thead><tr>']
-    for i, enc in enumerate(encabezados):
+    for i, enc in enumerate(tabla["encabezados"]):
         partes.append(_celda(enc, S_TH_IZQ if i < cols_izq else S_TH, "th"))
     partes.append("</tr></thead><tbody>")
 
@@ -346,7 +366,8 @@ def tabla_apa(numero: int, titulo: str, encabezados: list[str],
             partes.append(_celda(valor, estilo))
         partes.append("</tr>")
     partes.append("</tbody></table>")
-    partes.append(f'<p style="{S_NOTA}"><i>Nota.</i> {nota}</p>')
+    if con_nota:
+        partes.append(f'<p style="{S_NOTA}"><i>Nota.</i> {tabla["nota"]}</p>')
     partes.append("</div>")
     return "\n".join(partes)
 
@@ -370,7 +391,7 @@ def _leer_datos_base() -> dict[str, pd.DataFrame]:
 
 
 def _bloque_base(numero: int, var: VarBase, base: pd.DataFrame,
-                 imputados: dict | None) -> tuple[str, str]:
+                 imputados: dict | None) -> dict:
     """Tabla de una variable base: países en filas, años en columnas."""
     pivote = base.pivot(index="pais", columns="anio", values=var.columna)
     filas, series_pais = [], {}
@@ -418,7 +439,10 @@ def _bloque_base(numero: int, var: VarBase, base: pd.DataFrame,
 
     encabezados = (["País"] + [str(a) for a in ANIOS] +
                    [f"Δ {ANIOS[0]}–{ANIOS[-1]}"])
-    return tabla_apa(numero, titulo, encabezados, filas, resumen, nota), titulo
+    return dict(numero=numero, titulo=titulo,
+                titulo_con_unidad=f"{titulo} (en {var.unidad})",
+                encabezados=encabezados, filas=filas, resumen=resumen,
+                nota=nota, cols_izq=1)
 
 
 # ---------------------------------------------------------------------------
@@ -476,7 +500,7 @@ def _fuente_indicador(codigo: str, dim: str) -> str:
 
 
 def _bloque_indicador(numero: int, codigo: str, ficha: dict, serie: dict,
-                      bloque: dict, imputados: dict | None) -> tuple[str, str]:
+                      bloque: dict, imputados: dict | None) -> dict:
     """Tabla de una serie de indicador: países en filas, años en columnas,
     y las filas de resumen del proyecto al cierre."""
     formato = serie["formato"]
@@ -527,11 +551,13 @@ def _bloque_indicador(numero: int, codigo: str, ficha: dict, serie: dict,
 
     encabezados = (["País"] + [str(a) for a in ANIOS] +
                    [f"Δ {ANIOS[0]}–{ANIOS[-1]}"])
-    return tabla_apa(numero, titulo, encabezados, filas, resumen,
-                     nota), titulo
+    return dict(numero=numero, titulo=titulo,
+                titulo_con_unidad=f"{titulo} (en {serie['unidad']})",
+                encabezados=encabezados, filas=filas, resumen=resumen,
+                nota=nota, cols_izq=1)
 
 
-def _bloque_env6(numero: int, ficha: dict, datos: dict) -> tuple[str, str]:
+def _bloque_env6(numero: int, ficha: dict, datos: dict) -> dict:
     """ENV6 es un comparativo de dos series observadas, no un cociente:
     lleva una columna extra de serie y no admite filas de resumen."""
     filas = []
@@ -549,8 +575,10 @@ def _bloque_env6(numero: int, ficha: dict, datos: dict) -> tuple[str, str]:
             "Elaboración propia a partir de las series recopiladas por el "
             "equipo de investigación.")
     encabezados = ["País", "Serie"] + [str(a) for a in ANIOS]
-    return tabla_apa(numero, titulo, encabezados, filas, [], nota,
-                     cols_izq=2), titulo
+    return dict(numero=numero, titulo=titulo,
+                titulo_con_unidad=f"{titulo} (en {ficha['unidad']})",
+                encabezados=encabezados, filas=filas, resumen=[],
+                nota=nota, cols_izq=2)
 
 
 # ---------------------------------------------------------------------------
@@ -601,6 +629,26 @@ valores provienen del mismo pipeline que alimenta los visualizadores y el
 resumen metodológico del proyecto.</p>
 """
 
+INTRO_SIN_NOTAS = """<p style="{s_p}">Esta es la <b>versión sin notas</b>
+de las {n} tablas de la fase cuantitativa: cada tabla lleva únicamente su
+número, su título y los datos, para intercalarlas en el cuerpo del
+monográfico sin arrastrar el aparato metodológico. La unidad de medida se
+trasladó al título, entre paréntesis, para que ninguna tabla quede sin
+declarar en qué se expresan sus cifras.</p>
+<p style="{s_p}">Las notas completas —fórmula de cálculo, criterio de
+agregación, advertencias metodológicas y fuente de cada serie— están en
+<i>tablas_apa_SIEPAC.docx</i>, con la misma numeración. Conviene
+conservarlas: el Manual APA pide que la tabla se entienda sin recurrir al
+texto, así que las tablas que dependan de una advertencia (ECO14 y sus
+valores imputados, SOC2 y la inconsistencia de Guatemala, ENV6 y su
+carácter ilustrativo) deberían llevar la nota también aquí, o bien la
+aclaración correspondiente en el párrafo que las presenta.</p>
+<p style="{s_p}">Cobertura: {paises}, ventana {a0}–{a1}.
+«s.d.» indica que no hay dato para esa celda. El asterisco marca valores
+imputados. Documento generado automáticamente por
+<i>src/generar_tablas_apa.py</i> el {fecha}.</p>
+"""
+
 
 def _seccion(titulo: str, parrafos: list[str]) -> list[str]:
     bloque = [f'<h2 style="{S_H2}">{titulo}</h2>']
@@ -622,10 +670,10 @@ def _tablas_base(inicio: int, hojas: dict, imputados: dict) -> list[dict]:
                             dim.upper(), var.columna)
                 continue
             marcas = imputados if var.columna == "tarifa_usd_mwh" else None
-            cuerpo, titulo = _bloque_base(n, var, hojas[dim], marcas)
-            tablas.append(dict(numero=n, seccion=f"Datos base ({nombre})",
-                               codigo=var.columna, titulo=titulo,
-                               html=cuerpo, dim=dim))
+            tabla = _bloque_base(n, var, hojas[dim], marcas)
+            tabla.update(seccion=f"Datos base ({nombre})",
+                         codigo=var.columna, dim=dim)
+            tablas.append(tabla)
             n += 1
     return tablas
 
@@ -638,11 +686,10 @@ def _tablas_indicadores(inicio: int, datos: dict,
         if ficha.get("tipo") == "env6":
             if "ENV6" not in datos:
                 continue
-            cuerpo, titulo = _bloque_env6(n, ficha, datos)
-            tablas.append(dict(numero=n,
-                               seccion=f"Indicadores ({NOMBRE_DIM[ficha['dim']]})",
-                               codigo="ENV6", titulo=titulo, html=cuerpo,
-                               dim=ficha["dim"]))
+            tabla = _bloque_env6(n, ficha, datos)
+            tabla.update(seccion=f"Indicadores ({NOMBRE_DIM[ficha['dim']]})",
+                         codigo="ENV6", dim=ficha["dim"])
+            tablas.append(tabla)
             n += 1
             continue
         for serie in _series_de(ficha, codigo):
@@ -651,12 +698,11 @@ def _tablas_indicadores(inicio: int, datos: dict,
                             serie["clave"])
                 continue
             marcas = imputados if serie["clave"] == "ECO14" else None
-            cuerpo, titulo = _bloque_indicador(
+            tabla = _bloque_indicador(
                 n, codigo, ficha, serie, datos[serie["clave"]], marcas)
-            tablas.append(dict(numero=n,
-                               seccion=f"Indicadores ({NOMBRE_DIM[ficha['dim']]})",
-                               codigo=serie["clave"], titulo=titulo,
-                               html=cuerpo, dim=ficha["dim"]))
+            tabla.update(seccion=f"Indicadores ({NOMBRE_DIM[ficha['dim']]})",
+                         codigo=serie["clave"], dim=ficha["dim"])
+            tablas.append(tabla)
             n += 1
     return tablas
 
@@ -752,6 +798,71 @@ def _exportar_docx(ruta_html: Path, ruta_docx: Path) -> bool:
     return True
 
 
+def _armar_documento(tablas: list[dict], base: list[dict],
+                     indicadores: list[dict], orden: str,
+                     con_notas: bool) -> list[str]:
+    """Cuerpo HTML completo de una de las dos versiones del documento.
+
+    Ambas comparten portada, índice y tablas; la versión sin notas omite
+    la nota al pie de cada tabla y la sección de referencias, que solo
+    tiene sentido acompañando a las notas que citan las fuentes.
+    """
+    plantilla_intro = INTRO if con_notas else INTRO_SIN_NOTAS
+    encabezado = ("Tablas de la fase cuantitativa" if con_notas
+                  else "Tablas de la fase cuantitativa (sin notas)")
+    cuerpo = [f'<h1 style="{S_H1}">{encabezado}</h1>',
+              f'<p style="{S_TITULO}">Evaluación del suministro de energía '
+              'eléctrica en el SIEPAC: perspectivas económicas, sociales y '
+              f'ambientales, {ANIOS[0]}–{ANIOS[-1]}</p>',
+              plantilla_intro.format(
+                  s_p=S_P, n=len(tablas), paises=", ".join(PAISES),
+                  a0=ANIOS[0], a1=ANIOS[-1],
+                  fecha=date.today().isoformat())]
+    cuerpo += _indice_html(tablas)
+
+    cierre_indicadores = (
+        "Las series sin denominador disponible en el repositorio (ECO14, "
+        "SOC2 y SOC3) presentan únicamente el promedio de países, y así lo "
+        "advierte su nota." if con_notas else
+        "Las series sin denominador disponible en el repositorio (ECO14, "
+        "SOC2 y SOC3) presentan únicamente el promedio de países; la nota "
+        "que lo explica está en la versión con notas.")
+    secciones = {
+        "base": _seccion(
+            "Tablas de datos base",
+            ["Variables de entrada del cálculo, tal como quedan en las hojas "
+             "<i>Datos_Base</i> de los libros del pipeline. Las magnitudes "
+             "energéticas se presentan en GWh (1 GWh = 10⁶ kWh) y las "
+             "monetarias en millones de USD constantes de 2015, para que las "
+             "cifras sean legibles en una tabla impresa; los libros conservan "
+             "las unidades originales (kWh y USD).",
+             "Las hojas ambiental y social repiten población y producción "
+             "bruta con los mismos valores de la dimensión económica, por lo "
+             "que no se duplican aquí; el PIB del libro ambiental sí difiere "
+             "y se presenta aparte."]),
+        "indicadores": _seccion(
+            "Tablas de indicadores",
+            ["Indicadores energéticos del desarrollo sostenible (IEDS, "
+             "OIEA/NU, 2005) calculados sobre las variables base anteriores. "
+             "Cada tabla cierra con dos resúmenes que responden preguntas "
+             "distintas: el promedio de países describe al país típico del "
+             "bloque y el agregado regional describe al SIEPAC como sistema. "
+             "Al citar una cifra regional debe indicarse cuál de los dos se "
+             "utiliza, porque pueden divergir incluso en el signo de la "
+             "tendencia.",
+             cierre_indicadores]),
+    }
+    orden_secciones = ([("base", base), ("indicadores", indicadores)]
+                       if orden == "base"
+                       else [("indicadores", indicadores), ("base", base)])
+    for clave, grupo in orden_secciones:
+        cuerpo += secciones[clave]
+        cuerpo += [tabla_apa(t, con_nota=con_notas) for t in grupo]
+    if con_notas:
+        cuerpo += _referencias_html()
+    return cuerpo
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Genera las tablas de la fase cuantitativa en formato "
@@ -779,59 +890,22 @@ def main() -> None:
         base = _tablas_base(len(indicadores) + 1, hojas, imputados)
         tablas = indicadores + base
 
-    cuerpo = [f'<h1 style="{S_H1}">Tablas de la fase cuantitativa</h1>',
-              f'<p style="{S_TITULO}">Evaluación del suministro de energía '
-              'eléctrica en el SIEPAC: perspectivas económicas, sociales y '
-              f'ambientales, {ANIOS[0]}–{ANIOS[-1]}</p>',
-              INTRO.format(s_p=S_P, n=len(tablas), paises=", ".join(PAISES),
-                           a0=ANIOS[0], a1=ANIOS[-1],
-                           fecha=date.today().isoformat())]
-    cuerpo += _indice_html(tablas)
+    for ruta, con_notas in [(RUTA_DOC, True), (RUTA_DOC_SIN_NOTAS, False)]:
+        cuerpo = _armar_documento(tablas, base, indicadores, args.orden,
+                                  con_notas)
+        DIR_SALIDA.mkdir(exist_ok=True)
+        ruta.write_text(
+            PLANTILLA.format(
+                titulo=("Tablas APA - Fase cuantitativa SIEPAC" if con_notas
+                        else "Tablas APA sin notas - Fase cuantitativa "
+                             "SIEPAC"),
+                cuerpo="\n".join(cuerpo)),
+            encoding="utf-8")
+        log.info("Exportado: %s (%d tablas%s, %.0f KB)", ruta, len(tablas),
+                 "" if con_notas else ", sin notas",
+                 ruta.stat().st_size / 1024)
 
-    secciones = {
-        "base": _seccion(
-            "Tablas de datos base",
-            ["Variables de entrada del cálculo, tal como quedan en las hojas "
-             "<i>Datos_Base</i> de los libros del pipeline. Las magnitudes "
-             "energéticas se presentan en GWh (1 GWh = 10⁶ kWh) y las "
-             "monetarias en millones de USD constantes de 2015, para que las "
-             "cifras sean legibles en una tabla impresa; los libros conservan "
-             "las unidades originales (kWh y USD).",
-             "Las hojas ambiental y social repiten población y producción "
-             "bruta con los mismos valores de la dimensión económica, por lo "
-             "que no se duplican aquí; el PIB del libro ambiental sí difiere "
-             "y se presenta aparte."]),
-        "indicadores": _seccion(
-            "Tablas de indicadores",
-            ["Indicadores energéticos del desarrollo sostenible (IEDS, "
-             "OIEA/NU, 2005) calculados sobre las variables base anteriores. "
-             "Cada tabla cierra con dos resúmenes que responden preguntas "
-             "distintas: el promedio de países describe al país típico del "
-             "bloque y el agregado regional describe al SIEPAC como sistema. "
-             "Al citar una cifra regional debe indicarse cuál de los dos se "
-             "utiliza, porque pueden divergir incluso en el signo de la "
-             "tendencia.",
-             "Las series sin denominador disponible en el repositorio "
-             "(ECO14, SOC2 y SOC3) presentan únicamente el promedio de "
-             "países, y así lo advierte su nota."]),
-    }
-    orden_secciones = ([("base", base), ("indicadores", indicadores)]
-                       if args.orden == "base"
-                       else [("indicadores", indicadores), ("base", base)])
-    for clave, grupo in orden_secciones:
-        cuerpo += secciones[clave]
-        cuerpo += [t["html"] for t in grupo]
-    cuerpo += _referencias_html()
-
-    DIR_SALIDA.mkdir(exist_ok=True)
     DIR_INDIVIDUALES.mkdir(exist_ok=True)
-
-    RUTA_DOC.write_text(
-        PLANTILLA.format(titulo="Tablas APA - Fase cuantitativa SIEPAC",
-                         cuerpo="\n".join(cuerpo)),
-        encoding="utf-8")
-    log.info("Exportado: %s (%d tablas, %.0f KB)", RUTA_DOC, len(tablas),
-             RUTA_DOC.stat().st_size / 1024)
 
     # Se limpian las tablas sueltas de corridas anteriores: al cambiar
     # --orden cambia el numero de cada tabla y quedarian archivos viejos
@@ -843,7 +917,7 @@ def main() -> None:
         nombre = f"Tabla_{t['numero']:02d}_{_slug(t['codigo'])}.html"
         (DIR_INDIVIDUALES / nombre).write_text(
             PLANTILLA.format(titulo=html.escape(f"Tabla {t['numero']}"),
-                             cuerpo=t["html"]),
+                             cuerpo=tabla_apa(t)),
             encoding="utf-8")
         t["archivo"] = f"individuales/{nombre}"
     log.info("Exportadas %d tablas sueltas en: %s", len(tablas),
@@ -860,6 +934,7 @@ def main() -> None:
 
     if not args.sin_docx:
         _exportar_docx(RUTA_DOC, RUTA_DOCX)
+        _exportar_docx(RUTA_DOC_SIN_NOTAS, RUTA_DOCX_SIN_NOTAS)
 
 
 if __name__ == "__main__":
