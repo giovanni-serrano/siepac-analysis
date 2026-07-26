@@ -78,8 +78,12 @@ def extraer_datos() -> pd.DataFrame:
     ruta = archivos[0]
     log.info("Leyendo archivo raw: %s", ruta.name)
 
-    # Verificamos que la hoja 'datos' exista antes de leerla.
-    hojas = pd.ExcelFile(ruta).sheet_names
+    # Verificamos que la hoja 'datos' exista antes de leerla. El
+    # context manager cierra el archivo: sin el, el handle queda abierto
+    # hasta que el recolector de basura lo libere y pandas 3.0 lo reporta
+    # como ResourceWarning.
+    with pd.ExcelFile(ruta) as libro:
+        hojas = libro.sheet_names
     if HOJA_DATOS not in hojas:
         log.error(
             "La hoja '%s' no existe. Hojas disponibles: %s. "
