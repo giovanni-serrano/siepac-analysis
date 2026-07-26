@@ -1,12 +1,13 @@
 """
 run_pipeline.py — Orquestador del pipeline completo
 ====================================================
-Etapa del pipeline : orquestación (ejecuta los 16 scripts en orden)
+Etapa del pipeline : orquestación (ejecuta los 18 scripts en orden)
 Entradas           : — (cada script lee sus propias entradas)
 Salidas            : — (las de cada script: CSVs, Excel, HTML y PNG)
 
-Ejecuta los ETL, la consolidación, los generadores de indicadores, los
-dos visualizadores y la exportación de gráficos a PNG en el orden correcto
+Ejecuta los ETL, la consolidación, los generadores de indicadores, las
+tablas APA, los dos visualizadores y la exportación de gráficos a PNG en
+el orden correcto
 de dependencias, y se detiene en el primer script que termine con error
 (incluida una VALIDACIÓN FALLIDA).
 
@@ -37,6 +38,7 @@ ORDEN = [
     "generar_matriz_indicadores.py",
     "procesar_dimensiones.py",
     "generar_resumen_indicadores.py",
+    "generar_tablas_apa.py",
     "generar_explorador.py",
     "generar_panel.py",
     "exportar_graficos.py",
