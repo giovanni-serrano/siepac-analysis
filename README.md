@@ -45,6 +45,36 @@ Las constantes compartidas (países, años, rutas, conversiones) viven en
 - Python **3.10 o superior**
 - `pip install -r requirements.txt` (pandas, openpyxl, plotly)
 
+## Datos crudos: dos formas de acercarse a este repositorio
+
+Cinco de las nueve fuentes crudas (`consumo_final_total`,
+`consumo_industrial`, `generacion_por_tipo_de_fuente`,
+`importaciones_exportaciones`, `produccion_bruta` — todas de OLADE/SIELAC)
+**no viven en este repositorio**: sus Términos y Condiciones prohíben
+expresamente redistribuir el archivo descargado. Por eso hay dos puntos
+de entrada distintos:
+
+- **Auditable, siempre.** El código, los indicadores calculados
+  (`data/processed/*.xlsx`), los visualizadores (`graficos/`) y el
+  resumen metodológico (`docs/`) están completos y son públicos. Alcanza
+  para revisar cómo se calculó cada cifra sin necesitar los archivos
+  crudos.
+- **Ejecutable de punta a punta**, si además obtienes tu propia copia de
+  esas cinco fuentes. `data/raw/MANIFIESTO.md` documenta, para cada una,
+  la ruta exacta de descarga en el portal de origen y el hash SHA-256 de
+  la copia con la que se verificaron los cálculos de este proyecto.
+  Después de descargarlas:
+
+  ```
+  python src/verificar_datos_raw.py
+  ```
+
+  confirma que tu copia es la correcta (o avisa si la fuente actualizó la
+  serie desde entonces — no bloquea, solo lo declara).
+
+Las otras cuatro fuentes (Banco Mundial, CEPALSTAT, agenda2030lac) sí
+están en el repositorio.
+
 ## Cómo reproducir
 
 Desde la raíz del proyecto, todo el pipeline con un solo comando:

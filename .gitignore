@@ -1,3 +1,23 @@
+# ---------------------------------------------------------------------
+# TRABAJO INTERNO — NO PUBLICAR
+# Estas reglas vivían en .git/info/exclude, que no se versiona, no se
+# respalda y no sobrevive a un clon nuevo: si ese archivo se perdía, un
+# "git add -A" publicaba todo esto. Aquí quedan protegidas de forma
+# permanente. Que el nombre del archivo se vea en un .gitignore público
+# no revela nada de su contenido.
+# ---------------------------------------------------------------------
+
+# Registro personal de trazabilidad para la defensa: contiene pendientes
+# internos del equipo y anomalías de datos sin confirmar.
+BITACORA_PERSONAL.md
+
+# Contexto para asistentes de IA: incluye los mismos pendientes internos.
+AGENTS.md
+CLAUDE.md
+
+# Versión alternativa local del visualizador, no publicada.
+version-alt/
+
 # Python
 __pycache__/
 *.pyc
@@ -32,3 +52,17 @@ graficos/soc/
 # con generar_tablas_apa.py.
 tablas-apa/*.docx
 tablas-apa/individuales/
+
+# Datos crudos de OLADE/SIELAC: sus Términos y Condiciones prohíben
+# expresamente el almacenamiento en otro sistema y la distribución por
+# cualquier medio (verificado el 2026-07-26; ver la nota completa en
+# src/catalogo_datos_raw.py). Siguen viviendo en el disco local y son el
+# insumo real del pipeline; data/raw/MANIFIESTO.md documenta de dónde
+# descargar cada uno y src/verificar_datos_raw.py confirma que la copia
+# local es la correcta. Los Fuente.txt de estas carpetas SÍ se versionan
+# (son solo texto de trazabilidad, no el dato en sí).
+data/raw/consumo_final_total/*.xlsx
+data/raw/consumo_industrial/*.xlsx
+data/raw/generacion_por_tipo_de_fuente/*.xlsx
+data/raw/importaciones_exportaciones/*.xlsx
+data/raw/produccion_bruta/*.xlsx
