@@ -47,12 +47,12 @@ Las constantes compartidas (países, años, rutas, conversiones) viven en
 
 ## Datos crudos: dos formas de acercarse a este repositorio
 
-Cinco de las nueve fuentes crudas (`consumo_final_total`,
-`consumo_industrial`, `generacion_por_tipo_de_fuente`,
-`importaciones_exportaciones`, `produccion_bruta` — todas de OLADE/SIELAC)
-**no viven en este repositorio**: sus Términos y Condiciones prohíben
-expresamente redistribuir el archivo descargado. Por eso hay dos puntos
-de entrada distintos:
+Ocho de las nueve fuentes crudas **no viven en este repositorio**: los
+términos de OLADE/SIELAC y de CEPAL prohíben redistribuir el archivo
+descargado, aunque ambos contemplan usar los datos citando la
+procedencia, que es lo que hace este proyecto. La única que sí se
+versiona es la del Banco Mundial (`data/raw/pib/`), publicada bajo
+CC-BY 4.0. Por eso hay dos puntos de entrada distintos:
 
 - **Auditable, siempre.** El código, los indicadores calculados
   (`data/processed/*.xlsx`), los visualizadores (`graficos/`) y el
@@ -60,7 +60,7 @@ de entrada distintos:
   para revisar cómo se calculó cada cifra sin necesitar los archivos
   crudos.
 - **Ejecutable de punta a punta**, si además obtienes tu propia copia de
-  esas cinco fuentes. `data/raw/MANIFIESTO.md` documenta, para cada una,
+  esas ocho fuentes. `data/raw/MANIFIESTO.md` documenta, para cada una,
   la ruta exacta de descarga en el portal de origen y el hash SHA-256 de
   la copia con la que se verificaron los cálculos de este proyecto.
   Después de descargarlas:
@@ -71,9 +71,6 @@ de entrada distintos:
 
   confirma que tu copia es la correcta (o avisa si la fuente actualizó la
   serie desde entonces — no bloquea, solo lo declara).
-
-Las otras cuatro fuentes (Banco Mundial, CEPALSTAT, agenda2030lac) sí
-están en el repositorio.
 
 ## Cómo reproducir
 
@@ -178,8 +175,12 @@ Proyecto desarrollado como tesis de Ingeniería Eléctrica, UNI Nicaragua.
 ## Licencia
 
 El código se distribuye bajo licencia [MIT](LICENSE). Los datos crudos
-pertenecen a sus fuentes (OLADE, CEPAL, Banco Mundial) y se incluyen con
-fines académicos y de reproducibilidad, con atribución en los `Fuente.txt`.
+pertenecen a sus fuentes. Los de OLADE/SIELAC y CEPAL **no se
+redistribuyen aquí** porque sus términos no lo permiten: se documentan en
+`data/raw/MANIFIESTO.md` para que cada quien descargue su propia copia.
+El del Banco Mundial sí se incluye, bajo CC-BY 4.0 y con atribución. Los
+indicadores calculados y los visualizadores son obra derivada del
+análisis, elaborados citando cada fuente.
 
 ## Notas
 

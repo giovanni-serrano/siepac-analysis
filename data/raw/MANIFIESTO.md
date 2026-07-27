@@ -13,12 +13,14 @@ No cubre `data/raw_equipo/` (entregables propios del equipo de tesis, no descarg
 | Generación eléctrica por tipo de fuente | OLADE / SIELAC | **No** (verificado) | No — ver más abajo |
 | Matriz de balance energético (importaciones/exportaciones) | OLADE / SIELAC | **No** (verificado) | No — ver más abajo |
 | Producción bruta de electricidad | OLADE / SIELAC | **No** (verificado) | No — ver más abajo |
-| PIB real (USD constantes de 2015) | Banco Mundial (WDI) | **Sí** (CC-BY) | Sí |
-| Población total | CEPALSTAT (CEPAL-CELADE) | Sin verificar | Sí |
-| Precio medio de la electricidad | CEPALSTAT | Sin verificar | Sí |
-| Valor agregado industrial (% del PIB) | agenda2030lac (ODS-NU / UNIDO) | Sin verificar | Sí |
+| PIB real (USD constantes de 2015) | Banco Mundial (WDI) | **Sí** (CC-BY 4.0) | Sí |
+| Población total | CEPALSTAT (CEPAL-CELADE) | **No** (verificado) | No — ver más abajo |
+| Precio medio de la electricidad | CEPALSTAT | **No** (verificado) | No — ver más abajo |
+| Valor agregado industrial (% del PIB) | agenda2030lac (ODS-NU / UNIDO) | **No** (verificado) | No — ver más abajo |
 
-Los archivos marcados **No** no están en este repositorio: sus Términos y Condiciones prohíben expresamente el almacenamiento en otro sistema y la distribución por cualquier medio. Sí son el insumo real del pipeline — cada quien descarga su propia copia desde la ruta indicada en su ficha.
+Los archivos marcados **No** no están en este repositorio: los términos de sus fuentes prohíben redistribuir el archivo descargado. OLADE/SIELAC veda el «almacenamiento en cualquier otro sistema» y la «distribución por cualquier medio»; CEPAL permite bajar y copiar sus materiales «para su uso personal, sin fines comerciales, sin ningún derecho a revender, redistribuir, o crear otros trabajos a partir de los mismos» (agenda2030lac lo opera CEPAL y hereda ese acuerdo). Ambos verificados el 2026-07-26; las citas completas están en `src/catalogo_datos_raw.py`.
+
+Eso no impide usar los datos: las dos fuentes contemplan su uso citando la procedencia, que es lo que hace este proyecto. Lo que no se puede es republicar sus archivos. Siguen siendo el insumo real del pipeline — cada quien descarga su propia copia desde la ruta indicada en su ficha.
 
 ## Fichas por variable
 
@@ -82,7 +84,7 @@ Los archivos marcados **No** no están en este repositorio: sus Términos y Cond
 
 - **Variable:** PIB real (USD constantes de 2015)
 - **Fuente:** Banco Mundial (WDI)
-- **¿Redistribuible?:** **Sí** (CC-BY)
+- **¿Redistribuible?:** **Sí** (CC-BY 4.0)
 - **Cobertura:** Todos los países, serie histórica completa
 - **Patrón que localiza el ETL:** `*.csv` (el nombre exacto cambia en cada descarga: los exports llevan timestamp)
 - **Dónde descargarlo:** datos.bancomundial.org/indicador/NY.GDP.MKTP.KD (descarga completa, se filtra en el ETL)
@@ -93,7 +95,7 @@ Los archivos marcados **No** no están en este repositorio: sus Términos y Cond
 
 - **Variable:** Población total
 - **Fuente:** CEPALSTAT (CEPAL-CELADE)
-- **¿Redistribuible?:** Sin verificar
+- **¿Redistribuible?:** **No** (verificado)
 - **Cobertura:** 6 países SIEPAC, 2020-2024
 - **Patrón que localiza el ETL:** `*.xlsx` (el nombre exacto cambia en cada descarga: los exports llevan timestamp)
 - **Dónde descargarlo:** CEPALSTAT / Estadísticas e indicadores / Población / Estimaciones y proyecciones de población / Población total por sexo (filtrar: 6 países SIEPAC, 2020-2024, ambos sexos; hoja "datos" del export, valores en miles de habitantes)
@@ -104,7 +106,7 @@ Los archivos marcados **No** no están en este repositorio: sus Términos y Cond
 
 - **Variable:** Precio medio de la electricidad
 - **Fuente:** CEPALSTAT
-- **¿Redistribuible?:** Sin verificar
+- **¿Redistribuible?:** **No** (verificado)
 - **Cobertura:** 6 países SIEPAC, 2020-2024
 - **Patrón que localiza el ETL:** `*.xlsx` (el nombre exacto cambia en cada descarga: los exports llevan timestamp)
 - **Dónde descargarlo:** statistics.cepal.org/portal/cepalstat/dashboard.html?indicator_id=4758&area_id=2454&lang=es (filtrar: 6 países SIEPAC y años disponibles)
@@ -115,7 +117,7 @@ Los archivos marcados **No** no están en este repositorio: sus Términos y Cond
 
 - **Variable:** Valor agregado industrial (% del PIB)
 - **Fuente:** agenda2030lac (ODS-NU / UNIDO)
-- **¿Redistribuible?:** Sin verificar
+- **¿Redistribuible?:** **No** (verificado)
 - **Cobertura:** 6 países SIEPAC, 2020-2024
 - **Patrón que localiza el ETL:** `*.xlsx` (el nombre exacto cambia en cada descarga: los exports llevan timestamp)
 - **Dónde descargarlo:** agenda2030lac.org/estadisticas/banco-datos-regional-seguimiento-ods.html?indicator_id=4353&lang=es

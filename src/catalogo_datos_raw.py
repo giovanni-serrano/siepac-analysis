@@ -14,22 +14,41 @@ una fuente externa) ni las fichas técnicas en PDF (documentación, no
 entrada del pipeline).
 
 Notas metodológicas:
-  - Los archivos de OLADE/SIELAC (consumo_final_total, consumo_industrial,
+  - De las nueve fuentes, ocho NO viven en el repositorio porque sus
+    términos prohíben redistribuir el archivo descargado. Siguen siendo
+    el insumo real del pipeline: cada quien descarga su propia copia y
+    `verificar_datos_raw.py` confirma que es la misma con la que se
+    calculó todo, comparando el hash.
+  - OLADE/SIELAC (consumo_final_total, consumo_industrial,
     generacion_por_tipo_de_fuente, importaciones_exportaciones,
-    produccion_bruta) NO viven en el repositorio: sus Términos y
-    Condiciones prohíben expresamente el almacenamiento en otro sistema y
-    la distribución por cualquier medio (verificado el 2026-07-26 en
+    produccion_bruta): sus Términos y Condiciones prohíben expresamente
+    el "almacenamiento en cualquier otro sistema" y la "distribución por
+    cualquier medio" (verificado el 2026-07-26 en
     https://sielac.olacde.org/WebForms/Utilidades/contenido.aspx?archivo=contenido5.1.html).
-    Siguen siendo el insumo real del pipeline: cada quien descarga su
-    propia copia y `verificar_datos_raw.py` confirma que es la misma con
-    la que se calculó todo, comparando el hash.
-  - El de Banco Mundial (pib) es CC-BY: redistribuible sin restricción.
-  - Los de CEPALSTAT y agenda2030lac (poblacion_total, tarifa_electrica_media,
-    valor_agregado_industrial) tienen licencia sin verificar todavía: se
-    mantienen en el repositorio a la espera de esa revisión.
-  - Los nombres de archivo de OLADE llevan un timestamp de exportación
-    (cambian en cada descarga); por eso los ETL localizan el archivo por
-    patrón glob (`*.xlsx`), no por nombre exacto.
+  - CEPALSTAT y agenda2030lac (poblacion_total, tarifa_electrica_media,
+    valor_agregado_industrial): el acuerdo de uso del sitio de CEPAL
+    permite bajar y copiar los materiales "para su uso personal, sin
+    fines comerciales, sin ningún derecho a revender, redistribuir, o
+    crear otros trabajos a partir de los mismos" (verificado el
+    2026-07-26 en https://www.cepal.org/es/terminos-y-condiciones-sobre-el-uso-del-sitio-web-entre-la-cepal-y-el-usuario).
+    agenda2030lac lo opera CEPAL y no publica términos propios, así que
+    hereda ese acuerdo. No se encontró una licencia abierta explícita
+    para los datos de CEPALSTAT pese a que el portal se promociona como
+    datos abiertos y ofrece API pública.
+    Sobre la cláusula de "crear otros trabajos": leída al pie de la letra
+    prohibiría el análisis mismo, lo que contradice la misión del
+    organismo, su API para desarrolladores y la práctica académica de
+    citar estadísticas oficiales. Se interpreta como lenguaje de sitio
+    web referido a contenidos y publicaciones, no como impedimento para
+    calcular indicadores a partir de datos citados. Lo inequívoco, y lo
+    que se acata aquí, es la prohibición de redistribuir los archivos.
+  - Banco Mundial (pib): CC-BY 4.0, redistribuible con atribución
+    (verificado el 2026-07-26 en
+    https://datacatalog.worldbank.org/public-licenses). Es la única
+    fuente cruda que sí se versiona.
+  - Los nombres de archivo llevan un timestamp de exportación (cambian en
+    cada descarga); por eso los ETL localizan el archivo por patrón glob
+    (`*.xlsx`), no por nombre exacto.
 
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
@@ -43,7 +62,7 @@ class ArchivoRaw:
     patron: str              # patrón glob que usa el ETL para localizarlo
     variable: str            # qué mide
     fuente: str               # organización que lo publica
-    redistribuible: str      # "no" | "si" | "sin verificar"
+    redistribuible: str      # "no" | "si" (verificado; ver notas de arriba)
     ruta_navegacion: str     # cómo llegar al reporte en el portal de origen
     sha256: str               # hash de la copia verificada por este pipeline
     tamano_bytes: int
@@ -116,7 +135,7 @@ CATALOGO_RAW = [
     ArchivoRaw(
         carpeta="poblacion_total", patron="*.xlsx",
         variable="Población total",
-        fuente="CEPALSTAT (CEPAL-CELADE)", redistribuible="sin verificar",
+        fuente="CEPALSTAT (CEPAL-CELADE)", redistribuible="no",
         ruta_navegacion="CEPALSTAT / Estadísticas e indicadores / Población / "
                         "Estimaciones y proyecciones de población / "
                         "Población total por sexo (filtrar: 6 países SIEPAC, "
@@ -128,7 +147,7 @@ CATALOGO_RAW = [
     ArchivoRaw(
         carpeta="tarifa_electrica_media", patron="*.xlsx",
         variable="Precio medio de la electricidad",
-        fuente="CEPALSTAT", redistribuible="sin verificar",
+        fuente="CEPALSTAT", redistribuible="no",
         ruta_navegacion="statistics.cepal.org/portal/cepalstat/dashboard.html"
                         "?indicator_id=4758&area_id=2454&lang=es (filtrar: "
                         "6 países SIEPAC y años disponibles)",
@@ -138,7 +157,7 @@ CATALOGO_RAW = [
     ArchivoRaw(
         carpeta="valor_agregado_industrial", patron="*.xlsx",
         variable="Valor agregado industrial (% del PIB)",
-        fuente="agenda2030lac (ODS-NU / UNIDO)", redistribuible="sin verificar",
+        fuente="agenda2030lac (ODS-NU / UNIDO)", redistribuible="no",
         ruta_navegacion="agenda2030lac.org/estadisticas/banco-datos-regional-"
                         "seguimiento-ods.html?indicator_id=4353&lang=es",
         sha256="97f92db3fd94eb0f19fb6dd89ce8f0729618101db79739f0ecea68c0849e8ba1",

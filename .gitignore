@@ -53,16 +53,35 @@ graficos/soc/
 tablas-apa/*.docx
 tablas-apa/individuales/
 
-# Datos crudos de OLADE/SIELAC: sus Términos y Condiciones prohíben
-# expresamente el almacenamiento en otro sistema y la distribución por
-# cualquier medio (verificado el 2026-07-26; ver la nota completa en
+# Datos crudos cuyas fuentes prohíben redistribuir el archivo descargado
+# (ambos términos verificados el 2026-07-26; las citas textuales están en
 # src/catalogo_datos_raw.py). Siguen viviendo en el disco local y son el
 # insumo real del pipeline; data/raw/MANIFIESTO.md documenta de dónde
 # descargar cada uno y src/verificar_datos_raw.py confirma que la copia
 # local es la correcta. Los Fuente.txt de estas carpetas SÍ se versionan
 # (son solo texto de trazabilidad, no el dato en sí).
+#
+# OLADE/SIELAC: veda el "almacenamiento en cualquier otro sistema" y la
+# "distribución por cualquier medio".
 data/raw/consumo_final_total/*.xlsx
 data/raw/consumo_industrial/*.xlsx
 data/raw/generacion_por_tipo_de_fuente/*.xlsx
 data/raw/importaciones_exportaciones/*.xlsx
 data/raw/produccion_bruta/*.xlsx
+#
+# CEPALSTAT y agenda2030lac (operado por CEPAL): permiten bajar y copiar
+# "para su uso personal, sin fines comerciales, sin ningún derecho a
+# revender, redistribuir, o crear otros trabajos a partir de los mismos".
+data/raw/poblacion_total/*.xlsx
+data/raw/tarifa_electrica_media/*.xlsx
+data/raw/valor_agregado_industrial/*.xlsx
+#
+# Fichas técnicas en PDF de CEPAL: son publicaciones institucionales, y
+# los términos de su Repositorio Digital piden solicitar autorización a
+# publicaciones.cepal@un.org para reproducirlas "en todo o en parte". No
+# son entrada del pipeline (documentan la metodología de la fuente); los
+# Fuente.txt indican dónde consultarlas.
+data/raw/**/*.pdf
+#
+# El CSV del Banco Mundial (data/raw/pib/) es CC-BY 4.0 y SÍ se versiona:
+# es la única fuente cruda redistribuible del proyecto.

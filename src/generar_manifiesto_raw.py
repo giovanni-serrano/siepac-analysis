@@ -38,8 +38,7 @@ RUTA_MANIFIESTO = DIR_RAW / "MANIFIESTO.md"
 
 ETIQUETA_REDIST = {
     "no": "**No** (verificado)",
-    "si": "**Sí** (CC-BY)",
-    "sin verificar": "Sin verificar",
+    "si": "**Sí** (CC-BY 4.0)",
 }
 
 
@@ -87,11 +86,20 @@ def main() -> None:
     ]
     contenido += _tabla_resumen()
     contenido.append(
-        "\nLos archivos marcados **No** no están en este repositorio: sus "
-        "Términos y Condiciones prohíben expresamente el almacenamiento en "
-        "otro sistema y la distribución por cualquier medio. Sí son el "
-        "insumo real del pipeline — cada quien descarga su propia copia "
-        "desde la ruta indicada en su ficha.\n")
+        "\nLos archivos marcados **No** no están en este repositorio: los "
+        "términos de sus fuentes prohíben redistribuir el archivo "
+        "descargado. OLADE/SIELAC veda el «almacenamiento en cualquier otro "
+        "sistema» y la «distribución por cualquier medio»; CEPAL permite "
+        "bajar y copiar sus materiales «para su uso personal, sin fines "
+        "comerciales, sin ningún derecho a revender, redistribuir, o crear "
+        "otros trabajos a partir de los mismos» (agenda2030lac lo opera "
+        "CEPAL y hereda ese acuerdo). Ambos verificados el 2026-07-26; las "
+        "citas completas están en `src/catalogo_datos_raw.py`.\n"
+        "\nEso no impide usar los datos: las dos fuentes contemplan su uso "
+        "citando la procedencia, que es lo que hace este proyecto. Lo que "
+        "no se puede es republicar sus archivos. Siguen siendo el insumo "
+        "real del pipeline — cada quien descarga su propia copia desde la "
+        "ruta indicada en su ficha.\n")
     contenido.append("## Fichas por variable\n")
     for e in CATALOGO_RAW:
         contenido += _ficha(e)
