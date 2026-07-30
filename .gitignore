@@ -18,6 +18,9 @@ CLAUDE.md
 # Versión alternativa local del visualizador, no publicada.
 version-alt/
 
+# Protocolo de investigación: documento interno de trabajo, no publicado.
+protocolo/
+
 # Python
 __pycache__/
 *.pyc
