@@ -21,6 +21,10 @@ version-alt/
 # Protocolo de investigación: documento interno de trabajo, no publicado.
 protocolo/
 
+# Análisis estadístico descriptivo a nivel de bloque SIEPAC: trabajo
+# interno en curso, no publicado.
+analisis-eco/
+
 # Python
 __pycache__/
 *.pyc
