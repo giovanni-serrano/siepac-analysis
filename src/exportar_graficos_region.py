@@ -6,6 +6,7 @@ Entradas           : data/processed/indicadores_consolidados_tidy.csv,
                      matriz_consolidada_wide.csv y el Datos_Base del libro ENV
 Salidas            : graficos/region/*.png (una figura por análisis regional),
                      graficos/region/tabla_agregados.csv y
+                     graficos/region/tabla_descriptivos_SOC2.csv,
                      graficos/region/LEYENDAS.md (pies de figura listos
                      para pegar en el documento)
 Alimenta           : — (figuras estáticas del capítulo de análisis regional)
@@ -16,21 +17,24 @@ Uso:  python src/exportar_graficos_region.py   (ejecutar desde la raíz)
 Exporta la estadística del BLOQUE como sistema, en PNG listos para el
 documento de tesis (3000x1860 px, fondo blanco):
 
-  1. Una figura por serie con agregado regional (15): la razón de sumas
+  1. Una figura por serie con agregado regional (17): la razón de sumas
      (foco, azul) contrastada con el promedio de países (gris punteado).
-  2. Magnitudes absolutas del bloque: consumo final, generación por
+  2. Tres figuras descriptivas de SOC2: cambios por país para sus dos
+     series y evolución anual de la media, mediana y rango nacionales.
+  3. Una figura conjunta de la brecha rural-urbana del agregado SOC3.
+  4. Magnitudes absolutas del bloque: consumo final, generación por
      fuente (small multiples con ejes espejados), composición
      renovable/fósil, intercambios con el exterior, personas sin
      electricidad y emisiones GEI.
 
-Decisiones de estética (coherentes con version-alt/DECISIONES_VISUALIZACION.md):
+Convenciones gráficas:
   - Un solo acento cromático: el azul #1F4E79 de la referencia regional.
-  - El promedio de países acompaña en gris discontinuo (comparación
-    honesta entre las dos medidas; ambas quedan etiquetadas).
+  - El promedio de países se presenta en gris discontinuo y ambas medidas
+    se etiquetan directamente.
   - Composición renovable/fósil con el par azul/pardo de la escala
     divergente del proyecto (distinguible bajo daltonismo; los
     segmentos llevan separador blanco y etiqueta directa).
-  - Un solo eje por figura; nada de dobles escalas.
+  - Cada figura utiliza una sola escala vertical.
 
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
@@ -157,7 +161,7 @@ def figuras_series(tidy: pd.DataFrame, cat: dict) -> list[tuple]:
         agr = (sub[sub["pais"] == "Agregado regional"]
                .set_index("anio")["valor"].reindex(ANIOS))
         if agr.isna().all():
-            continue          # ECO14 / SOC2 / SOC3: sin agregado
+            continue          # ECO14 / SOC2: sin agregado
         prom = (sub[sub["pais"] == "Promedio regional"]
                 .set_index("anio")["valor"].reindex(ANIOS))
 
@@ -187,6 +191,15 @@ def figuras_series(tidy: pd.DataFrame, cat: dict) -> list[tuple]:
             sufijo=info["sufijo"], **extra))
         _exportar(fig, f"{clave}_agregado_vs_promedio")
 
+        if clave.startswith("SOC3_"):
+            fuente_leyenda = (
+                "Elaboración propia a partir de SOCs.xlsx y Banco Mundial "
+                "(WDI: SP.RUR.TOTL y SP.URB.TOTL).")
+        else:
+            fuente_leyenda = (
+                "Elaboración propia con datos de SIELAC-OLADE, "
+                "CEPALSTAT y Banco Mundial.")
+
         leyendas.append((
             f"{clave}_agregado_vs_promedio.png",
             f"{clave} — {info['nombre']} a nivel del bloque SIEPAC, "
@@ -198,9 +211,194 @@ def figuras_series(tidy: pd.DataFrame, cat: dict) -> list[tuple]:
             f"{_fmt(prom.iloc[0], info['formato'])} → "
             f"{_fmt(prom.iloc[-1], info['formato'])} "
             f"({_delta_txt(prom.iloc[0], prom.iloc[-1], info['delta'])}). "
-            "Elaboración propia con datos de SIELAC-OLADE, CEPALSTAT y "
-            "Banco Mundial."))
+            f"{fuente_leyenda}"))
     return leyendas
+
+
+def _resumen_soc2(tidy: pd.DataFrame, clave: str) -> pd.DataFrame:
+    """Estadísticos anuales de los seis valores nacionales de SOC2."""
+    datos = tidy[(tidy["serie"] == clave) & tidy["pais"].isin(PAISES)]
+    return (datos.groupby("anio")["valor"]
+            .agg(n="count", media="mean", mediana="median",
+                 de=lambda s: s.std(ddof=0), minimo="min", maximo="max")
+            .reindex(ANIOS)
+            .assign(rango=lambda d: d["maximo"] - d["minimo"]))
+
+
+def _figura_soc2_paises(tidy: pd.DataFrame, clave: str, titulo: str) -> tuple:
+    """Dumbbell 2020–2024 por país; la columna derecha muestra el cambio."""
+    datos = (tidy[(tidy["serie"] == clave) & tidy["pais"].isin(PAISES)]
+             .pivot(index="pais", columns="anio", values="valor")
+             .reindex(PAISES))
+    fig = go.Figure()
+    for pais in PAISES:
+        fig.add_scatter(
+            x=[datos.loc[pais, ANIOS[0]], datos.loc[pais, ANIOS[-1]]],
+            y=[pais, pais], mode="lines", showlegend=False,
+            line=dict(color=GRIS_LINEA, width=2))
+    fig.add_scatter(
+        x=datos[ANIOS[0]], y=datos.index, name=str(ANIOS[0]), mode="markers",
+        marker=dict(size=12, color="#FFFFFF", line=dict(
+            color=GRIS_OSCURO, width=2.2), symbol="circle"))
+    fig.add_scatter(
+        x=datos[ANIOS[-1]], y=datos.index, name=str(ANIOS[-1]),
+        mode="markers", marker=dict(size=12, color=AZUL))
+
+    for pais in PAISES:
+        cambio = datos.loc[pais, ANIOS[-1]] - datos.loc[pais, ANIOS[0]]
+        fig.add_annotation(
+            x=1.015, xref="paper", y=pais, yref="y",
+            text=f"<b>{cambio:+.1f} pp</b>", showarrow=False,
+            xanchor="left", font=dict(size=13, color=GRIS_OSCURO))
+    fig.add_annotation(
+        x=1.015, xref="paper", y=1.06, yref="paper", text="<b>Cambio</b>",
+        showarrow=False, xanchor="left",
+        font=dict(size=13, color=GRIS_OSCURO))
+
+    limite = float(datos[[ANIOS[0], ANIOS[-1]]].to_numpy().max()) * 1.08
+    fig.update_layout(_layout(
+        f"{clave} · {titulo}",
+        "Comparación nacional 2020–2024 · porcentaje del ingreso",
+        sufijo="%",
+        margin=dict(l=120, r=115, t=86, b=76),
+        xaxis=dict(gridcolor=GRIS_GRILLA, ticksuffix="%", range=[0, limite],
+                   automargin=True, zerolinecolor=GRIS_GRILLA),
+        yaxis=dict(categoryorder="array",
+                   categoryarray=list(reversed(PAISES)), automargin=True)))
+    _exportar(fig, f"{clave}_paises_2020_2024")
+    return datos
+
+
+def figuras_soc2_descriptivas(tidy: pd.DataFrame) -> list[tuple]:
+    """Exporta cambios nacionales y evolución del centro/dispersión SOC2."""
+    leyendas = []
+    configuracion = [
+        ("SOC2_PROM", "Ingreso destinado a electricidad · Serie de referencia"),
+        ("SOC2_POBRE", "Ingreso destinado a electricidad · Menores ingresos"),
+    ]
+    for clave, titulo in configuracion:
+        datos = _figura_soc2_paises(tidy, clave, titulo)
+        cambios = datos[ANIOS[-1]] - datos[ANIOS[0]]
+        leyendas.append((
+            f"{clave}_paises_2020_2024.png",
+            f"{clave} — Cambio del porcentaje de ingreso destinado a "
+            f"electricidad en cada país del SIEPAC entre {ANIOS[0]} y "
+            f"{ANIOS[-1]}. El punto gris hueco corresponde a {ANIOS[0]} "
+            f"y el azul a {ANIOS[-1]}; la columna derecha expresa el "
+            f"cambio en puntos porcentuales. El cambio nacional varió "
+            f"entre {cambios.min():+.1f} y {cambios.max():+.1f} pp. "
+            "Elaboración propia a partir de SOCs.xlsx."))
+
+    fig = make_subplots(
+        rows=1, cols=2, horizontal_spacing=0.11,
+        subplot_titles=("Serie de referencia", "Menores ingresos"))
+    for col, (clave, _) in enumerate(configuracion, start=1):
+        e = _resumen_soc2(tidy, clave)
+        fig.add_scatter(
+            x=ANIOS, y=e["minimo"], mode="lines", line=dict(width=0),
+            hoverinfo="skip", showlegend=False, row=1, col=col)
+        fig.add_scatter(
+            x=ANIOS, y=e["maximo"], mode="lines", line=dict(width=0),
+            fill="tonexty", fillcolor="rgba(138,138,138,0.14)",
+            name="Rango nacional", showlegend=(col == 1), row=1, col=col)
+        fig.add_scatter(
+            x=ANIOS, y=e["media"], mode="lines+markers", name="Media",
+            line=dict(color=AZUL, width=3.4),
+            marker=dict(size=9, color=AZUL), showlegend=(col == 1),
+            row=1, col=col)
+        fig.add_scatter(
+            x=ANIOS, y=e["mediana"], mode="lines+markers", name="Mediana",
+            line=dict(color=GRIS_OSCURO, width=2.5, dash="dash"),
+            marker=dict(size=8, color=GRIS_OSCURO), showlegend=(col == 1),
+            row=1, col=col)
+    fig.update_layout(
+        paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+        font=dict(family=FUENTE, size=15, color=TINTA),
+        title=dict(
+            text="<b>SOC2 · Evolución descriptiva del conjunto SIEPAC</b>"
+                 "<br><sup style='color:#5B5B5B'>Media, mediana y rango "
+                 "de los seis resultados nacionales · 2020–2024</sup>",
+            x=0.02, xanchor="left", font=dict(size=21)),
+        legend=dict(orientation="h", y=-0.14, x=0.5, xanchor="center"),
+        margin=dict(l=70, r=40, t=105, b=76))
+    fig.update_xaxes(tickvals=ANIOS, gridcolor="#F5F5F5", automargin=True)
+    fig.update_yaxes(gridcolor=GRIS_GRILLA, ticksuffix="%", rangemode="tozero",
+                     automargin=True, zerolinecolor=GRIS_GRILLA)
+    _exportar(fig, "SOC2_media_mediana_rango")
+
+    ep = _resumen_soc2(tidy, "SOC2_PROM")
+    eb = _resumen_soc2(tidy, "SOC2_POBRE")
+    leyendas.append((
+        "SOC2_media_mediana_rango.png",
+        "SOC2 — Evolución anual de la media simple, la mediana y el rango "
+        "de los seis países del SIEPAC. En la serie de referencia, la "
+        f"media pasó de {ep.iloc[0]['media']:.2f} % a "
+        f"{ep.iloc[-1]['media']:.2f} % y la DE de "
+        f"{ep.iloc[0]['de']:.2f} a {ep.iloc[-1]['de']:.2f}. En los hogares "
+        f"de menores ingresos, la media pasó de {eb.iloc[0]['media']:.2f} % "
+        f"a {eb.iloc[-1]['media']:.2f} %, mientras la mediana cambió de "
+        f"{eb.iloc[0]['mediana']:.2f} % a {eb.iloc[-1]['mediana']:.2f} %. "
+        "La franja gris representa el mínimo y máximo nacional. "
+        "Elaboración propia a partir de SOCs.xlsx."))
+    return leyendas
+
+
+def figura_soc3_brecha(tidy: pd.DataFrame) -> list[tuple]:
+    """Compara los agregados SOC3 rural y urbano y explicita su brecha."""
+    regional = tidy[tidy["pais"] == "Agregado regional"]
+    rural = (regional[regional["serie"] == "SOC3_RURAL"]
+             .set_index("anio")["valor"].reindex(ANIOS))
+    urbana = (regional[regional["serie"] == "SOC3_URB"]
+              .set_index("anio")["valor"].reindex(ANIOS))
+    if rural.isna().any() or urbana.isna().any():
+        log.warning("SOC3 sin agregados completos; se omite figura de brecha.")
+        return []
+
+    fig = go.Figure()
+    fig.add_scatter(
+        x=ANIOS, y=rural, name="Zona rural", mode="lines+markers",
+        line=dict(color=AZUL, width=3.4),
+        marker=dict(size=9, color=AZUL))
+    fig.add_scatter(
+        x=ANIOS, y=urbana, name="Zona urbana", mode="lines+markers",
+        line=dict(color=GRIS_OSCURO, width=3),
+        marker=dict(size=8, color=GRIS_OSCURO), fill="tonexty",
+        fillcolor="rgba(138,138,138,0.12)")
+
+    _etiqueta_final(fig, rural.iloc[-1], f"Rural {rural.iloc[-1]:.1f} %",
+                    AZUL)
+    _etiqueta_final(fig, urbana.iloc[-1], f"Urbana {urbana.iloc[-1]:.1f} %",
+                    GRIS_OSCURO)
+    brecha_2024 = urbana.iloc[-1] - rural.iloc[-1]
+    fig.add_annotation(
+        x=ANIOS[-1] - 0.2,
+        y=(urbana.iloc[-1] + rural.iloc[-1]) / 2,
+        text=f"Brecha 2024: {brecha_2024:.1f} pp",
+        showarrow=False, bgcolor="rgba(255,255,255,0.88)",
+        bordercolor=GRIS_LINEA, borderwidth=1, borderpad=5,
+        font=dict(size=13, color=GRIS_OSCURO))
+
+    minimo = max(0, float(min(rural.min(), urbana.min())) - 7)
+    maximo = min(100, float(max(rural.max(), urbana.max())) + 7)
+    fig.update_layout(_layout(
+        "SOC3 · Brecha rural-urbana del acceso renovable",
+        "Agregados regionales ponderados por la población de cada zona",
+        sufijo="%",
+        yaxis=dict(gridcolor=GRIS_GRILLA, ticksuffix="%",
+                   range=[minimo, maximo], automargin=True,
+                   zerolinecolor=GRIS_GRILLA)))
+    _exportar(fig, "SOC3_brecha_rural_urbana_agregado")
+
+    brecha_2020 = urbana.iloc[0] - rural.iloc[0]
+    return [("SOC3_brecha_rural_urbana_agregado.png",
+             "SOC3 — Agregados regionales de acceso a energía "
+             f"renovable por zona, {ANIOS[0]}–{ANIOS[-1]}. Rural: "
+             f"{rural.iloc[0]:.1f} % → {rural.iloc[-1]:.1f} %; urbana: "
+             f"{urbana.iloc[0]:.1f} % → {urbana.iloc[-1]:.1f} %. La "
+             f"brecha urbana-rural pasa de {brecha_2020:.1f} a "
+             f"{brecha_2024:.1f} puntos porcentuales. Elaboración propia "
+             "a partir de SOCs.xlsx y Banco Mundial (WDI: SP.RUR.TOTL y "
+             "SP.URB.TOTL).")]
 
 
 # ---------------------------------------------------------------------------
@@ -361,8 +559,8 @@ def figura_soc1(tidy: pd.DataFrame, wide: pd.DataFrame) -> list[tuple]:
         f"Personas sin acceso a electricidad en el bloque SIEPAC, "
         f"2020–2024: {personas.iloc[0]:.2f} → {personas.iloc[-1]:.2f} "
         f"millones. Equivale al SOC1 agregado ({(personas.iloc[-1]*1e6/pob[2024].sum()*100):.2f} % "
-        "del bloque en 2024). Elaboración propia con datos del equipo "
-        "de tesis y CEPAL-CELADE.")]
+        "del bloque en 2024). Elaboración propia con SOCs.xlsx y datos "
+        "de CEPAL-CELADE.")]
 
 
 def figura_emisiones() -> list[tuple]:
@@ -385,7 +583,7 @@ def figura_emisiones() -> list[tuple]:
         f"Emisiones de GEI del sector eléctrico del bloque SIEPAC, "
         f"2020–2024: {mt.iloc[0]:.1f} → {mt.iloc[-1]:.1f} Mt CO₂eq "
         f"({(mt.iloc[-1]/mt.iloc[0]-1)*100:+.1f} %). Elaboración propia "
-        "con datos del equipo de tesis (dimensión ambiental).")]
+        "a partir de ENVs.xlsx.")]
 
 
 # ---------------------------------------------------------------------------
@@ -415,6 +613,33 @@ def exportar_tabla(tidy: pd.DataFrame, cat: dict) -> None:
     log.info("  OK  region/tabla_agregados.csv (%d filas)", len(df))
 
 
+def exportar_tabla_soc2(tidy: pd.DataFrame) -> None:
+    """CSV auditable de los estadísticos descriptivos anuales de SOC2."""
+    filas = []
+    for clave in ("SOC2_PROM", "SOC2_POBRE"):
+        e = _resumen_soc2(tidy, clave)
+        media_2020 = e.iloc[0]["media"]
+        mediana_2020 = e.iloc[0]["mediana"]
+        for anio, fila in e.iterrows():
+            filas.append([
+                clave, anio, int(fila["n"]), fila["media"],
+                fila["mediana"], fila["de"], fila["minimo"],
+                fila["maximo"], fila["rango"],
+                fila["media"] - media_2020,
+                fila["mediana"] - mediana_2020,
+            ])
+    salida = pd.DataFrame(filas, columns=[
+        "serie", "anio", "n", "media", "mediana", "de_poblacional",
+        "minimo", "maximo", "rango", "delta_media_desde_2020_pp",
+        "delta_mediana_desde_2020_pp",
+    ])
+    ruta = DIR_SALIDA / "tabla_descriptivos_SOC2.csv"
+    salida.to_csv(ruta, index=False, encoding="utf-8-sig",
+                  float_format="%.6f")
+    log.info("  OK  region/tabla_descriptivos_SOC2.csv (%d filas)",
+             len(salida))
+
+
 def exportar_leyendas(leyendas: list[tuple]) -> None:
     md = ["# Pies de figura — análisis regional del SIEPAC",
           "",
@@ -427,6 +652,9 @@ def exportar_leyendas(leyendas: list[tuple]) -> None:
           "sumas Σ numerador / Σ denominador de los seis países (el "
           "bloque como sistema); \"promedio de países\" = media simple "
           "(el país típico). Ver docs/resumen_indicadores_SIEPAC.md.",
+          "Las figuras SOC2 se identifican como análisis descriptivo del "
+          "conjunto de seis países: presentan media, mediana, dispersión "
+          "y cambios nacionales, no una razón de sumas regional.",
           ""]
     for archivo, texto in leyendas:
         md.append(f"## {archivo}")
@@ -446,12 +674,15 @@ def main() -> None:
 
     log.info("Exportando figuras regionales a graficos/region/ ...")
     leyendas = figuras_series(tidy, cat)
+    leyendas += figuras_soc2_descriptivas(tidy)
+    leyendas += figura_soc3_brecha(tidy)
     leyendas += figuras_bloque(wide)
     leyendas += figura_soc1(tidy, wide)
     leyendas += figura_emisiones()
     exportar_tabla(tidy, cat)
+    exportar_tabla_soc2(tidy)
     exportar_leyendas(leyendas)
-    log.info("Listo: %d figuras + tabla + leyendas en graficos/region/",
+    log.info("Listo: %d figuras + tablas + leyendas en graficos/region/",
              len(leyendas))
 
 

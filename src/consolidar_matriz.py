@@ -42,14 +42,8 @@ log = logging.getLogger(Path(__file__).stem)
 # CONFIGURACIÓN
 # ---------------------------------------------------------------------------
 
-# Diccionario de normalización de nombres de país.
-# Detectado en la auditoría previa: importaciones_exportaciones.csv
-# usaba "Panama" (sin tilde) mientras los demás archivos usan "Panamá".
-# Un merge con nombres distintos NO da error: simplemente deja NaN
-# silenciosos en la matriz ancha. Por eso se normaliza ANTES de unir.
-# Red de seguridad: desde la corrección del ETL de importaciones/exportaciones
-# (Paso 4, Fase B) este mapeo ya no debería activarse — el ETL entrega
-# directamente el nombre canónico "Panamá". Se conserva por si acaso.
+# Normalización defensiva de claves geográficas antes de las uniones.
+# Evita separar registros equivalentes por diferencias ortográficas.
 MAPEO_PAISES = {
     "Panama": "Panamá",
 }
@@ -175,7 +169,7 @@ def transformar(datos: dict[str, pd.DataFrame]) -> tuple[pd.DataFrame, pd.DataFr
         index=["pais", "anio"],
         columns="variable",
         values="valor",
-        aggfunc="first",  # ya validamos que no hay duplicados pais-anio
+        aggfunc="first",  # la validación exige unicidad por país y año
     ).reset_index()
     wide.columns.name = None
     # Orden de columnas estable y legible.

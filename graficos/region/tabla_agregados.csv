@@ -33,4 +33,6 @@ SOC1,Población sin electricidad,%,agregado_razon_sumas,7.569954,7.566899,7.2900
 SOC2_PROM,Ingreso destinado a electricidad — Hogar promedio,%,promedio_paises,3.870832,3.518526,3.594091,3.470997,3.446813,-0.4 pp
 SOC2_POBRE,Ingreso destinado a electricidad — Quintil más pobre,%,promedio_paises,23.297733,21.760031,23.24088,23.068702,24.7301,+1.4 pp
 SOC3_RURAL,Hogares con acceso a energía renovable — Rural,%,promedio_paises,64.063834,65.800894,65.140508,57.086908,59.146172,-4.9 pp
+SOC3_RURAL,Hogares con acceso a energía renovable — Rural,%,agregado_razon_sumas,57.986382,59.376649,60.27788,52.261701,51.210467,-6.8 pp
 SOC3_URB,Hogares con acceso a energía renovable — Urbano,%,promedio_paises,74.162445,74.769919,73.523903,63.612927,64.60693,-9.6 pp
+SOC3_URB,Hogares con acceso a energía renovable — Urbano,%,agregado_razon_sumas,73.200313,73.138924,73.140391,63.012036,61.945393,-11.3 pp

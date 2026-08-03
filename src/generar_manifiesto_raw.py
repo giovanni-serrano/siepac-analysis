@@ -77,12 +77,11 @@ def main() -> None:
         "descarga, si su fuente permite redistribuir el archivo y el hash "
         "SHA-256 de la copia con la que se verificaron los cálculos de este "
         "proyecto. Después de descargar un archivo, correr "
-        "`python src/verificar_datos_raw.py` confirma que es exactamente esa "
-        "copia (o avisa si difiere, por ejemplo porque la fuente actualizó "
-        "la serie).\n",
-        "No cubre `data/raw_equipo/` (entregables propios del equipo de "
-        "tesis, no descargas de una fuente externa) ni las fichas técnicas "
-        "en PDF (documentación de referencia, no entrada del pipeline).\n",
+        "`python src/verificar_datos_raw.py` compara la copia local con el "
+        "hash registrado y detecta cambios en el archivo de origen.\n",
+        "No cubre `data/raw_equipo/` (matrices de entrada del estudio) ni "
+        "las fichas técnicas en PDF (documentación de referencia, no "
+        "entradas del pipeline).\n",
     ]
     contenido += _tabla_resumen()
     contenido.append(
@@ -95,11 +94,9 @@ def main() -> None:
         "otros trabajos a partir de los mismos» (agenda2030lac lo opera "
         "CEPAL y hereda ese acuerdo). Ambos verificados el 2026-07-26; las "
         "citas completas están en `src/catalogo_datos_raw.py`.\n"
-        "\nEso no impide usar los datos: las dos fuentes contemplan su uso "
-        "citando la procedencia, que es lo que hace este proyecto. Lo que "
-        "no se puede es republicar sus archivos. Siguen siendo el insumo "
-        "real del pipeline — cada quien descarga su propia copia desde la "
-        "ruta indicada en su ficha.\n")
+        "\nEl uso analítico conserva la atribución de procedencia. Los "
+        "archivos descargados no se republican; el pipeline utiliza copias "
+        "locales obtenidas desde la ruta indicada en cada ficha.\n")
     contenido.append("## Fichas por variable\n")
     for e in CATALOGO_RAW:
         contenido += _ficha(e)

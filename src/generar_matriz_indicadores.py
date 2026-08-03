@@ -143,11 +143,11 @@ INDICADORES = {
         formula="=Datos_Base!D{r}/Datos_Base!T{r}",
         formula_agregado="={D}/{T}",
         calculo=lambda d: d["consumo_industrial_kwh"] / d["vai_usd_const2015"],
-        descripcion="Consumo Final Industrial (kWh) ÷ Valor Agregado Industrial "
-                     "(USD constantes 2015). El VAI en USD ya fue calculado en el "
-                     "ETL como VAI%% × PIB real.",
+        descripcion="Consumo Final Industrial (kWh) ÷ Valor Agregado "
+                     "Manufacturero (USD constantes 2015). El VAM en USD ya fue "
+                     "calculado en el ETL como VAM%% (ODS 9.2.1) × PIB real.",
         fuentes="SIELAC-OLADE (consumo industrial); CEPALSTAT ODS 9.2.1 × "
-                "Banco Mundial (VAI)",
+                "Banco Mundial (VAM)",
         num_fmt="0.0000",
     ),
     "ECO11": dict(
@@ -184,11 +184,11 @@ INDICADORES = {
         descripcion="Ingresos por energía regulada vendida (USD) ÷ energía "
                      "regulada consumida (MWh), calculado en el ETL. En USD "
                      "corrientes del año bajo análisis (no constantes). Las "
-                     "celdas sombreadas en amarillo son valores imputados vía "
-                     "CAGR de la serie histórica 2015+ (ver Datos_Base, "
+                     "celdas sombreadas en amarillo son valores calculados "
+                     "mediante CAGR de la serie histórica 2015+ (ver Datos_Base, "
                      "columna tarifa_fuente_dato).",
-        fuentes="CEPAL-SIECA (serie histórica); imputación CAGR para años "
-                "faltantes documentada en el ETL",
+        fuentes="CEPAL-SIECA (serie histórica); cálculo CAGR documentado "
+                "en el ETL",
         num_fmt="0.00",
     ),
     "ECO15": dict(
@@ -226,7 +226,7 @@ def calcular_valores(wide: pd.DataFrame) -> pd.DataFrame:
     valores = wide[["pais", "anio"]].copy()
     for codigo, info in INDICADORES.items():
         valores[codigo] = info["calculo"](wide)
-    # Bandera de imputación de la tarifa (la usan ECO14 y los visualizadores).
+    # Identificador del método aplicado a la tarifa.
     valores["tarifa_fuente_dato"] = wide["tarifa_fuente_dato"]
     return valores
 
@@ -257,7 +257,7 @@ def hoja_datos_base(wb: Workbook, wide: pd.DataFrame) -> None:
                 cel.number_format = formatos[letra]
             if letra == "B":
                 cel.number_format = "0"  # anio sin separador de miles
-        # sombrear tarifa imputada
+        # Resaltar valores calculados mediante CAGR.
         if ws.cell(row=r, column=21).value == "imputado_CAGR":
             ws.cell(row=r, column=18).fill = FILL_IMPUTADO
 
@@ -333,15 +333,15 @@ def hoja_indicador(wb: Workbook, codigo: str, info: dict,
             cel.number_format = info["num_fmt"]
     else:
         nota_agr = ws.cell(row=fila_agr + 1, column=1,
-                           value="Sin agregado regional: la fuente no "
-                                 "publica la energía regulada vendida "
-                                 "(MWh) por país para ponderar la tarifa.")
+                           value="Agregado regional no definido: la razón "
+                                 "de sumas requiere energía regulada vendida "
+                                 "(MWh) por país y año.")
         nota_agr.font = FUENTE_SUB
 
     if codigo == "ECO14":
         nota = ws.cell(row=fila_agr + 3, column=1,
-                       value="Celdas en amarillo: valores imputados vía CAGR "
-                             "(no observados). Detalle en Datos_Base, columna "
+                       value="Celdas en amarillo: valores calculados mediante "
+                             "CAGR. Detalle en Datos_Base, columna "
                              "tarifa_fuente_dato.")
         nota.font = FUENTE_SUB
 

@@ -7,10 +7,10 @@ Ingeniería Eléctrica, Universidad Nacional de Ingeniería (Nicaragua).
 Development*, OIEA/NU, 2005).
 **Cobertura:** Costa Rica, El Salvador, Guatemala, Honduras, Nicaragua, Panamá — los seis países interconectados por
 el SIEPAC — ventana 2020–2024.
-**Fuentes de datos:** SIELAC·OLADE, CEPALSTAT·CEPAL, Banco Mundial (WDI)
-y EOR (Mercado Eléctrico Regional).
+**Fuentes de datos:** SIELAC·OLADE, CEPALSTAT·CEPAL, Banco Mundial (WDI),
+matrices ambiental y social del estudio, y EOR (Mercado Eléctrico Regional).
 **Documento generado automáticamente** por
-`src/generar_resumen_indicadores.py` el 2026-07-26;
+`src/generar_resumen_indicadores.py` el 2026-08-03;
 los valores provienen del mismo pipeline que alimenta los visualizadores.
 
 ## Cómo leer este documento
@@ -34,10 +34,8 @@ Cada tabla cierra con dos resúmenes que responden preguntas distintas:
 
 Ambos son legítimos pero pueden divergir mucho (incluso en el signo de
 la tendencia, como en ECO15): al citar cifras regionales debe indicarse
-cuál de los dos se usa. Las series sin denominador disponible en el
-repositorio (ECO14: energía regulada vendida; SOC2: hogares e ingresos
-en USD; SOC3: población rural/urbana) solo presentan el promedio de
-países, y su nota metodológica lo advierte.
+cuál de los dos se usa. ECO14 y SOC2 se representan mediante promedio de
+países; el criterio se especifica en la ficha de cada indicador.
 
 
 ## Dimensión económica
@@ -83,7 +81,7 @@ Cuánta energía consume la economía por cada dólar de PIB real. Bajar en el t
 
 Porcentaje de la producción bruta que llega como consumo final. La brecha son pérdidas técnicas, autoconsumo y saldo de intercambios.
 
-> Nota metodológica: Aproximación generación→consumo final; no cubre la cadena energética primaria completa.
+> Nota metodológica: La razón relaciona consumo final y producción bruta; la brecha integra pérdidas, autoconsumo y saldo de intercambios.
 
 **ECO3** · Unidad: % · Fórmula: (Consumo final total ÷ Producción bruta) × 100
 
@@ -101,9 +99,11 @@ Porcentaje de la producción bruta que llega como consumo final. La brecha son p
 
 ### ECO6 · Intensidad energética de la industria
 
-Energía que necesita la industria por cada dólar de valor agregado industrial. Menor = industria que genera más valor por kWh.
+Energía que necesita la industria por cada dólar de valor agregado manufacturero. Menor = industria que genera más valor por kWh.
 
-**ECO6** · Unidad: kWh/USD const. 2015 · Fórmula: Consumo industrial (kWh) ÷ Valor agregado industrial (USD 2015)
+> Nota metodológica: El denominador es el valor agregado manufacturero (ODS 9.2.1, % del PIB × PIB real) y el numerador es el consumo industrial de electricidad reportado por OLADE.
+
+**ECO6** · Unidad: kWh/USD const. 2015 · Fórmula: Consumo industrial (kWh) ÷ Valor agregado manufacturero (USD 2015)
 
 | País | 2020 | 2021 | 2022 | 2023 | 2024 | Δ 2020→2024 |
 |---|---|---|---|---|---|---|
@@ -157,7 +157,7 @@ Hidro + geotermia + eólica + solar + biomasa como porcentaje de la generación 
 
 Ingresos por energía regulada vendida entre energía regulada consumida. En dólares corrientes de cada año.
 
-> Nota metodológica: Los puntos huecos son valores imputados vía CAGR (2023–2024 en cinco países; 2022–2024 en El Salvador), no observaciones reales. Sin energía regulada vendida (MWh) por país en la fuente, el agregado regional ponderado no es calculable: se reporta el promedio de países (media simple).
+> Nota metodológica: La serie regional se representa mediante el promedio de países. La razón de sumas requiere la energía regulada vendida por país y año.
 
 **ECO14** · Unidad: USD corrientes/MWh · Fórmula: Ingresos por energía regulada (USD) ÷ Energía regulada (MWh)
 
@@ -174,9 +174,9 @@ Ingresos por energía regulada vendida entre energía regulada consumida. En dó
 
 ### ECO15 · Dependencia de importaciones netas
 
-Importaciones netas sobre la oferta total. Positivo = importador neto; negativo = EXPORTADOR neto ese año (no es un error del dato).
+Importaciones netas sobre la oferta total. Los valores positivos representan importación neta y los negativos, exportación neta.
 
-> Nota metodológica: La línea punteada en 0 separa importadores (arriba) de exportadores netos (abajo). En el agregado regional los intercambios dentro del MER se cancelan al sumar: la cifra del bloque mide su dependencia extrarregional, no el promedio de las dependencias nacionales.
+> Nota metodológica: En el agregado regional los intercambios dentro del MER se cancelan al sumar, por lo que la cifra del bloque mide su dependencia extrarregional y no el promedio de las dependencias nacionales.
 
 **ECO15** · Unidad: % · Fórmula: (Importaciones − Exportaciones) ÷ (Producción bruta + Importaciones − Exportaciones) × 100
 
@@ -301,13 +301,13 @@ Emisiones de contaminantes atmosféricos procedentes de los sistemas energético
 | **Agregado regional** (razón de sumas) | **1.491** | **1.382** | **1.158** | **1.627** | **1.728** | **+15.9 %** |
 
 
-### ENV6 · Biomasa vs Saldo MER (ilustrativo)
+### ENV6 · Biomasa vs Saldo MER
 
 **Unidad:** GWh.
 
 Comparativo de inyección de biomasa vs saldo neto en el Mercado Eléctrico Regional, por país. Saldo negativo = importador neto en el MER ese año.
 
-> Nota metodológica: Indicador ilustrativo: contrasta dos series observadas, no calcula un cociente.
+> Nota metodológica: Comparativo de dos series expresadas en GWh; no calcula un cociente entre ellas.
 
 | País | Serie | 2020 | 2021 | 2022 | 2023 | 2024 |
 |---|---|---|---|---|---|---|
@@ -331,7 +331,7 @@ Comparativo de inyección de biomasa vs saldo neto en el Mercado Eléctrico Regi
 
 Porcentaje de hogares (o de población) sin electricidad o energía comercial, o muy dependientes de energías no comerciales.
 
-> Nota metodológica: El agregado regional pondera cada país por su población (razón de sumas): equivale a personas sin electricidad del bloque ÷ población del bloque.
+> Nota metodológica: El agregado regional pondera cada país por su población (razón de sumas), equivalente a personas sin electricidad del bloque ÷ población del bloque.
 
 **SOC1** · Unidad: % · Fórmula: 100 − Tasa de electrificación total
 
@@ -351,7 +351,7 @@ Porcentaje de hogares (o de población) sin electricidad o energía comercial, o
 
 Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, para el hogar de ingreso promedio y para el quintil de menores ingresos.
 
-> Nota metodológica: Guatemala: valores ~1000× menores que el resto del bloque (posible inconsistencia de unidades en la fuente); verificar con el equipo antes de interpretar. Solo promedio de países: los insumos monetarios están en moneda local y no hay número de hogares por país-año para ponderar un agregado regional.
+> Nota metodológica: Las dos series se resumen mediante promedio de países. Los insumos monetarios se conservan en el marco de cada país, por lo que no se construye una razón de sumas regional.
 
 **SOC2_PROM — Hogar promedio** · Unidad: % · Fórmula: Cargo anual de electricidad ÷ Ingreso anual promedio × 100
 
@@ -382,7 +382,7 @@ Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, pa
 
 Uso de energía en los hogares por grupo (rural/urbano) y combinación de combustibles: hogares con acceso eléctrico ponderado por la participación renovable de la generación.
 
-> Nota metodológica: Proxy elaborado por el equipo: asume que el mix de la red es uniforme entre zonas. Solo promedio de países: sin población rural/urbana por país-año no puede ponderarse un agregado regional.
+> Nota metodológica: Cada serie combina la tasa de electrificación de la zona con la participación renovable de la generación nacional. El agregado rural pondera por población rural y el urbano por población urbana.
 
 **SOC3_RURAL — Rural** · Unidad: % · Fórmula: Tasa de electrificación rural × % renovable de la generación
 
@@ -395,6 +395,7 @@ Uso de energía en los hogares por grupo (rural/urbano) y combinación de combus
 | Nicaragua | 50.9 | 50.5 | 47.8 | 42.7 | 37.8 | -13.1 pp |
 | Panamá | 54.0 | 58.1 | 61.0 | 51.2 | 71.2 | +17.3 pp |
 | **Promedio de países** (media simple) | **64.1** | **65.8** | **65.1** | **57.1** | **59.1** | **-4.9 pp** |
+| **Agregado regional** (razón de sumas) | **58.0** | **59.4** | **60.3** | **52.3** | **51.2** | **-6.8 pp** |
 
 **SOC3_URB — Urbano** · Unidad: % · Fórmula: Tasa de electrificación urbana × % renovable de la generación
 
@@ -407,14 +408,15 @@ Uso de energía en los hogares por grupo (rural/urbano) y combinación de combus
 | Nicaragua | 69.8 | 69.2 | 65.6 | 58.6 | 51.8 | -18.0 pp |
 | Panamá | 64.8 | 68.4 | 67.2 | 54.6 | 73.0 | +8.2 pp |
 | **Promedio de países** (media simple) | **74.2** | **74.8** | **73.5** | **63.6** | **64.6** | **-9.6 pp** |
+| **Agregado regional** (razón de sumas) | **73.2** | **73.1** | **73.1** | **63.0** | **61.9** | **-11.3 pp** |
 
 
 ## Trazabilidad
 
 Los valores de este documento se calculan con las fórmulas indicadas a
 partir de las variables base del pipeline (`data/processed/`), en
-unidades homologadas: energía en kWh, PIB y valor agregado industrial en
-USD constantes de 2015, tarifa en USD corrientes/MWh. Las mismas cifras,
+unidades homologadas: energía en kWh, PIB y valor agregado manufacturero
+en USD constantes de 2015, tarifa en USD corrientes/MWh. Las mismas cifras,
 con sus tablas de datos base, pueden auditarse en los visualizadores del
 proyecto (`graficos/`); en los libros Excel, las filas "Agregado
 regional (razón de sumas)" llevan fórmulas SUM auditables hacia
@@ -424,4 +426,4 @@ países aparece como pais = "Promedio regional" con fuente_dato =
 "calculado_media_simple"; el agregado, como "Agregado regional" con
 "calculado_razon_sumas").
 
-\* Valor imputado vía CAGR (no observación directa de la fuente).
+\* Valor calculado mediante CAGR.

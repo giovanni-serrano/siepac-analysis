@@ -56,8 +56,7 @@ def extraer_datos(path_excel: Path, hoja: str) -> pd.DataFrame:
 
     A diferencia de los archivos SIELAC-OLADE (bloques verticales por anio),
     aqui cada fila ya es un registro individual: pais, sexo, anio, valor.
-    No hay que iterar detectando encabezados de bloque; solo filtrar y
-    renombrar columnas.
+    El formato tabular permite filtrar y renombrar columnas directamente.
     """
     df_raw = pd.read_excel(path_excel, sheet_name=hoja)
 

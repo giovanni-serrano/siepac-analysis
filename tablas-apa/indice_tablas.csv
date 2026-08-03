@@ -14,8 +14,8 @@
 13,Datos base (económica),eco,exportaciones_kwh,"Exportaciones de electricidad por país, 2020–2024",individuales/Tabla_13_exportaciones-kwh.html
 14,Datos base (económica),eco,poblacion_habitantes,"Población total por país, 2020–2024",individuales/Tabla_14_poblacion-habitantes.html
 15,Datos base (económica),eco,pib_usd_const2015,"Producto interno bruto real por país, 2020–2024",individuales/Tabla_15_pib-usd-const2015.html
-16,Datos base (económica),eco,vai_usd_const2015,"Valor agregado industrial por país, 2020–2024",individuales/Tabla_16_vai-usd-const2015.html
-17,Datos base (económica),eco,vai_pct_pib,"Participación del valor agregado industrial en el PIB por país, 2020–2024",individuales/Tabla_17_vai-pct-pib.html
+16,Datos base (económica),eco,vai_usd_const2015,"Valor agregado manufacturero por país, 2020–2024",individuales/Tabla_16_vai-usd-const2015.html
+17,Datos base (económica),eco,vai_pct_pib,"Participación del valor agregado manufacturero en el PIB por país, 2020–2024",individuales/Tabla_17_vai-pct-pib.html
 18,Datos base (económica),eco,tarifa_usd_mwh,"Precio medio de la electricidad regulada por país, 2020–2024",individuales/Tabla_18_tarifa-usd-mwh.html
 19,Datos base (ambiental),env,emisiones_gei_10e3t,"Emisiones de gases de efecto invernadero de las centrales eléctricas por país, 2020–2024",individuales/Tabla_19_emisiones-gei-10e3t.html
 20,Datos base (ambiental),env,so2_10e3t,"Emisiones de dióxido de azufre de las centrales eléctricas por país, 2020–2024",individuales/Tabla_20_so2-10e3t.html
@@ -48,3 +48,27 @@
 47,Indicadores (social),soc,SOC2_POBRE,"Ingreso destinado a electricidad (SOC2_POBRE), Quintil más pobre, por país, 2020–2024",individuales/Tabla_47_soc2-pobre.html
 48,Indicadores (social),soc,SOC3_RURAL,"Hogares con acceso a energía renovable (SOC3_RURAL), Rural, por país, 2020–2024",individuales/Tabla_48_soc3-rural.html
 49,Indicadores (social),soc,SOC3_URB,"Hogares con acceso a energía renovable (SOC3_URB), Urbano, por país, 2020–2024",individuales/Tabla_49_soc3-urb.html
+50,Estadística descriptiva del bloque (económica),eco,BLOQUE_TENDENCIA,"Nivel y tendencia del bloque SIEPAC por indicador económico, 2020–2024",individuales/Tabla_50_bloque-tendencia.html
+51,Estadística descriptiva del bloque (económica),eco,BLOQUE_HET_ECO1,"Estadística descriptiva de Uso de energía per cápita (ECO1) entre los países del SIEPAC, por año, 2020–2024",individuales/Tabla_51_bloque-het-eco1.html
+52,Estadística descriptiva del bloque (económica),eco,BLOQUE_HET_ECO2,"Estadística descriptiva de Uso de energía por unidad de PIB (ECO2) entre los países del SIEPAC, por año, 2020–2024",individuales/Tabla_52_bloque-het-eco2.html
+53,Estadística descriptiva del bloque (económica),eco,BLOQUE_HET_ECO3,"Estadística descriptiva de Eficiencia de conversión y distribución (ECO3) entre los países del SIEPAC, por año, 2020–2024",individuales/Tabla_53_bloque-het-eco3.html
+54,Estadística descriptiva del bloque (económica),eco,BLOQUE_HET_ECO6,"Estadística descriptiva de Intensidad energética de la industria (ECO6) entre los países del SIEPAC, por año, 2020–2024",individuales/Tabla_54_bloque-het-eco6.html
+55,Estadística descriptiva del bloque (económica),eco,BLOQUE_HET_ECO11,"Estadística descriptiva de Fósiles en la electricidad (ECO11) entre los países del SIEPAC, por año, 2020–2024",individuales/Tabla_55_bloque-het-eco11.html
+56,Estadística descriptiva del bloque (económica),eco,BLOQUE_HET_ECO13,"Estadística descriptiva de Renovables en la electricidad (ECO13) entre los países del SIEPAC, por año, 2020–2024",individuales/Tabla_56_bloque-het-eco13.html
+57,Estadística descriptiva del bloque (económica),eco,BLOQUE_HET_ECO14,"Estadística descriptiva de Precio medio de la electricidad (ECO14) entre los países del SIEPAC, por año, 2020–2024",individuales/Tabla_57_bloque-het-eco14.html
+58,Estadística descriptiva del bloque (económica),eco,BLOQUE_HET_ECO15,"Estadística descriptiva de Dependencia de importaciones netas (ECO15) entre los países del SIEPAC, por año, 2020–2024",individuales/Tabla_58_bloque-het-eco15.html
+59,Estadística descriptiva del bloque (económica),eco,BLOQUE_CONVERGENCIA,"Convergencia sigma entre los países del SIEPAC por indicador económico, 2020–2024",individuales/Tabla_59_bloque-convergencia.html
+60,Estadística descriptiva del bloque (social),soc,BLOQUE_SOC_TENDENCIA,"Nivel y tendencia regional de los indicadores sociales agregables del SIEPAC, 2020–2024",individuales/Tabla_60_bloque-soc-tendencia.html
+61,Estadística descriptiva del bloque (social),soc,BLOQUE_SOC_HETEROGENEIDAD,"Heterogeneidad de los indicadores sociales entre los países del SIEPAC, 2020 y 2024",individuales/Tabla_61_bloque-soc-heterogeneidad.html
+62,Estadística descriptiva del bloque (social),soc,BLOQUE_SOC2_DESCRIPTIVOS,"Estadística descriptiva anual del ingreso destinado a electricidad en los países del SIEPAC, 2020–2024",individuales/Tabla_62_bloque-soc2-descriptivos.html
+63,Estadística descriptiva del bloque (social),soc,BLOQUE_SOC2_CAMBIO,Cambio en el nivel y la dispersión de SOC2 entre 2020 y 2024,individuales/Tabla_63_bloque-soc2-cambio.html
+64,Estadística descriptiva del bloque (ambiental),env,BLOQUE_ENV_TENDENCIA,"Nivel y tendencia regional de los indicadores ambientales del SIEPAC, 2020–2024",individuales/Tabla_64_bloque-env-tendencia.html
+65,Estadística descriptiva del bloque (ambiental),env,BLOQUE_HET_ENV1_PC,"Estadística descriptiva de Emisiones de GEI del sector eléctrico (ENV1_PC), Per cápita, entre los países del SIEPAC, 2020–2024",individuales/Tabla_65_bloque-het-env1-pc.html
+66,Estadística descriptiva del bloque (ambiental),env,BLOQUE_HET_ENV1_PIB,"Estadística descriptiva de Emisiones de GEI del sector eléctrico (ENV1_PIB), Por unidad de PIB, entre los países del SIEPAC, 2020–2024",individuales/Tabla_66_bloque-het-env1-pib.html
+67,Estadística descriptiva del bloque (ambiental),env,BLOQUE_HET_ENV2_SO2_PC,"Estadística descriptiva de Contaminantes atmosféricos urbanos (ENV2_SO2_PC), SO₂ per cápita, entre los países del SIEPAC, 2020–2024",individuales/Tabla_67_bloque-het-env2-so2-pc.html
+68,Estadística descriptiva del bloque (ambiental),env,BLOQUE_HET_ENV2_PAR_PC,"Estadística descriptiva de Contaminantes atmosféricos urbanos (ENV2_PAR_PC), Partículas per cápita, entre los países del SIEPAC, 2020–2024",individuales/Tabla_68_bloque-het-env2-par-pc.html
+69,Estadística descriptiva del bloque (ambiental),env,BLOQUE_HET_ENV2_SO2_PIB,"Estadística descriptiva de Contaminantes atmosféricos urbanos (ENV2_SO2_PIB), SO₂ por PIB, entre los países del SIEPAC, 2020–2024",individuales/Tabla_69_bloque-het-env2-so2-pib.html
+70,Estadística descriptiva del bloque (ambiental),env,BLOQUE_HET_ENV2_PAR_PIB,"Estadística descriptiva de Contaminantes atmosféricos urbanos (ENV2_PAR_PIB), Partículas por PIB, entre los países del SIEPAC, 2020–2024",individuales/Tabla_70_bloque-het-env2-par-pib.html
+71,Estadística descriptiva del bloque (ambiental),env,BLOQUE_HET_ENV3,"Estadística descriptiva de Emisiones atmosféricas del sistema (ENV3), Escala eléctrica, entre los países del SIEPAC, 2020–2024",individuales/Tabla_71_bloque-het-env3.html
+72,Estadística descriptiva del bloque (ambiental),env,BLOQUE_ENV_CONVERGENCIA,"Convergencia sigma entre los países del SIEPAC por indicador ambiental, 2020–2024",individuales/Tabla_72_bloque-env-convergencia.html
+73,Estadística descriptiva del bloque (ambiental),env,BLOQUE_ENV6_DESCRIPTIVOS,"Estadística descriptiva anual de la inyección de biomasa y el saldo neto en el MER (ENV6) entre los países del SIEPAC, 2020–2024",individuales/Tabla_73_bloque-env6-descriptivos.html

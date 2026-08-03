@@ -1,14 +1,13 @@
 """
 run_pipeline.py — Orquestador del pipeline completo
 ====================================================
-Etapa del pipeline : orquestación (ejecuta los 18 scripts en orden)
+Etapa del pipeline : orquestación (ejecuta los scripts en orden)
 Entradas           : — (cada script lee sus propias entradas)
 Salidas            : — (las de cada script: CSVs, Excel, HTML y PNG)
 
 Ejecuta los ETL, la consolidación, los generadores de indicadores, las
 tablas APA, los dos visualizadores y la exportación de gráficos a PNG en
-el orden correcto
-de dependencias, y se detiene en el primer script que termine con error
+el orden correcto de dependencias y se detiene en el primer script con error
 (incluida una VALIDACIÓN FALLIDA).
 
 Uso:  python src/run_pipeline.py   (ejecutar desde la raíz del proyecto)
@@ -22,12 +21,13 @@ from pathlib import Path
 
 SRC = Path(__file__).resolve().parent
 
-# Orden de ejecución. La única dependencia entre ETL es que
-# etl_valor_agregado_industrial necesita pib.csv (por eso va después).
+# Orden de ejecución: la población por zona se contrasta con población total
+# y el valor agregado industrial requiere el PIB procesado.
 ORDEN = [
     "etl_consumo_final_total.py",
     "etl_consumo_industrial.py",
     "etl_poblacion_total.py",
+    "etl_poblacion_rural_urbana.py",
     "etl_pib.py",
     "etl_valor_agregado_industrial.py",
     "etl_produccion_bruta.py",

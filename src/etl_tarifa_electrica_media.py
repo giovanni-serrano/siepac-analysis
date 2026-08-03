@@ -10,12 +10,10 @@ Fuente de datos    : CEPAL / SIECA-CRIE
 Uso:  python src/etl_tarifa_electrica_media.py   (ejecutar desde la raíz)
 
 Notas metodológicas:
-  - Se distinguen DOS ventanas de años: la SERIE HISTÓRICA completa
-    (2015+, toda la data real por país) se usa SOLO para calcular el
-    CAGR; la VENTANA DE ANÁLISIS (2020-2024) es lo que se exporta.
-  - Los años de la ventana sin dato regulado (2023-2024 en cinco países;
-    2022-2024 en El Salvador) se proyectan hacia adelante con el CAGR de
-    la serie histórica del país y se marcan fuente_dato=imputado_CAGR.
+  - La serie histórica completa se utiliza para calcular el CAGR; la salida
+    se restringe a la ventana de análisis 2020-2024.
+  - Los valores proyectados se identifican con
+    fuente_dato=imputado_CAGR.
   - ECO14 se mantiene en USD corrientes/MWh (no constantes), según la
     definición metodológica del proyecto (ver README, Notas metodológicas).
 
@@ -47,22 +45,19 @@ HOJA = "datos"
 
 PAISES_VALIDOS = set(PAISES_SIEPAC)
 
-# --- 2. Las dos ventanas, ahora separadas ---
+# --- 2. Ventanas temporales ---
 
 # Ventana de analisis = lo que se exporta (contexto de la monografia);
 # viene de config_siepac.ANIOS_ANALISIS (2020-2024).
 
-# La serie historica para el CAGR NO se fija aqui: se toma, para cada pais,
-# todo el rango de datos reales que traiga el Excel (2015-2022). Asi, si en
-# el futuro la fuente agrega mas anios, el CAGR se recalcula solo.
+# El CAGR utiliza todo el intervalo histórico disponible para cada país.
 
 
 def extraer_datos(path_excel: Path, hoja: str) -> pd.DataFrame:
     """Lee la hoja 'datos' (formato tabular CEPAL) y devuelve un DataFrame tidy.
 
-    IMPORTANTE: aqui NO se filtra por anio. Se conservan todos los anios
-    reales (2015-2022) porque los anios previos a 2020 son necesarios para
-    calcular un CAGR estable, aunque luego no se exporten.
+    La extracción conserva la serie histórica completa para calcular el
+    CAGR antes de aplicar la ventana de análisis.
     Se filtra por 'Tipo regulación' == 'Regulado' y 'Sector' == 'Total',
     y se descartan filas sin valor.
     """
@@ -80,7 +75,7 @@ def extraer_datos(path_excel: Path, hoja: str) -> pd.DataFrame:
         "value": "valor_usd_mwh",
     })[["pais", "anio", "valor_usd_mwh"]]
 
-    # Descartar filas sin dato real (por si la fuente trae celdas vacias)
+    # Excluir celdas vacías antes del cálculo temporal.
     df_tidy = df_tidy.dropna(subset=["valor_usd_mwh"]).copy()
     df_tidy["anio"] = df_tidy["anio"].astype(int)
 
@@ -90,22 +85,20 @@ def extraer_datos(path_excel: Path, hoja: str) -> pd.DataFrame:
 def calcular_cagr(valor_inicial: float, valor_final: float, n_periodos: int) -> float:
     """CAGR = (valor_final / valor_inicial) ** (1 / n_periodos) - 1
 
-    n_periodos = numero de anios entre el primer y el ultimo dato REAL.
+    n_periodos = número de años entre los extremos de la serie histórica.
     """
     return (valor_final / valor_inicial) ** (1 / n_periodos) - 1
 
 
 def proyectar_faltantes(df_tidy: pd.DataFrame) -> pd.DataFrame:
-    """Proyecta con CAGR los anios de la VENTANA DE ANALISIS que no tienen
-    dato real.
+    """Completa la ventana de análisis mediante proyección CAGR.
 
     Logica por pais:
-    1. Se toma la serie historica real completa (todos los anios reales).
-    2. Se calcula el CAGR entre el primer y el ultimo anio real disponible.
-    3. Se identifican los anios de ANIOS_ANALISIS que faltan.
-    4. Cada anio faltante se proyecta HACIA ADELANTE desde el ultimo anio
-       real:  valor = valor_ultimo_real * (1 + CAGR) ** (anio - anio_ultimo_real)
-       (todos los faltantes aqui son posteriores al ultimo dato real).
+    1. Se toma la serie histórica disponible.
+    2. Se calcula el CAGR entre el primer y el último año.
+    3. Se identifican los años por completar en ANIOS_ANALISIS.
+    4. Cada año se proyecta desde el último valor histórico:
+       valor = valor_ultimo * (1 + CAGR) ** (anio - anio_ultimo)
     5. Cada fila proyectada se marca con fuente_dato = "imputado_CAGR".
     """
     filas_finales = []
@@ -134,7 +127,7 @@ def proyectar_faltantes(df_tidy: pd.DataFrame) -> pd.DataFrame:
             for anio in faltantes:
                 if cagr is None:
                     continue
-                delta = anio - ultimo_anio  # siempre >= 1 (proyeccion adelante)
+                delta = anio - ultimo_anio
                 valor_proyectado = v_ultimo * (1 + cagr) ** delta
                 serie.loc[anio] = valor_proyectado
                 log.info("  -> %s %d: proyectado = %.4f (base %d = %.4f, +%d anio/s)",
@@ -154,12 +147,11 @@ def proyectar_faltantes(df_tidy: pd.DataFrame) -> pd.DataFrame:
 def transformar(df_tidy: pd.DataFrame) -> pd.DataFrame:
     """Recorta a la VENTANA DE ANALISIS (2020-2024) y da formato final.
 
-    Aqui es donde se descartan los anios 2015-2019, que solo servian para
-    el CAGR. ECO14 se mantiene en USD corrientes (no se convierte a
-    constantes), segun la definicion metodologica del proyecto.
+    Los años anteriores a la ventana se utilizan únicamente para calcular
+    el CAGR. ECO14 se mantiene en USD corrientes.
     """
     df_tidy = df_tidy.copy()
-    df_tidy = df_tidy[df_tidy["anio"].isin(ANIOS_ANALISIS)]  # <- recorte a la ventana
+    df_tidy = df_tidy[df_tidy["anio"].isin(ANIOS_ANALISIS)]
     df_tidy["fuente"] = "CEPAL-SIECA"
     df_tidy = df_tidy[["pais", "anio", "valor_usd_mwh", "fuente_dato", "fuente"]]
     df_tidy = df_tidy.sort_values(["anio", "pais"]).reset_index(drop=True)
@@ -167,9 +159,7 @@ def transformar(df_tidy: pd.DataFrame) -> pd.DataFrame:
 
 
 def validar(df_tidy: pd.DataFrame) -> None:
-    """Chequeos antes de guardar. Los problemas graves (nulos en el valor,
-    paises inesperados) abortan sin escribir el CSV; el conteo de filas
-    distinto al esperado solo avisa."""
+    """Valida cobertura, valores y países antes de escribir el CSV."""
     errores_graves = []
 
     n_esperado = len(PAISES_VALIDOS) * len(ANIOS_ANALISIS)

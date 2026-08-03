@@ -41,32 +41,24 @@ log = logging.getLogger(Path(__file__).stem)
 
 # ======================================================================
 # CONFIGURACIÓN
-# Todo lo que podría cambiar está aquí arriba, en un solo lugar.
 # ======================================================================
 
-# Indicador que ESPERAMOS encontrar. Si el archivo trae otro, el script
-# se detiene en vez de procesar una serie equivocada por accidente.
+# Código del indicador requerido para este ETL.
 INDICADOR_ESPERADO = "NY.GDP.MKTP.KD"
 
-# Los 6 países del SIEPAC, identificados por su código ISO3.
-# Filtramos por CÓDIGO y no por nombre a propósito: el nombre cambia de
-# grafía entre fuentes (el Banco Mundial en español escribe "Panamá" CON
-# tilde; otras fuentes escriben "Panama" sin tilde). El código ISO3 es
-# estable y no sufre ese problema. El valor de este diccionario es el que
-# queda en la columna 'pais' del CSV de salida (grafía canónica del
-# proyecto, definida en config_siepac).
+# Los códigos ISO3 estabilizan la unión frente a variaciones ortográficas
+# en los nombres de país. Los valores contienen la grafía canónica de salida.
 CODIGOS_SIEPAC = CODIGOS_ISO3
 
 # Ventana de análisis de la tesis (definida una sola vez en config_siepac).
 ANIO_INICIO = ANIOS_ANALISIS[0]
 ANIO_FIN = ANIOS_ANALISIS[-1]
 
-# Los export del Banco Mundial traen 4 filas de metadatos ("Data Source",
-# "Last Updated Date", etc.) ANTES de la tabla real. Hay que saltarlas.
+# Los archivos exportados por el Banco Mundial anteponen cuatro filas de
+# metadatos a la tabla de datos.
 FILAS_METADATOS = 4
 
-# Etiqueta de fuente para trazabilidad (la "Ficha de Registro Documental"
-# del protocolo: de dónde salió el dato y en qué unidad original).
+# Etiqueta de procedencia y unidad original incluida en el CSV procesado.
 FUENTE = ("Banco Mundial - Indicadores del Desarrollo Mundial - "
           "NY.GDP.MKTP.KD (PIB US$ constantes 2015)")
 
@@ -78,7 +70,7 @@ FUENTE = ("Banco Mundial - Indicadores del Desarrollo Mundial - "
 def extraer_datos(ruta_csv: Path) -> pd.DataFrame:
     """Lee el CSV crudo del Banco Mundial y devuelve el DataFrame completo.
 
-    Dos detalles del formato del Banco Mundial que hay que respetar:
+    Particularidades del formato del Banco Mundial:
       1) skiprows=FILAS_METADATOS  -> las 4 primeras líneas son metadatos.
       2) encoding='utf-8-sig'      -> el archivo trae un BOM invisible al
          inicio; sin 'utf-8-sig' la primera columna se llamaría
@@ -98,21 +90,19 @@ def transformar(df: pd.DataFrame) -> pd.DataFrame:
     """Filtra, valida el indicador, pasa a formato tidy y aplica moneda."""
 
     # --- 2.1 Verificar que el indicador es el correcto -----------------
-    # Si el archivo tuviera otra serie (PIB nominal, per cápita, etc.),
-    # nos detenemos aquí en vez de procesar la serie equivocada.
+    # La validación impide procesar una serie distinta de la configurada.
     codigos_indicador = list(df["Indicator Code"].dropna().unique())
     if codigos_indicador != [INDICADOR_ESPERADO]:
         raise ValueError(
-            f"Indicador inesperado. Esperaba SOLO '{INDICADOR_ESPERADO}' "
-            f"pero el archivo contiene: {codigos_indicador}. "
-            f"DETENIDO para no procesar la serie equivocada."
+            f"Indicador inesperado: se requiere '{INDICADOR_ESPERADO}' "
+            f"y el archivo contiene {codigos_indicador}."
         )
     log.info("Indicador verificado: %s", INDICADOR_ESPERADO)
 
     # --- 2.2 Filtrar a los 6 países SIEPAC por código ISO3 -------------
     df_siepac = df[df["Country Code"].isin(CODIGOS_SIEPAC.keys())].copy()
 
-    # Avisar si falta algún país (nunca inventamos filas).
+    # Comparar la cobertura geográfica con la configuración del proyecto.
     faltantes = set(CODIGOS_SIEPAC.keys()) - set(df_siepac["Country Code"])
     if faltantes:
         log.warning("Faltan países SIEPAC en el archivo: %s", faltantes)
@@ -137,8 +127,7 @@ def transformar(df: pd.DataFrame) -> pd.DataFrame:
 
     # --- 2.5 Limpieza y validación de cada valor ------------------------
     tidy["anio"] = tidy["anio"].astype(int)
-    # Forzar a numérico: lo que no sea número (celda vacía, "..") se vuelve
-    # NaN. NO se inventa ni se rellena con cero.
+    # Convertir marcadores no numéricos y celdas vacías a NaN.
     tidy["valor_bruto"] = pd.to_numeric(tidy["valor_bruto"], errors="coerce")
 
     # Reportar y descartar filas sin dato.
@@ -149,13 +138,9 @@ def transformar(df: pd.DataFrame) -> pd.DataFrame:
                     nulos, detalle.to_string(index=False))
     tidy = tidy.dropna(subset=["valor_bruto"])
 
-    # --- 2.6 REGLA DE MONEDA del proyecto -------------------------------
-    # El PIB es variable macroeconómica: USD constantes 2015, VALOR ENTERO.
-    # La regla dice "si el dato viene en millones de USD, multiplicar por
-    # 1,000,000". EN LA INSPECCIÓN SE VERIFICÓ que el Banco Mundial ya
-    # entrega USD ABSOLUTOS (ej. Costa Rica 2024 ~ 7.6e10 = ~76 mil
-    # millones USD = su PIB real). Por lo tanto NO se multiplica por
-    # 1,000,000. Solo se redondea a entero.
+    # --- 2.6 Normalización monetaria -------------------------------------
+    # NY.GDP.MKTP.KD se expresa en USD constantes de 2015. El valor se
+    # conserva en USD absolutos y se redondea al entero más cercano.
     tidy["valor_usd"] = tidy["valor_bruto"].round(0).astype("int64")
 
     # --- 2.7 Formato final tidy del proyecto ----------------------------
@@ -176,33 +161,26 @@ def transformar(df: pd.DataFrame) -> pd.DataFrame:
 # ======================================================================
 
 def validar(df: pd.DataFrame) -> None:
-    """Chequeos de calidad antes de guardar. Los problemas graves (nulos,
-    PIB no positivo o de magnitud implausible, años fuera de rango)
-    abortan sin escribir el CSV; el conteo de filas distinto al esperado
-    solo avisa."""
+    """Valida cobertura, rango temporal y magnitudes antes de guardar."""
     errores_graves = []
 
     # a) No debe haber nulos en el resultado final.
     if df.isna().any().any():
         errores_graves.append("Hay valores nulos en el resultado final.")
 
-    # b) Conteo esperado: 6 países x 5 años = 30 (si todo está completo).
-    #    Puede ser normal si falta algún año en la fuente: solo avisa.
+    # b) Conteo esperado: 6 países x 5 años = 30.
     esperado = len(CODIGOS_SIEPAC) * (ANIO_FIN - ANIO_INICIO + 1)
     if df.shape[0] != esperado:
         log.warning("Se esperaban %d filas (6 países x 5 años) pero hay %d. "
                     "Revisar si falta algún año en la fuente.",
                     esperado, df.shape[0])
 
-    # c) El PIB debe ser positivo y de magnitud plausible.
-    #    Umbral de mil millones: si algo cae por debajo, sospechar que la
-    #    unidad quedó mal (p. ej. millones sin convertir).
+    # c) El PIB debe ser positivo y superar el umbral mínimo configurado.
     if (df["valor_usd"] <= 0).any():
         errores_graves.append("Hay valores de PIB <= 0, lo cual es imposible.")
     if (df["valor_usd"] < 1_000_000_000).any():
         errores_graves.append(
-            "Hay PIB < mil millones USD: sospechoso, revisar la unidad "
-            "(posibles millones sin convertir o serie equivocada)."
+            "Hay PIB < mil millones USD; verificar unidad y serie de origen."
         )
 
     # d) Los años deben estar dentro del rango pedido.

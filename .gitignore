@@ -54,11 +54,13 @@ graficos/soc/
 
 # Tablas APA: se versionan el documento HTML, el índice y el README (el
 # producto curado); se ignoran el .docx —binario que git no puede
-# comparar y que Word regenera en segundos— y las 49 tablas sueltas, que
+# comparar y que Word regenera en segundos— y las 73 tablas sueltas, que
 # son copias de conveniencia del mismo documento. Todo se reconstruye
 # con generar_tablas_apa.py.
 tablas-apa/*.docx
 tablas-apa/individuales/
+tablas-apa/ANALISIS_SOC2_TESIS.md
+tablas-apa/matriz_poblacion_rural_urbana_*.xlsx
 
 # Datos crudos cuyas fuentes prohíben redistribuir el archivo descargado
 # (ambos términos verificados el 2026-07-26; las citas textuales están en

@@ -10,12 +10,11 @@ Fuente de datos    : SIELAC-OLADE (Series de oferta y demanda)
 Uso:  python src/etl_produccion_bruta.py   (ejecutar desde la raíz del proyecto)
 
 Notas metodológicas:
-  - Estructura del raw (verificada por inspección): una sola hoja con 5
+  - Estructura del archivo: una sola hoja con 5
     bloques, uno por año; cada bloque trae fila título "Producción - AAAA",
     encabezados (23 energéticos), unidades y 6 filas de países.
-  - Decisión metodológica (validada con tutor): no existe una fila
-    "Producción Bruta Total"; se usa la columna "Electricidad" (GWh),
-    que corresponde a la generación eléctrica bruta de cada país.
+  - La columna "Electricidad" (GWh) contiene la generación eléctrica
+    bruta de cada país.
 
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
@@ -118,7 +117,7 @@ def _a_numero(valor):
 
 def _procesar_bloque(filas: list[list], idx_titulo: int, anio: int) -> list[dict]:
     """Procesa un bloque anual. Devuelve registros tidy o [] si el bloque
-    no se puede delimitar con confianza (loggea el motivo y lo salta)."""
+    no se puede delimitar mediante las etiquetas esperadas."""
 
     # --- Encabezados (fila siguiente al título) ---
     if idx_titulo + 2 >= len(filas):
@@ -128,7 +127,7 @@ def _procesar_bloque(filas: list[list], idx_titulo: int, anio: int) -> list[dict
     encabezados = [_celda_texto(c).lower() for c in filas[idx_titulo + 1]]
     unidades = [_celda_texto(c).lower() for c in filas[idx_titulo + 2]]
 
-    # Localizar la columna 'Electricidad' por nombre, nunca por posición
+    # Localizar la columna ``Electricidad`` por nombre.
     try:
         col = encabezados.index(COLUMNA_OBJETIVO)
     except ValueError:

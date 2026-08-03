@@ -6,8 +6,7 @@ Etapa del pipeline : consolidación de resultados (posterior a
 Entradas           : data/processed/indicadores_ECO_valores.csv,
                      indicadores_ECO_SIEPAC.xlsx y, si existen, los libros
                      ENV/SOC (todo vía viz_comun.cargar_datos/leer_series_extra)
-Salidas            : docs/resumen_indicadores_SIEPAC.md (fichas + tablas,
-                     legible por humanos y por asistentes de IA) y
+Salidas            : docs/resumen_indicadores_SIEPAC.md (fichas + tablas) y
                      data/processed/indicadores_consolidados_tidy.csv
                      (una fila por serie-país-año, formato máquina)
 Alimenta           : — (insumo para el análisis cualitativo de la tesis)
@@ -153,8 +152,8 @@ Ingeniería Eléctrica, Universidad Nacional de Ingeniería (Nicaragua).
 Development*, OIEA/NU, 2005).
 **Cobertura:** {', '.join(PAISES)} — los seis países interconectados por
 el SIEPAC — ventana {ANIOS[0]}–{ANIOS[-1]}.
-**Fuentes de datos:** SIELAC·OLADE, CEPALSTAT·CEPAL, Banco Mundial (WDI)
-y EOR (Mercado Eléctrico Regional).
+**Fuentes de datos:** SIELAC·OLADE, CEPALSTAT·CEPAL, Banco Mundial (WDI),
+matrices ambiental y social del estudio, y EOR (Mercado Eléctrico Regional).
 **Documento generado automáticamente** por
 `src/generar_resumen_indicadores.py` el {date.today().isoformat()};
 los valores provienen del mismo pipeline que alimenta los visualizadores.
@@ -180,16 +179,14 @@ Cada tabla cierra con dos resúmenes que responden preguntas distintas:
 
 Ambos son legítimos pero pueden divergir mucho (incluso en el signo de
 la tendencia, como en ECO15): al citar cifras regionales debe indicarse
-cuál de los dos se usa. Las series sin denominador disponible en el
-repositorio (ECO14: energía regulada vendida; SOC2: hogares e ingresos
-en USD; SOC3: población rural/urbana) solo presentan el promedio de
-países, y su nota metodológica lo advierte.
+cuál de los dos se usa. ECO14 y SOC2 se representan mediante promedio de
+países; el criterio se especifica en la ficha de cada indicador.
 """]
     filas_csv = []
 
     dim_previa = None
     for codigo, ficha in FICHAS.items():
-        # ENV6: comparativo ilustrativo de dos series observadas.
+        # ENV6: comparativo de dos series expresadas en GWh.
         if ficha.get("tipo") == "env6":
             if "ENV6" not in datos:
                 continue
@@ -269,8 +266,8 @@ países, y su nota metodológica lo advierte.
 
 Los valores de este documento se calculan con las fórmulas indicadas a
 partir de las variables base del pipeline (`data/processed/`), en
-unidades homologadas: energía en kWh, PIB y valor agregado industrial en
-USD constantes de 2015, tarifa en USD corrientes/MWh. Las mismas cifras,
+unidades homologadas: energía en kWh, PIB y valor agregado manufacturero
+en USD constantes de 2015, tarifa en USD corrientes/MWh. Las mismas cifras,
 con sus tablas de datos base, pueden auditarse en los visualizadores del
 proyecto (`graficos/`); en los libros Excel, las filas "Agregado
 regional (razón de sumas)" llevan fórmulas SUM auditables hacia
@@ -280,7 +277,7 @@ países aparece como pais = "Promedio regional" con fuente_dato =
 "calculado_media_simple"; el agregado, como "Agregado regional" con
 "calculado_razon_sumas").
 
-\\* Valor imputado vía CAGR (no observación directa de la fuente).
+\\* Valor calculado mediante CAGR.
 """)
     return "\n".join(md), filas_csv
 

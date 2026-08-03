@@ -20,7 +20,7 @@ cálculo.
 
 ```mermaid
 flowchart TD
-    RAW["data/raw/<br>(OLADE, CEPAL, Banco Mundial)"] --> ETL["9 ETL<br>src/etl_*.py"]
+    RAW["data/raw/<br>(OLADE, CEPAL y Banco Mundial)"] --> ETL["10 ETL<br>src/etl_*.py"]
     ETL --> CSV["data/processed/*.csv<br>(tidy, unidades base)"]
     CSV --> CONS["consolidar_matriz.py"]
     CONS --> MAT["matrices consolidadas<br>tidy y wide"]
@@ -47,12 +47,12 @@ Las constantes compartidas (países, años, rutas, conversiones) viven en
 
 ## Datos crudos: dos formas de acercarse a este repositorio
 
-Ocho de las nueve fuentes crudas **no viven en este repositorio**: los
+Ocho de las fuentes oficiales crudas **no viven en este repositorio**: los
 términos de OLADE/SIELAC y de CEPAL prohíben redistribuir el archivo
 descargado, aunque ambos contemplan usar los datos citando la
-procedencia, que es lo que hace este proyecto. La única que sí se
-versiona es la del Banco Mundial (`data/raw/pib/`), publicada bajo
-CC-BY 4.0. Por eso hay dos puntos de entrada distintos:
+procedencia, que es lo que hace este proyecto. Los dos extractos del Banco
+Mundial —PIB y población rural/urbana— se versionan bajo CC-BY 4.0 y con
+atribución. Por eso hay dos puntos de entrada distintos:
 
 - **Auditable, siempre.** El código, los indicadores calculados
   (`data/processed/*.xlsx`), los visualizadores (`graficos/`) y el
@@ -69,8 +69,7 @@ CC-BY 4.0. Por eso hay dos puntos de entrada distintos:
   python src/verificar_datos_raw.py
   ```
 
-  confirma que tu copia es la correcta (o avisa si la fuente actualizó la
-  serie desde entonces — no bloquea, solo lo declara).
+  compara cada copia con el hash documentado y reporta cualquier diferencia.
 
 ## Cómo reproducir
 
@@ -86,6 +85,7 @@ O script por script, en este orden:
 python src/etl_consumo_final_total.py
 python src/etl_consumo_industrial.py
 python src/etl_poblacion_total.py
+python src/etl_poblacion_rural_urbana.py
 python src/etl_pib.py
 python src/etl_valor_agregado_industrial.py   # requiere pib.csv, por eso va después
 python src/etl_produccion_bruta.py
@@ -99,11 +99,9 @@ python src/generar_explorador.py
 python src/generar_panel.py
 ```
 
-Los ETL validan sus salidas y abortan con `VALIDACIÓN FALLIDA` ante errores
-graves (nulos, países inesperados, unidades o reconciliaciones que no
-cuadran), antes de escribir un CSV corrupto. Los avisos menores (por
-ejemplo, un conteo de filas distinto al esperado) se reportan como
-`WARNING` sin detener el proceso.
+Los ETL validan esquema, cobertura, unidades y reconciliaciones antes de
+escribir cada CSV. Las validaciones obligatorias detienen el proceso; las
+comprobaciones informativas se registran como `WARNING`.
 
 Los dos HTML de `graficos/` son autocontenidos: abren con doble clic,
 sin servidor y sin internet (Plotly va embebido).
@@ -120,11 +118,12 @@ siepac-analysis/
 │   │   ├── generacion_por_tipo_de_fuente/
 │   │   ├── importaciones_exportaciones/
 │   │   ├── pib/
+│   │   ├── poblacion_rural_urbana/
 │   │   ├── poblacion_total/
 │   │   ├── produccion_bruta/
 │   │   ├── tarifa_electrica_media/
 │   │   └── valor_agregado_industrial/
-│   ├── raw_equipo/           # entregables del equipo (ENVs.xlsx, SOCs.xlsx)
+│   ├── raw_equipo/           # matrices de entrada (ENVs.xlsx, SOCs.xlsx)
 │   └── processed/            # salidas del pipeline (los CSV se regeneran)
 ├── docs/                     # capturas de pantalla para este README
 ├── graficos/                 # apps HTML autocontenidas (abren con doble clic)
@@ -138,10 +137,13 @@ siepac-analysis/
 - Unidades base del proyecto: energía en kWh, variables macro en USD
   constantes de 2015 (valor entero), tarifa en USD corrientes/MWh,
   población en habitantes.
-- Tarifa (ECO14): años faltantes imputados por CAGR de la serie histórica,
-  marcados como `imputado_CAGR` y sombreados en el Excel.
-- ECO15 negativo = exportador neto (no es un error).
+- Tarifa (ECO14): los valores calculados mediante CAGR se identifican como
+  `imputado_CAGR` y se sombrean en el Excel.
+- En ECO15, los valores negativos representan exportación neta.
 - ECO3 es una aproximación generación → consumo final.
+- Los agregados de SOC3 ponderan la serie rural por población rural y la
+  urbana por población urbana; ambas combinan la tasa de electrificación
+  de la zona con la participación renovable de la generación nacional.
 - El Excel de indicadores económicos contiene fórmulas que referencian la
   hoja Datos_Base (auditables celda a celda); los visualizadores leen los
   mismos valores desde `indicadores_ECO_valores.csv`, calculados en pandas
@@ -177,11 +179,7 @@ Proyecto desarrollado como tesis de Ingeniería Eléctrica, UNI Nicaragua.
 El código se distribuye bajo licencia [MIT](LICENSE). Los datos crudos
 pertenecen a sus fuentes. Los de OLADE/SIELAC y CEPAL **no se
 redistribuyen aquí** porque sus términos no lo permiten: se documentan en
-`data/raw/MANIFIESTO.md` para que cada quien descargue su propia copia.
-El del Banco Mundial sí se incluye, bajo CC-BY 4.0 y con atribución. Los
-indicadores calculados y los visualizadores son obra derivada del
+`data/raw/MANIFIESTO.md` para obtener una copia local desde la fuente.
+Los extractos del Banco Mundial sí se incluyen, bajo CC-BY 4.0 y con
+atribución. Los indicadores calculados y los visualizadores son obra derivada del
 análisis, elaborados citando cada fuente.
-
-## Notas
-
-El aspecto gráfico es un archivo html generado

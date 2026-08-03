@@ -53,12 +53,10 @@ from config_siepac import GWH_A_KWH, DIR_RAW, DIR_PROCESSED
 RAW_DIR = DIR_RAW / "generacion_por_tipo_de_fuente"
 OUT_DIR = DIR_PROCESSED
 
-FUENTE_DATO = "sieLAC-OLADE"          # procedencia (va en la columna `fuente`)
-TOLERANCIA_KWH = 1.0                  # holgura al reconciliar sumas (en kWh)
+FUENTE_DATO = "sieLAC-OLADE"          # procedencia en la columna `fuente`
+TOLERANCIA_KWH = 1.0                  # tolerancia de reconciliación en kWh
 
-# logging en vez de print(): permite distinguir INFO / WARNING / ERROR y deja
-# un rastro claro de qué hizo el script. Es la base para detectar fallos
-# silenciosos (una fuente que no se clasifica sale como WARNING, no se pierde).
+# El registro diferencia mensajes informativos, advertencias y errores.
 logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)-7s | %(message)s",
@@ -67,23 +65,20 @@ logging.basicConfig(
 log = logging.getLogger(Path(__file__).stem)
 
 # --------------------------------------------------------------------------- #
-# 1. TAXONOMÍA FUENTE -> CATEGORÍA (el corazón del mapeo fósil/renovable)
+# 1. TAXONOMÍA FUENTE -> CATEGORÍA
 # --------------------------------------------------------------------------- #
-# Clasificamos por ETIQUETA EXACTA, no por posición de fila. Si OLADE reordena
-# o inserta filas, el mapeo sigue siendo correcto; y si aparece una etiqueta
-# desconocida, la detectamos (no la clasificamos a ciegas).
+# La clasificación utiliza etiquetas exactas en lugar de posiciones de fila.
+# Las etiquetas no incluidas en la taxonomía se registran y se excluyen.
 #
-# Cada entrada dice: nivel (padre/hijo), categoría (fósil/renovable) y, para los
-# hijos renovables, a qué grupo de ECO13 pertenecen (hidro/geotermia/eólica/
-# solar/biomasa). Los tres sub-tipos de biomasa (Biogás, Biomasa sólida,
-# Biocombustibles líquidos) van todos a grupo "biomasa" (decisión validada).
+# Cada entrada define el nivel, la categoría y el grupo de ECO13. Biogás,
+# biomasa sólida y biocombustibles líquidos integran el grupo "biomasa".
 
 PADRE_FOSIL = "Térmica no renovable (combustión)"
 PADRE_BIOMASA = "Térmica renovable (combustión)"
 PADRE_RENOV_NO_COMB = "Fuentes renovable (no combustión)"
 ETIQUETA_TOTAL = "Total"
 
-# Padres -> categoría (se usan para los AGREGADOS: ya vienen pre-sumados)
+# Los renglones padre aportan los agregados publicados por la fuente.
 PADRES = {
     PADRE_FOSIL: "fósil",
     PADRE_BIOMASA: "renovable",
@@ -105,9 +100,7 @@ HIJOS = {
     "Solar":                     (PADRE_RENOV_NO_COMB, "renovable", "solar"),
 }
 
-# Conjunto de todas las etiquetas ESPERADAS (padres + hijos + Total). Sirve para
-# (a) detectar etiquetas desconocidas y (b) NO confundir la nota al pie
-# "Fuente: sieLAC-OLADE" con el renglón de datos "Fuentes renovable ...".
+# El conjunto separa las filas de datos reconocidas de las notas al pie.
 ETIQUETAS_CONOCIDAS = set(PADRES) | set(HIJOS) | {ETIQUETA_TOTAL}
 
 # Cuántas fuentes hoja esperamos por país (para el conteo de validación).
@@ -118,16 +111,16 @@ N_HIJOS_ESPERADOS = len(HIJOS)  # 11
 # Utilidades pequeñas
 # --------------------------------------------------------------------------- #
 def _texto(v) -> str:
-    """Devuelve el valor de celda como texto SIN espacios de borde.
-    Los espacios internos de sangría (3 al inicio) los quitamos aquí: sirven
-    solo como marca visual de 'hijo', pero ya clasificamos por etiqueta."""
+    """Devuelve el texto sin espacios de borde ni sangría de presentación."""
     return v.strip() if isinstance(v, str) else ""
 
 
 def _es_nota_al_pie(texto: str) -> bool:
-    """True si la celda es una nota al pie y NO un renglón de datos.
-    OJO: 'Fuente:' (con dos puntos) es la procedencia; 'Fuentes renovable...'
-    es un dato. Por eso exigimos los dos puntos, no solo 'Fuente'."""
+    """Identifica notas al pie sin confundirlas con filas de generación.
+
+    El prefijo incluye los dos puntos para distinguir ``Fuente:`` de
+    etiquetas de datos que comienzan con ``Fuentes``.
+    """
     return texto.startswith("Fuente:") or texto.startswith("La opción")
 
 
@@ -156,12 +149,12 @@ def extraer_datos(xlsx_path: Path) -> pd.DataFrame:
     - valor_gwh: número en GWh; si la celda venía vacía -> 0.0.
     - dato_reportado: False si la celda original estaba vacía (traza del 0).
 
-    Es DEFENSIVO: si una hoja no tiene encabezado reconocible, la registra
-    como WARNING y la salta (no rompe el proceso ni inventa datos).
+    Las hojas sin encabezado reconocible se registran como WARNING y se
+    excluyen del resultado.
     """
     log.info("Abriendo workbook: %s", xlsx_path.name)
-    # data_only=True -> si hubiese fórmulas, leemos el valor calculado, no "=...".
-    # read_only=False es seguro aquí porque el archivo es pequeño (~40 KB).
+    # data_only=True devuelve el valor calculado de las fórmulas.
+    # El modo normal permite acceder de forma consistente a celdas y fórmulas.
     wb = load_workbook(xlsx_path, data_only=True)
 
     filas = []
@@ -180,8 +173,7 @@ def extraer_datos(xlsx_path: Path) -> pd.DataFrame:
                         "SE OMITE la hoja completa.", nombre_hoja)
             continue
 
-        # -- cross-check: país de la hoja vs etiqueta interna (fila hdr-1) ----
-        # La fila justo arriba del encabezado dice p.ej. "Costa Rica - ...".
+        # -- contraste del país de la hoja con la etiqueta interna ------------
         etiqueta_pais = _texto(ws.cell(fila_hdr - 1, 1).value)
         if etiqueta_pais and _norm(pais) not in _norm(etiqueta_pais):
             log.warning("Hoja %r: el país del nombre (%r) no coincide con la "
@@ -195,7 +187,7 @@ def extraer_datos(xlsx_path: Path) -> pd.DataFrame:
             if crudo.isdigit():
                 anios.append((c, int(crudo)))
             else:
-                # columna sin año válido -> la ignoramos (defensivo)
+                # Las columnas sin año válido no pertenecen a la serie.
                 if crudo:
                     log.warning("Hoja %r: encabezado de columna %d no es un año "
                                 "(%r). Se ignora esa columna.", nombre_hoja, c, crudo)
@@ -211,19 +203,19 @@ def extraer_datos(xlsx_path: Path) -> pd.DataFrame:
             etiqueta = _texto(celda_a)
 
             if etiqueta == "":
-                continue                      # fila en blanco -> saltar
+                continue                      # fila en blanco
             if _es_nota_al_pie(etiqueta):
-                continue                      # nota al pie -> saltar
+                continue                      # nota al pie
 
-            # ¿es una etiqueta que conocemos?
+            # Validación de la etiqueta contra la taxonomía.
             if etiqueta not in ETIQUETAS_CONOCIDAS:
-                # Señal clave de fallo silencioso: fuente nueva/renombrada.
+                # Una etiqueta nueva requiere una regla de clasificación.
                 log.warning("Hoja %r fila %d: etiqueta DESCONOCIDA %r. No se "
                             "clasifica ni se agrega (revisar taxonomía).",
                             nombre_hoja, r, etiqueta)
                 continue
 
-            # nivel según la taxonomía
+            # Nivel definido por la taxonomía.
             if etiqueta == ETIQUETA_TOTAL:
                 nivel = "total"
             elif etiqueta in PADRES:
@@ -232,21 +224,19 @@ def extraer_datos(xlsx_path: Path) -> pd.DataFrame:
                 nivel = "hijo"
             etiquetas_vistas.add(etiqueta)
 
-            # leer el valor de cada año para esta etiqueta
+            # Lectura de la serie anual de la etiqueta.
             for (c, anio) in anios:
                 bruto = ws.cell(r, c).value
                 if isinstance(bruto, (int, float)):
                     valor_gwh = float(bruto)
                     reportado = True
                 elif bruto is None:
-                    # Celda vacía = sin generación de ese tipo ese año.
-                    # OLADE trata el vacío como 0 en sus subtotales (verificado),
-                    # así que lo homologamos a 0.0 y lo marcamos como no reportado
-                    # (queda 100% auditable; no estamos "inventando" un número).
+                    # Los vacíos se codifican como 0.0 para reproducir los
+                    # subtotales; dato_reportado conserva el estado original.
                     valor_gwh = 0.0
                     reportado = False
                 else:
-                    # texto inesperado donde debería haber número -> defensivo
+                    # Los valores no numéricos se registran como no reportados.
                     log.warning("Hoja %r fila %d col %d: valor no numérico %r. "
                                 "Se trata como vacío (0).", nombre_hoja, r, c, bruto)
                     valor_gwh = 0.0
@@ -261,7 +251,7 @@ def extraer_datos(xlsx_path: Path) -> pd.DataFrame:
                     "dato_reportado": reportado,
                 })
 
-        # ¿extrajimos todos los hijos esperados en esta hoja?
+        # Cobertura de las categorías hoja requeridas.
         hijos_vistos = etiquetas_vistas & set(HIJOS)
         faltantes = set(HIJOS) - hijos_vistos
         if faltantes:
@@ -294,7 +284,7 @@ def transformar(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # ---------- (a) DETALLE (solo hijos) -----------------------------------
     hijos = df_raw[df_raw["nivel"] == "hijo"].copy()
 
-    # adjuntar categoría / subcategoría OLADE / grupo ECO13 desde la taxonomía
+    # Categoría, subcategoría OLADE y grupo ECO13 según la taxonomía.
     hijos["categoria"] = hijos["etiqueta"].map(lambda e: HIJOS[e][1])
     hijos["subcategoria_olade"] = hijos["etiqueta"].map(lambda e: HIJOS[e][0])
     hijos["grupo_eco13"] = hijos["etiqueta"].map(lambda e: HIJOS[e][2])
@@ -310,25 +300,25 @@ def transformar(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     )
 
     # ---------- (b) AGREGADO (una fila por país-año) ------------------------
-    # Desglose renovable ECO13: sumamos los hijos por grupo (hidro, geo, eólica,
-    # solar, biomasa). Como biomasa son 3 sub-tipos, el groupby los junta solo.
+    # Desglose renovable ECO13 por grupo: hidro, geotermia, eólica, solar
+    # y biomasa. La agregación reúne los tres subtipos de biomasa.
     renov = hijos[hijos["grupo_eco13"].notna()]
     pivote = (
         renov.groupby(["pais", "anio", "grupo_eco13"])["valor_gwh"].sum()
         .unstack("grupo_eco13", fill_value=0.0)
         .reset_index()
     )
-    # asegurar que existan las 5 columnas aunque algún país no tenga una fuente
+    # Esquema estable de cinco grupos renovables.
     for grupo in ["hidro", "geotermia", "eolica", "solar", "biomasa"]:
         if grupo not in pivote.columns:
             pivote[grupo] = 0.0
 
-    # fósil: lo tomamos del renglón PADRE 'Térmica no renovable' (pre-sumado).
+    # El agregado fósil procede del renglón padre "Térmica no renovable".
     fosil = (
         df_raw[df_raw["etiqueta"] == PADRE_FOSIL]
         .rename(columns={"valor_gwh": "fosil_gwh"})[["pais", "anio", "fosil_gwh"]]
     )
-    # total: del renglón 'Total' de ORIGEN (autoridad para el denominador).
+    # El renglón "Total" de la fuente define el denominador.
     total = (
         df_raw[df_raw["etiqueta"] == ETIQUETA_TOTAL]
         .rename(columns={"valor_gwh": "total_gwh"})[["pais", "anio", "total_gwh"]]
@@ -338,7 +328,7 @@ def transformar(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # renovable = suma del desglose (hidro+geo+eólica+solar+biomasa)
     agg["renovable_gwh"] = agg[["hidro", "geotermia", "eolica", "solar", "biomasa"]].sum(axis=1)
 
-    # pasar todo a kWh (unidad base del pipeline)
+    # Conversión a kWh, unidad base del pipeline.
     for col in ["hidro", "geotermia", "eolica", "solar", "biomasa",
                 "renovable_gwh", "fosil_gwh", "total_gwh"]:
         agg[col.replace("_gwh", "") + "_kwh" if col.endswith("_gwh") else col + "_kwh"] = \
@@ -407,7 +397,7 @@ def validar(df_detalle: pd.DataFrame, df_agregado: pd.DataFrame,
     else:
         log.info("Detalle: categorías = %s OK.", sorted(cats))
 
-    # 4.4 reconciliaciones por país-año (el chequeo más importante)
+    # 4.4 Reconciliaciones por país y año.
     problemas = 0
     for _, fila in df_agregado.iterrows():
         # (i) fósil + renovable == total (usando el Total de ORIGEN)

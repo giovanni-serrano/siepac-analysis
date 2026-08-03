@@ -1,10 +1,10 @@
 # Manifiesto de datos crudos
 
-Generado automáticamente por `src/generar_manifiesto_raw.py` el 2026-07-26 a partir de `src/catalogo_datos_raw.py` — no editar a mano.
+Generado automáticamente por `src/generar_manifiesto_raw.py` el 2026-08-03 a partir de `src/catalogo_datos_raw.py` — no editar a mano.
 
-Documenta, para cada variable de entrada del pipeline, de dónde se descarga, si su fuente permite redistribuir el archivo y el hash SHA-256 de la copia con la que se verificaron los cálculos de este proyecto. Después de descargar un archivo, correr `python src/verificar_datos_raw.py` confirma que es exactamente esa copia (o avisa si difiere, por ejemplo porque la fuente actualizó la serie).
+Documenta, para cada variable de entrada del pipeline, de dónde se descarga, si su fuente permite redistribuir el archivo y el hash SHA-256 de la copia con la que se verificaron los cálculos de este proyecto. Después de descargar un archivo, correr `python src/verificar_datos_raw.py` compara la copia local con el hash registrado y detecta cambios en el archivo de origen.
 
-No cubre `data/raw_equipo/` (entregables propios del equipo de tesis, no descargas de una fuente externa) ni las fichas técnicas en PDF (documentación de referencia, no entrada del pipeline).
+No cubre `data/raw_equipo/` (matrices de entrada del estudio) ni las fichas técnicas en PDF (documentación de referencia, no entradas del pipeline).
 
 | Variable | Fuente | ¿Redistribuible? | En este repositorio |
 |---|---|---|---|
@@ -14,13 +14,14 @@ No cubre `data/raw_equipo/` (entregables propios del equipo de tesis, no descarg
 | Matriz de balance energético (importaciones/exportaciones) | OLADE / SIELAC | **No** (verificado) | No — ver más abajo |
 | Producción bruta de electricidad | OLADE / SIELAC | **No** (verificado) | No — ver más abajo |
 | PIB real (USD constantes de 2015) | Banco Mundial (WDI) | **Sí** (CC-BY 4.0) | Sí |
+| Población rural y urbana | Banco Mundial (WDI) | **Sí** (CC-BY 4.0) | Sí |
 | Población total | CEPALSTAT (CEPAL-CELADE) | **No** (verificado) | No — ver más abajo |
 | Precio medio de la electricidad | CEPALSTAT | **No** (verificado) | No — ver más abajo |
-| Valor agregado industrial (% del PIB) | agenda2030lac (ODS-NU / UNIDO) | **No** (verificado) | No — ver más abajo |
+| Valor agregado manufacturero (% del PIB, ODS 9.2.1) | agenda2030lac (ODS-NU / UNIDO) | **No** (verificado) | No — ver más abajo |
 
 Los archivos marcados **No** no están en este repositorio: los términos de sus fuentes prohíben redistribuir el archivo descargado. OLADE/SIELAC veda el «almacenamiento en cualquier otro sistema» y la «distribución por cualquier medio»; CEPAL permite bajar y copiar sus materiales «para su uso personal, sin fines comerciales, sin ningún derecho a revender, redistribuir, o crear otros trabajos a partir de los mismos» (agenda2030lac lo opera CEPAL y hereda ese acuerdo). Ambos verificados el 2026-07-26; las citas completas están en `src/catalogo_datos_raw.py`.
 
-Eso no impide usar los datos: las dos fuentes contemplan su uso citando la procedencia, que es lo que hace este proyecto. Lo que no se puede es republicar sus archivos. Siguen siendo el insumo real del pipeline — cada quien descarga su propia copia desde la ruta indicada en su ficha.
+El uso analítico conserva la atribución de procedencia. Los archivos descargados no se republican; el pipeline utiliza copias locales obtenidas desde la ruta indicada en cada ficha.
 
 ## Fichas por variable
 
@@ -91,6 +92,17 @@ Eso no impide usar los datos: las dos fuentes contemplan su uso citando la proce
 - **SHA-256 de la copia verificada:** `4caefd74bb19ed6cc827a116f555ee8a0535ce24bca8bca225cef3368f94b0d4`
 - **Tamaño de esa copia:** 301,964 bytes
 
+### `data/raw/poblacion_rural_urbana/`
+
+- **Variable:** Población rural y urbana
+- **Fuente:** Banco Mundial (WDI)
+- **¿Redistribuible?:** **Sí** (CC-BY 4.0)
+- **Cobertura:** 6 países SIEPAC, 2020-2024
+- **Patrón que localiza el ETL:** `*.csv` (el nombre exacto cambia en cada descarga: los exports llevan timestamp)
+- **Dónde descargarlo:** datos.bancomundial.org/indicador/SP.RUR.TOTL y datos.bancomundial.org/indicador/SP.URB.TOTL (filtrar: 6 países SIEPAC, 2020-2024)
+- **SHA-256 de la copia verificada:** `e59daec091a133f8f16c1b825a3576b72fcd67febcc7327779c984adb6c2f8fe`
+- **Tamaño de esa copia:** 1,388 bytes
+
 ### `data/raw/poblacion_total/`
 
 - **Variable:** Población total
@@ -115,7 +127,7 @@ Eso no impide usar los datos: las dos fuentes contemplan su uso citando la proce
 
 ### `data/raw/valor_agregado_industrial/`
 
-- **Variable:** Valor agregado industrial (% del PIB)
+- **Variable:** Valor agregado manufacturero (% del PIB, ODS 9.2.1)
 - **Fuente:** agenda2030lac (ODS-NU / UNIDO)
 - **¿Redistribuible?:** **No** (verificado)
 - **Cobertura:** 6 países SIEPAC, 2020-2024

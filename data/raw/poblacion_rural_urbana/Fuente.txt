@@ -1,0 +1,22 @@
+Archivo:
+poblacion_rural_urbana_SIEPAC_2020_2024_tidy_wide.csv
+
+Procedencia:
+Banco Mundial, Indicadores del Desarrollo Mundial.
+Población rural: SP.RUR.TOTL
+https://datos.bancomundial.org/indicador/SP.RUR.TOTL
+Población urbana: SP.URB.TOTL
+https://datos.bancomundial.org/indicador/SP.URB.TOTL
+
+El Banco Mundial compila estas series a partir de World Urbanization
+Prospects de Naciones Unidas y de estimaciones basadas en definiciones
+nacionales. El archivo conserva el extracto utilizado por el pipeline.
+
+Cobertura:
+Seis países del SIEPAC, 2020-2024. Población rural, urbana y total en
+habitantes.
+
+Uso metodológico:
+La población rural pondera SOC3_RURAL y la población urbana pondera
+SOC3_URB. La población total valida la identidad rural + urbana = total
+y permite contrastar ambas series con el ETL de población total.

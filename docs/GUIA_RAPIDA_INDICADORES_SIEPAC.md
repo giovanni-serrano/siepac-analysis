@@ -1,128 +1,100 @@
-## Indicadores ECO y SOC a nivel SIEPAC
+# Guía de agregación regional — indicadores SIEPAC
 
-Qué indicadores ya se pueden usar "a nivel SIEPAC", cómo se
-calcularon, qué hipótesis sugieren y qué gráfico los ilustra.
-Cifras: `graficos/region/tabla_agregados.csv`. Figuras: `graficos/region/`.
+Este documento resume el criterio de agregación empleado para representar
+los seis países del SIEPAC como un bloque. Las cifras completas se encuentran
+en `graficos/region/tabla_agregados.csv` y las figuras en
+`graficos/region/`.
 
----
+## Criterios de cálculo
 
-## Matematica
+- **Agregado regional:** razón entre la suma de los numeradores y la suma de
+  los denominadores nacionales. Representa al SIEPAC como sistema.
+- **Promedio de países:** media simple de los seis valores nacionales.
+  Representa el comportamiento del país típico del conjunto.
+- Ambos resultados se identifican por separado porque responden a unidades
+  de análisis distintas.
 
-> **"A nivel SIEPAC" = agregado regional (razón de sumas), NUNCA promedio simple.**
+Los gráficos `*_agregado_vs_promedio.png` presentan el agregado regional en
+azul y el promedio de países en gris punteado. El valor del último año se
+etiqueta directamente sobre cada serie.
 
-- **Agregado regional** = Σ numerador ÷ Σ denominador de los 6 países.
-  Es aplicar la fórmula IEDS al bloque como si fuera un solo país.
-- **Promedio de países** = media simple (peso 1/6). Responde otra pregunta
-  ("el país típico"). Solo para comparar países entre sí.
-- Pueden divergir mucho. Ejemplo: SOC1 2024 es **6.72 %** del bloque, no 4.92 %.
-  La diferencia son 940 mil personas.
-
-## Cómo leer los gráficos (aplica a todos los `*_agregado_vs_promedio.png`)
-
-- **Tipo:** líneas 2020–2024, dos series.
-- **Azul gruesa** = agregado regional → la cifra que se cita en la tesis.
-- **Gris punteada** = promedio de países → referencia de contraste.
-- **Por qué líneas:** el objeto de análisis es la *tendencia* del bloque en 5
-  años; dos líneas muestran además cuánto sesga el promedio simple.
-- El valor 2024 va etiquetado sobre cada línea.
-
----
-
-## ✅ Validados a nivel SIEPAC (listo para usar)
+## Indicadores con agregado regional
 
 ### ECO1 · Uso de energía per cápita
 
-- **Cálculo:** Σ consumo final (kWh) ÷ Σ población. **959 → 1 063 kWh/hab (+10.9 %).**
-- **Hipótesis:** la demanda eléctrica del bloque crece más rápido que su
-  población. La región se electrifica de forma sostenida.
-- **Gráfico:** `ECO1_agregado_vs_promedio.png`. Complemento en magnitud:
-  `REGION_consumo_final.png` (47.6 → 55.4 TWh).
+- **Cálculo:** Σ consumo final (kWh) ÷ Σ población.
+- **Resultado:** 959 → 1 063 kWh/hab (+10.9 %).
+- **Gráficos:** `ECO1_agregado_vs_promedio.png` y
+  `REGION_consumo_final.png`.
 
 ### ECO2 · Energía por unidad de PIB
 
-- **Cálculo:** Σ consumo final ÷ Σ PIB (USD 2015). **0.195 → 0.179 kWh/USD (−8.3 %).**
-- **Hipótesis:** desacople incipiente: la economía del bloque crece más rápido
-  que su consumo eléctrico. Señal positiva de eficiencia macro.
+- **Cálculo:** Σ consumo final ÷ Σ PIB real en USD constantes de 2015.
+- **Resultado:** 0.195 → 0.179 kWh/USD (−8.3 %).
 - **Gráfico:** `ECO2_agregado_vs_promedio.png`.
 
 ### ECO3 · Eficiencia de conversión y distribución
 
-- **Cálculo:** Σ consumo final ÷ Σ producción bruta × 100. **82.4 → 82.6 % (+0.2 pp).**
-- **Hipótesis:** estancamiento: la brecha (~17 %, pérdidas + autoconsumo) no
-  mejoró en 5 años. Ojo: el promedio simple sugiere *caída* (−0.9 pp) — usar el
-  agregado.
+- **Cálculo:** Σ consumo final ÷ Σ producción bruta × 100.
+- **Resultado:** 82.4 → 82.6 % (+0.2 pp).
 - **Gráfico:** `ECO3_agregado_vs_promedio.png`.
 
 ### ECO6 · Intensidad energética de la industria
 
-- **Cálculo:** Σ consumo industrial ÷ Σ valor agregado industrial. **0.370 → 0.497 kWh/USD (+34.4 %).**
-- **Hipótesis:** la industria del bloque genera menos valor por kWh: se
-  electrifica más rápido de lo que crece su valor agregado. Discutir causas con
-  el equipo (¿electrificación de procesos o VAI débil?).
+- **Cálculo:** Σ consumo industrial ÷ Σ valor agregado manufacturero.
+- **Resultado:** 0.370 → 0.497 kWh/USD (+34.4 %).
 - **Gráfico:** `ECO6_agregado_vs_promedio.png`.
 
-### ECO11 · Fósiles en la electricidad
+### ECO11 · Participación fósil
 
-- **Cálculo:** Σ generación fósil ÷ Σ generación total × 100. **25.0 → 33.0 % (+8.0 pp).**
-- **Hipótesis:** retroceso: el bloque quemó más térmica, con salto en 2023
-  (13.8 → 21.5 TWh fósiles; consistente con año seco e hidro a la baja).
-- **Gráfico:** `ECO11_agregado_vs_promedio.png` +
-  `REGION_renovable_vs_fosil.png` (barras apiladas: magnitud y % en una vista).
+- **Cálculo:** Σ generación fósil ÷ Σ generación total × 100.
+- **Resultado:** 25.0 → 33.0 % (+8.0 pp).
+- **Gráficos:** `ECO11_agregado_vs_promedio.png` y
+  `REGION_renovable_vs_fosil.png`.
 
-### ECO13 · Renovables en la electricidad
+### ECO13 · Participación renovable
 
-- **Cálculo:** espejo de ECO11. **75.0 → 67.0 % (−8.0 pp).**
-- **Hipótesis:** el bloque sigue siendo mayoritariamente renovable, pero perdió
-  8 pp en 5 años. La matriz es vulnerable a la hidrología.
-- **Gráfico:** `ECO13_agregado_vs_promedio.png` +
-  `REGION_generacion_fuentes.png` (6 paneles, mismo eje: hidro domina, fósil
-  crece, solar/eólica aún marginales).
+- **Cálculo:** Σ generación renovable ÷ Σ generación total × 100.
+- **Resultado:** 75.0 → 67.0 % (−8.0 pp).
+- **Gráficos:** `ECO13_agregado_vs_promedio.png` y
+  `REGION_generacion_fuentes.png`.
 
-### ECO15 · Dependencia de importaciones netas ⚠ interpretar bien
+### ECO15 · Dependencia de importaciones netas
 
-- **Cálculo:** Σ(imp − exp) ÷ Σ oferta × 100. **1.65 → 2.17 % (+0.5 pp, +31 %).**
-- **CLAVE:** al sumar el bloque, el comercio interno del MER se cancela.
-  El agregado mide **dependencia EXTRARREGIONAL** (≈ México→Guatemala).
-- **Hipótesis:** el bloque casi duplicó su compra neta al exterior
-  (0.97 → 1.49 TWh). El promedio simple dice lo contrario (−26 %): es el caso
-  demostrativo de por qué el método importa (paradoja de agregación).
-- **Gráfico:** `ECO15_agregado_vs_promedio.png` (la divergencia se ve sola) +
-  `REGION_intercambios.png` (Σimp, Σexp y saldo neto en TWh).
+- **Cálculo:** Σ(importaciones − exportaciones) ÷ Σ oferta × 100.
+- **Resultado:** 1.65 → 2.17 % (+0.5 pp).
+- Los intercambios internos del MER se cancelan al sumar el bloque; el saldo
+  agregado representa el intercambio extrarregional.
+- **Gráficos:** `ECO15_agregado_vs_promedio.png` y
+  `REGION_intercambios.png`.
 
 ### SOC1 · Población sin electricidad
 
-- **Cálculo:** media de % nacionales ponderada por población
-  (= personas sin luz ÷ población del bloque). **7.57 → 6.72 % (−0.8 pp).**
-- **Hipótesis:** el acceso avanza pero lento (~0.2 pp/año). Quedan
-  **3.50 millones** de personas sin electricidad, concentradas en Guatemala y
-  Honduras (90 % del total).
-- **Gráfico:** `SOC1_agregado_vs_promedio.png` +
-  `REGION_personas_sin_electricidad.png` (barras: personas son magnitud
-  absoluta, las barras comunican "cuántos", no tendencia relativa).
+- **Cálculo:** personas sin electricidad del bloque ÷ población total del
+  bloque × 100.
+- **Resultado:** 7.57 → 6.72 % (−0.8 pp).
+- **Gráficos:** `SOC1_agregado_vs_promedio.png` y
+  `REGION_personas_sin_electricidad.png`.
 
----
+### SOC3 · Acceso a energía renovable rural y urbano
 
-## Ejemplo de cálculo tipo — SOC1, año 2024
+- **Cálculo rural:** media de los porcentajes nacionales ponderada por
+  población rural. Resultado: 58.0 → 51.2 % (−6.8 pp).
+- **Cálculo urbano:** media de los porcentajes nacionales ponderada por
+  población urbana. Resultado: 73.2 → 61.9 % (−11.3 pp).
+- Cada serie combina la tasa de electrificación de la zona con la
+  participación renovable de la generación nacional.
+- **Gráficos:** `SOC3_RURAL_agregado_vs_promedio.png`,
+  `SOC3_URB_agregado_vs_promedio.png` y
+  `SOC3_brecha_rural_urbana_agregado.png`.
 
-Este ejemplo se detalla **una sola vez** en la tesis y respalda todos los
-agregados validados: solo cambian numerador y denominador según la ficha de
-cada indicador (ver "Cálculo" en cada bloque de arriba).
+## Ejemplo de cálculo — SOC1, año 2024
 
-**De dónde salen los datos:**
+La tasa nacional de población sin electricidad se multiplica por la
+población de cada país para obtener el numerador nacional. Los numeradores y
+denominadores se suman antes de calcular el porcentaje regional.
 
-- **% sin electricidad** por país: hoja "SOC 1" de `SOCs.xlsx` (equipo de
-  tesis) = 100 − tasa de electrificación total.
-  Procesado: `data/processed/indicadores_SOC_SIEPAC.xlsx`.
-- **Población** por país: CEPALSTAT (CEPAL-CELADE), "Población total por
-  sexo", ambos sexos, miles de habitantes a mitad de año.
-  Raw + ficha técnica: `data/raw/poblacion_total/`.
-  Procesado: `data/processed/poblacion_total.csv`.
-- Las **personas sin electricidad** no son dato observado: se calculan
-  (% × población).
-
-**Paso 1 — personas sin electricidad por país** (N_i = I_i × D_i ÷ 100):
-
-| País | I_i = % sin elec. | D_i = población | N_i = personas |
+| País | Tasa sin electricidad | Población | Personas sin electricidad |
 |---|---:|---:|---:|
 | Costa Rica | 0.60 % | 5 129 900 | 30 779 |
 | El Salvador | 1.70 % | 6 338 200 | 107 749 |
@@ -130,38 +102,27 @@ cada indicador (ver "Cálculo" en cada bloque de arriba).
 | Honduras | 13.64 % | 10 825 700 | 1 476 626 |
 | Nicaragua | 0.443 % | 6 916 100 | 30 638 |
 | Panamá | 4.00 % | 4 515 600 | 180 624 |
-| **Σ** | | **52 131 900** | **3 503 240** |
+| **Total SIEPAC** | | **52 131 900** | **3 503 240** |
 
-**Paso 2 — agregado regional (razón de sumas):**
+> SOC1 SIEPAC = 3 503 240 ÷ 52 131 900 × 100 = **6.72 %**
 
-> SOC1_SIEPAC = Σ N_i ÷ Σ D_i = 3 503 240 ÷ 52 131 900 × 100 = **6.72 %**
+El promedio simple de los seis porcentajes nacionales es 4.92 %. La
+diferencia corresponde al peso poblacional de cada país en el agregado.
 
-**Paso 3 — contraste con el promedio simple (control):**
+Fuentes del cálculo: `data/raw_equipo/SOCs.xlsx` para las tasas nacionales y
+CEPALSTAT-CELADE para la población total. El pipeline conserva los resultados
+en `data/processed/indicadores_SOC_SIEPAC.xlsx` y
+`graficos/region/tabla_agregados.csv`.
 
-> Ī = (0.60 + 1.70 + 9.11 + 13.64 + 0.443 + 4.00) ÷ 6 = 4.92 %
+## Series representadas mediante promedio de países
 
-4.92 % ≠ 6.72 % porque los países grandes (Guatemala, Honduras) tienen los %
-más altos y la media simple los pesa igual que a los pequeños. El agregado es
-la cifra correcta para "el bloque": equivale a contar personas.
+- **ECO14:** presenta el promedio simple de las tarifas nacionales. Los
+  valores calculados mediante CAGR se identifican en las tablas y los
+  visualizadores. La razón de sumas requiere energía regulada vendida por
+  país y año.
+- **SOC2:** presenta estadísticas descriptivas y promedio simple de los
+  resultados nacionales. Los insumos monetarios permanecen expresados en el
+  marco de cada país, por lo que no se construye una razón de sumas regional.
 
-**Para replicar en otro indicador:** sustituir N y D según su fórmula
-(ej. ECO1: N = consumo final kWh, D = población → 55.4 TWh ÷ 52.13 M hab =
-1 063 kWh/hab). Verificación automática: `graficos/region/tabla_agregados.csv`.
-
----
-
-## ❌ NO validados a nivel SIEPAC (no citar cifra regional)
-
-| Indicador | Por qué no | Estado |
-|---|---|---|
-| **ECO14** (tarifa) | Sin MWh regulados para ponderar. Y 2023–2024 es 100 % imputación CAGR, no dato. | Solo promedio de países, con nota. Solución propuesta: ponderar por consumo final (proxy) + buscar tarifas reales 2023–24. |
-| **SOC2** (% ingreso en electricidad) | Insumos en moneda local, sin nº de hogares. Guatemala con anomalía ~1000× **sin resolver**. | Bloqueado hasta aclarar Guatemala con el equipo. |
-| **SOC3** (acceso renovable rural/urb.) | Falta población rural/urbana para ponderar. | Arreglable: dato público (Banco Mundial SP.RUR/URB.TOTL) + ETL pequeño. |
-
----
-
-*Metodología completa: `docs/resumen_indicadores_SIEPAC.md`, sección "Cómo leer
-este documento". Respaldo formal: el agregado es la única agregación
-consistente con la definición IEDS; difiere del promedio en n·Cov(peso, valor)
-— con tamaño y desempeño correlacionados (como en CA) el promedio simple
-sesga, y puede invertir tendencias (Yule–Simpson, caso ECO15).*
+La definición completa de cada indicador se mantiene en
+`docs/resumen_indicadores_SIEPAC.md` y en `src/viz_comun.py`.

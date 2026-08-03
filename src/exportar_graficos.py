@@ -9,9 +9,9 @@ Fuente de datos    : el propio explorador HTML (Plotly.js)
 
 Toma el explorador ya generado y, con un navegador Chromium sin ventana
 (headless), fotografía cada gráfico TAL CUAL se ve en el visor usando
-Plotly.toImage. No redibuja nada en Python: maneja las mismas funciones
-JavaScript del explorador (render, setModo, setSerie, setPaisEnv6), así la
-imagen nunca discrepa del gráfico interactivo (una sola fuente de verdad).
+Plotly.toImage. Utiliza las mismas funciones JavaScript del explorador
+(render, setModo, setSerie, setPaisEnv6) para mantener una sola fuente de
+representación.
 
 Exporta las vistas de SERIE TEMPORAL y de BARRAS (2020 vs 2024) de cada
 indicador y sub-serie; los mapas de calor se omiten a propósito. Cada
@@ -46,8 +46,7 @@ log = logging.getLogger(Path(__file__).stem)
 
 RUTA_HTML = DIR_GRAFICOS / "0_explorador_indicadores.html"
 
-# Vistas a exportar. El explorador ofrece además "heatmap", que se omite
-# a propósito (decisión del proyecto: solo serie temporal y barras).
+# Vistas estáticas exportadas: serie temporal y comparación de extremos.
 MODOS_EXPORTAR = ["serie", "barras"]
 
 # Tamaño lógico del lienzo y factor de escala. La imagen final mide
@@ -156,8 +155,7 @@ def main() -> None:
             "&& typeof Plotly !== 'undefined'")
 
         for t in tareas:
-            # Omitir indicadores cuya dimensión no llegó (archivo faltante):
-            # se comprueba igual que el menú del explorador.
+            # Omitir series ausentes del paquete de datos del explorador.
             if not pagina.evaluate("(clave) => clave in DATOS", t["clave"]):
                 log.warning("Sin datos, se omite: %s", t["nombre"])
                 omitidas += 1

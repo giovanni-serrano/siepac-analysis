@@ -10,11 +10,10 @@ Fuente de datos    : sieLAC-OLADE (Matriz de balance energético)
 
 Uso:  python src/etl_importaciones_exportaciones.py   (ejecutar desde la raíz)
 
-Notas metodológicas:
-  - Diseño defensivo: NADA está hardcodeado por posición. Se buscan la
-    fila de encabezados, la columna ELECTRICIDAD y las filas de flujo por
-    su texto (normalizado sin acentos); una hoja que no cumple la
-    estructura se loggea y se salta — nunca se inventan valores.
+Reglas de transformación:
+  - La fila de encabezados, la columna ELECTRICIDAD y las filas de flujo se
+    localizan por texto normalizado, sin depender de posiciones fijas. Las
+    hojas que no cumplen el esquema se registran y se excluyen.
   - Celda vacía = flujo inexistente en los balances de OLADE, se
     interpreta como 0 GWh y se deja constancia en el log.
   - Los nombres de país se homologan a la grafía canónica del proyecto
@@ -35,7 +34,7 @@ from openpyxl import load_workbook
 from config_siepac import GWH_A_KWH, DIR_RAW, DIR_PROCESSED
 
 # ---------------------------------------------------------------------------
-# Configuración de rutas (relativas a la raíz del proyecto, nunca absolutas)
+# Rutas relativas a la raíz del proyecto.
 # ---------------------------------------------------------------------------
 CARPETA_RAW = DIR_RAW / "importaciones_exportaciones"
 CARPETA_PROCESSED = DIR_PROCESSED
@@ -53,8 +52,7 @@ NOMBRE_CANONICO = {
     "panama":      "Panamá",
 }
 
-# Países válidos del SIEPAC (normalizados) — cualquier hoja con otro país se
-# loggea y salta. Derivado de NOMBRE_CANONICO para no repetir la lista.
+# Países válidos del SIEPAC en forma normalizada.
 PAISES_SIEPAC = set(NOMBRE_CANONICO)
 
 # Patrón del nombre de hoja: "2020 - Costa Rica", "2024 - Panamá", etc.
@@ -76,7 +74,7 @@ def normalizar(texto) -> str:
     """Convierte a minúsculas y elimina acentos para comparar textos de forma
     robusta ('IMPORTACIÓN' == 'importacion'). Devuelve '' si el valor es None.
 
-    Esto protege contra variaciones de tildes entre hojas u años distintos.
+    La normalización absorbe variaciones de tildes entre hojas y años.
     """
     if texto is None:
         return ""
@@ -92,11 +90,10 @@ def a_numero(valor):
     Devuelve (numero, es_vacio):
       - Celda vacía (None o cadena en blanco) -> (0.0, True).
         En los balances energéticos de OLADE, una celda en blanco significa
-        'flujo inexistente', no 'dato perdido', por eso se interpreta como 0.
-        Aun así se marca como vacía para que quede constancia en el log.
+        'flujo inexistente', por lo que se interpreta como 0 y se registra
+        el estado original.
       - Valor numérico -> (float, False).
-      - Cualquier otra cosa (texto, error de Excel) -> lanza ValueError para
-        que la hoja se rechace explícitamente en vez de colar basura.
+      - Otro tipo de valor (texto o error de Excel) -> lanza ValueError.
     """
     if valor is None or (isinstance(valor, str) and valor.strip() == ""):
         return 0.0, True
@@ -113,7 +110,7 @@ def extraer_datos(carpeta_raw: Path) -> list[dict]:
     válida, importación y exportación de ELECTRICIDAD en GWh.
 
     Devuelve una lista de diccionarios (un registro por hoja procesada).
-    Las hojas problemáticas se loggean y se saltan; nunca detienen el resto.
+    Las hojas que no cumplen el esquema se registran y se excluyen.
     """
     archivos = sorted(carpeta_raw.glob("*.xlsx"))
     if not archivos:
@@ -132,9 +129,8 @@ def extraer_datos(carpeta_raw: Path) -> list[dict]:
                 if registro is not None:
                     registro["archivo"] = archivo.name
                     registros.append(registro)
-            except Exception as exc:  # noqa: BLE001 — defensivo a propósito
-                # Cualquier hoja rota se reporta y se salta. Jamás se
-                # inventan valores ni se aborta el lote completo.
+            except Exception as exc:  # noqa: BLE001 — aislamiento por hoja
+                # Cada hoja se procesa de forma independiente.
                 log.error("  [SALTADA] '%s': %s", nombre_hoja, exc)
 
         wb.close()
@@ -144,7 +140,7 @@ def extraer_datos(carpeta_raw: Path) -> list[dict]:
 def _extraer_hoja(ws, nombre_hoja: str) -> dict | None:
     """Extrae los datos de UNA hoja. Devuelve dict o None si se salta.
 
-    Pasos (todos por búsqueda, nada por posición fija):
+    Pasos basados en etiquetas y encabezados:
       1. Parsear año y país del nombre de la hoja.
       2. Buscar la fila de encabezados (la que contiene 'ELECTRICIDAD').
       3. Verificar que la unidad de esa columna sea GWh.
@@ -171,8 +167,7 @@ def _extraer_hoja(ws, nombre_hoja: str) -> dict | None:
 
     # --- 2. Localizar fila de encabezados y columna ELECTRICIDAD ----------
     fila_header, col_elec = None, None
-    # Se busca solo en las primeras 15 filas: los encabezados siempre están
-    # arriba; limitar la búsqueda evita falsos positivos en notas al pie.
+    # La búsqueda se limita al área de encabezados para excluir notas al pie.
     for fila in ws.iter_rows(min_row=1, max_row=15):
         for celda in fila:
             if normalizar(celda.value) == "electricidad":
@@ -187,15 +182,14 @@ def _extraer_hoja(ws, nombre_hoja: str) -> dict | None:
     # --- 3. Verificar unidad (fila inmediatamente bajo el encabezado) ------
     unidad = normalizar(ws.cell(fila_header + 1, col_elec).value)
     if unidad != "gwh":
-        raise ValueError(f"la unidad de ELECTRICIDAD es '{unidad}', se "
-                         f"esperaba 'gwh' — revisar antes de procesar")
+        raise ValueError(f"unidad de ELECTRICIDAD inesperada: '{unidad}'; "
+                         "se requiere 'gwh'")
 
     # --- 4. Localizar filas IMPORTACIÓN y EXPORTACIÓN ----------------------
     fila_imp, fila_exp = None, None
     for fila in ws.iter_rows(min_col=1, max_col=1):
         etiqueta = normalizar(fila[0].value)
-        # Coincidencia EXACTA tras normalizar: evita confundir con etiquetas
-        # compuestas tipo 'importación de crudo' si aparecieran algún día.
+        # La coincidencia exacta excluye otras categorías de importación.
         if etiqueta == "importacion":
             fila_imp = fila[0].row
         elif etiqueta == "exportacion":
@@ -241,8 +235,7 @@ def transformar(registros: list[dict]) -> pd.DataFrame:
     """
     df = pd.DataFrame(registros)
 
-    # Homologar nombres de país al nombre canónico del proyecto (con tildes),
-    # para que el merge con los demás CSVs no falle por 'Panamá' vs 'Panama'.
+    # Homologación a la grafía canónica utilizada en las claves de unión.
     df["pais"] = df["pais"].map(lambda p: NOMBRE_CANONICO[normalizar(p)])
 
     # Conversión a la unidad base del proyecto: GWh -> kWh.
@@ -268,9 +261,7 @@ def transformar(registros: list[dict]) -> pd.DataFrame:
 # VALIDACIÓN
 # ---------------------------------------------------------------------------
 def validar(df: pd.DataFrame) -> None:
-    """Chequeos de integridad. Cualquier fallo detiene el script con error
-    explícito: preferimos un fallo ruidoso a un CSV corrupto y silencioso.
-    """
+    """Detiene la escritura cuando falla una comprobación de integridad."""
     errores = []
 
     # 1. Sin nulos en ninguna columna.

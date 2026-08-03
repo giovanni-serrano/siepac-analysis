@@ -125,8 +125,8 @@ def cargar_pib() -> pd.DataFrame:
 def transformar(df: pd.DataFrame, pib: pd.DataFrame) -> pd.DataFrame:
     """Filtra, valida la unidad y reconstruye el VAI en USD constantes 2015."""
 
-    # 1. Nos quedamos solo con las columnas que necesitamos. Los nombres
-    #    con doble guion bajo son así en el export de CEPALSTAT.
+    # 1. Selección de columnas. Los nombres con doble guion bajo
+    #    corresponden al esquema exportado por CEPALSTAT.
     columnas_esperadas = ["País__ESTANDAR", "Años__ESTANDAR", "value", "unit"]
     faltantes = [c for c in columnas_esperadas if c not in df.columns]
     if faltantes:
@@ -179,8 +179,7 @@ def transformar(df: pd.DataFrame, pib: pd.DataFrame) -> pd.DataFrame:
         sys.exit(1)
     log.info("Unidad confirmada: Porcentaje del PIB (caso 3 de la regla de moneda)")
 
-    # 5. Merge con el PIB real. how='left' para detectar pares
-    #    (pais, anio) sin PIB en vez de perderlos silenciosamente.
+    # 5. Unión izquierda con el PIB para conservar todos los pares país-año.
     df = df.merge(pib, on=["pais", "anio"], how="left")
     sin_pib = df[df["pib_usd"].isna()]
     if not sin_pib.empty:
@@ -213,8 +212,7 @@ def validar(df: pd.DataFrame) -> None:
         log.error("El resultado tiene %d celdas nulas. Abortando.", nulos)
         sys.exit(1)
 
-    # Conteo esperado: 6 países x 5 años = 30 filas. Si hay menos,
-    # ya se loggeó el porqué arriba; aquí solo dejamos constancia.
+    # Conteo esperado: 6 países por 5 años.
     esperadas = len(PAISES_SIEPAC) * (ANIO_FIN - ANIO_INICIO + 1)
     if len(df) != esperadas:
         log.warning("Filas: %d (se esperaban %d). Revisa los WARNING previos.",
@@ -222,13 +220,12 @@ def validar(df: pd.DataFrame) -> None:
     else:
         log.info("Conteo de filas OK: %d", len(df))
 
-    # Cobertura: qué países SIEPAC faltan por completo.
+    # Comparar la cobertura geográfica con la configuración del proyecto.
     faltan = set(PAISES_SIEPAC) - set(df["pais"].unique())
     if faltan:
         log.warning("Países SIEPAC sin datos en la salida: %s", sorted(faltan))
 
-    # Sanidad de magnitudes: el VAI de estos países debe estar en el
-    # orden de 10^8 a 10^11 USD. Fuera de eso, algo salió mal.
+    # Validar el intervalo de magnitudes expresado en USD.
     if not df["valor_usd"].between(1e8, 1e12).all():
         log.error("Hay valores de VAI fuera del orden de magnitud esperado "
                   "(10^8 - 10^12 USD). Posible error de unidad. Abortando.")

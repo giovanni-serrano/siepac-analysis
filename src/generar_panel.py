@@ -313,7 +313,8 @@ const BASES = {
       "población en miles, PIB en USD constantes de 2015 y producción " +
       "bruta en GWh." },
   soc: { clave: "base_soc", csv: "datos_base_SOC_SIEPAC.csv",
-    desc: "Variables de entrada de SOC1 y SOC3, en %. Los insumos " +
+    desc: "Variables de entrada de SOC1 y SOC3: tasas en % y población " +
+          "rural/urbana en habitantes. Los insumos " +
       "monetarios de SOC2 permanecen en las hojas por país de la " +
       "fuente, en moneda local." },
 };
@@ -334,6 +335,10 @@ function claveDe(cod, idx) {
                   : cod;
 }
 function existe(cod) { return claveDe(cod, 0) in DATOS; }
+// El aviso combina la convención visual con la nota metodológica.
+function avisoFicha(f) {
+  return [f.nota_figura, f.nota].filter(Boolean).join(" ");
+}
 function infoSerie(cod, idx) {
   const f = FICHAS[cod];
   if (!f.series)
@@ -368,7 +373,7 @@ function deltaTexto(cod, vals) {
 }
 // Referencia regional de un bloque: el agregado (razón de sumas, el
 // bloque como sistema) cuando la serie tiene denominador disponible;
-// si no (ECO14, SOC2, SOC3), el promedio de países (media simple).
+// si no (ECO14 y SOC2), el promedio de países (media simple).
 function refRegional(bloque) {
   return bloque.agregado
       ? { vals: bloque.agregado, nombre: "Agregado regional" }
@@ -541,7 +546,8 @@ function renderDetalle() {
   if (f.tipo === "env6") {
     head += "<div class='unidad'>GWh · " + PAIS_ENV6 + "</div>" +
         "<p class='desc'>" + f.descripcion + "</p>" +
-        (f.nota ? "<div class='aviso'>" + f.nota + "</div>" : "") + "</div>";
+        (avisoFicha(f) ? "<div class='aviso'>" + avisoFicha(f) + "</div>"
+         : "") + "</div>";
     const chips = "<div class='chips'>" + PAISES.map(p =>
         "<button class='chip " + (p === PAIS_ENV6 ? "" : "off") +
         "' onclick=\"setPaisEnv6('" + p + "')\"><i style='background:" +
@@ -570,7 +576,8 @@ function renderDetalle() {
   head += "<div class='unidad'>" + inf.unidad +
       (inf.etiqueta ? " · " + inf.etiqueta : "") + "</div>" +
       "<p class='desc'>" + f.descripcion + "</p>" +
-      (f.nota ? "<div class='aviso'>" + f.nota + "</div>" : "") + "</div>";
+      (avisoFicha(f) ? "<div class='aviso'>" + avisoFicha(f) + "</div>"
+       : "") + "</div>";
 
   let controles = segmentado(
       f.modos.map(m => [m, ETIQ_MODO[m]]), MODO, "setModo");

@@ -32,18 +32,13 @@ cuerpo del monográfico). En la versión sin notas la unidad de medida se
 traslada al título, entre paréntesis, porque de otro modo desaparecería
 del documento.
 
-Las tablas se arman en HTML y, si la máquina tiene Microsoft Word, el
-script le pide al propio Word que convierta ese HTML en un .docx: el
-resultado son tablas de Word nativas (bordes por celda, Times New Roman,
-ancho ajustado al texto), listas para copiar al documento del monográfico
-o para usarse tal cual como anexo. Sin Word, el HTML sirve igual copiando
-y pegando desde el navegador.
+Las tablas se generan en HTML. Cuando Microsoft Word está disponible, la
+conversión automatizada produce archivos .docx con tablas nativas. El HTML
+permanece como formato de intercambio en las demás plataformas.
 
 Notas metodológicas:
-  - Los valores NO se recalculan aquí: se leen de viz_comun, la misma
-    fuente única que alimenta los visualizadores y el resumen en
-    Markdown, de modo que las tablas del documento final no puedan
-    divergir de las cifras del repositorio.
+  - Los valores se leen de viz_comun, la misma fuente que alimenta los
+    visualizadores y el resumen en Markdown.
   - Cada tabla de indicador cierra con las dos filas de resumen del
     proyecto: promedio de países (media simple) y, cuando la serie tiene
     denominador disponible, agregado regional (razón de sumas).
@@ -51,9 +46,7 @@ Notas metodológicas:
     variable es una magnitud sumable (energía, población, PIB) y con el
     promedio de países cuando es una razón o un porcentaje, que no se
     puede sumar entre países.
-  - Las referencias APA de las fuentes se declaran en FUENTES_APA y
-    REFERENCIAS_APA (más abajo): es el único lugar del script que hay que
-    tocar si cambia la forma de citar en el monográfico.
+  - FUENTES_APA y REFERENCIAS_APA centralizan las citas del documento.
 
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
@@ -101,21 +94,26 @@ NOMBRE_DIM = {"eco": "económica", "env": "ambiental", "soc": "social"}
 # ---------------------------------------------------------------------------
 # CITAS DE LAS FUENTES (formato APA 7.ª ed.)
 # Claves cortas para la nota al pie de cada tabla; el texto completo de la
-# referencia va en la sección final del documento. Ajustar aquí si el
-# monográfico cita de otra forma.
+# referencia se incluye en la sección final del documento.
 # ---------------------------------------------------------------------------
 FUENTES_APA = {
     "olade": "OLADE (2026)",
     "cepal": "CEPAL (2026)",
-    "bm": "Banco Mundial (2026)",
+    "bm": "Banco Mundial (2026a)",
+    "bm_pob": "Banco Mundial (2026b)",
     "ods": "CEPAL (2026) y UNIDO (2026)",
-    "equipo": "el equipo de investigación",
+    "env": "la matriz ENVs.xlsx",
+    "soc": "la matriz SOCs.xlsx",
 }
 
 REFERENCIAS_APA = [
-    "Banco Mundial. (2026). <i>PIB (US$ a precios constantes de 2015)</i> "
+    "Banco Mundial. (2026a). <i>PIB (US$ a precios constantes de 2015)</i> "
     "[Conjunto de datos]. Indicadores del desarrollo mundial. "
     "https://datos.bancomundial.org/indicador/NY.GDP.MKTP.KD",
+    "Banco Mundial. (2026b). <i>Población rural y población urbana</i> "
+    "[Conjuntos de datos]. Indicadores del desarrollo mundial. "
+    "https://datos.bancomundial.org/indicador/SP.RUR.TOTL; "
+    "https://datos.bancomundial.org/indicador/SP.URB.TOTL",
     "Comisión Económica para América Latina y el Caribe. (2026). "
     "<i>CEPALSTAT: bases de datos y publicaciones estadísticas</i> "
     "[Conjunto de datos]. https://statistics.cepal.org/portal/cepalstat/",
@@ -152,7 +150,7 @@ FUENTE_INDICADOR = {
 #   delta    : 'pct' variación relativa | 'pp' puntos porcentuales
 #   resumen  : 'suma' fila "Total SIEPAC" | 'media' fila "Promedio de países"
 #   fuente   : clave de FUENTES_APA
-#   nota     : advertencia adicional para la nota al pie ("" si no hay)
+#   nota     : precisión metodológica para la nota al pie ("" si no hay)
 # ---------------------------------------------------------------------------
 VarBase = namedtuple("VarBase", "columna etiqueta unidad escala formato "
                                 "delta resumen fuente nota")
@@ -195,19 +193,19 @@ BASE_ECO = [
     VarBase("pib_usd_const2015", "Producto interno bruto real",
             "millones de USD constantes de 2015", _MUSD, ",.0f", "pct",
             "suma", "bm", ""),
-    VarBase("vai_usd_const2015", "Valor agregado industrial",
+    VarBase("vai_usd_const2015", "Valor agregado manufacturero",
             "millones de USD constantes de 2015", _MUSD, ",.0f", "pct",
             "suma", "ods",
             "Calculado en el ETL como participación del valor agregado "
-            "industrial en el PIB multiplicada por el PIB real."),
+            "manufacturero en el PIB (indicador ODS 9.2.1) multiplicada "
+            "por el PIB real."),
     VarBase("vai_pct_pib",
-            "Participación del valor agregado industrial en el PIB",
+            "Participación del valor agregado manufacturero en el PIB",
             "%", 1, ".2f", "pp", "media", "ods", ""),
     VarBase("tarifa_usd_mwh", "Precio medio de la electricidad regulada",
             "USD corrientes por MWh", 1, ".1f", "pct", "media", "cepal",
-            "Los valores marcados con asterisco son imputaciones vía tasa "
-            "de crecimiento anual compuesta (CAGR), no observaciones de la "
-            "fuente."),
+            "Los valores marcados con asterisco se calculan mediante tasa "
+            "de crecimiento anual compuesta (CAGR)."),
 ]
 
 BASE_ENV = [
@@ -215,45 +213,39 @@ BASE_ENV = [
             "Emisiones de gases de efecto invernadero de las centrales "
             "eléctricas",
             "miles de toneladas de CO₂ equivalente", 1, ",.2f", "pct",
-            "suma", "equipo", ""),
+            "suma", "env", ""),
     VarBase("so2_10e3t",
             "Emisiones de dióxido de azufre de las centrales eléctricas",
-            "miles de toneladas", 1, ",.3f", "pct", "suma", "equipo", ""),
+            "miles de toneladas", 1, ",.3f", "pct", "suma", "env", ""),
     VarBase("nox_10e3t",
             "Emisiones de óxidos de nitrógeno de las centrales eléctricas",
-            "miles de toneladas", 1, ",.4f", "pct", "suma", "equipo", ""),
+            "miles de toneladas", 1, ",.4f", "pct", "suma", "env", ""),
     VarBase("co_10e3t",
             "Emisiones de monóxido de carbono de las centrales eléctricas",
-            "miles de toneladas", 1, ",.3f", "pct", "suma", "equipo", ""),
+            "miles de toneladas", 1, ",.3f", "pct", "suma", "env", ""),
     VarBase("particulas_10e3t",
             "Emisiones de material particulado de las centrales eléctricas",
-            "miles de toneladas", 1, ",.4f", "pct", "suma", "equipo", ""),
+            "miles de toneladas", 1, ",.4f", "pct", "suma", "env", ""),
     VarBase("pib_usd_const2015",
             "Producto interno bruto real empleado en la dimensión ambiental",
             "millones de USD constantes de 2015", 1, ",.1f", "pct", "suma",
-            "equipo",
-            "Serie del libro ambiental provisto por el equipo. Difiere "
-            "entre −3.4 % y +7.8 % de la serie del Banco Mundial "
-            "empleada en la dimensión económica; los indicadores ENV se "
-            "calculan con esta serie y los ECO con aquella."),
+            "env", "Serie de PIB correspondiente a la matriz ENVs.xlsx."),
 ]
 
 BASE_SOC = [
     VarBase("pct_sin_electricidad", "Población sin acceso a electricidad",
-            "%", 1, ".2f", "pp", "media", "equipo", ""),
+            "%", 1, ".2f", "pp", "media", "soc", ""),
     VarBase("tasa_electrificacion_rural", "Tasa de electrificación rural",
-            "%", 1, ".2f", "pp", "media", "equipo", ""),
+            "%", 1, ".2f", "pp", "media", "soc", ""),
     VarBase("tasa_electrificacion_urbana", "Tasa de electrificación urbana",
-            "%", 1, ".2f", "pp", "media", "equipo", ""),
+            "%", 1, ".2f", "pp", "media", "soc", ""),
     VarBase("pct_renovable_generacion",
             "Participación de las renovables en la generación eléctrica",
-            "%", 1, ".2f", "pp", "media", "equipo",
+            "%", 1, ".2f", "pp", "media", "soc",
             "Insumo del indicador SOC3; coincide con el indicador ECO13."),
 ]
 
-# Variables de las hojas Datos_Base que no reciben tabla propia por ser
-# idénticas (hasta el redondeo) a una ya presentada en la dimensión
-# económica; se advierte en la introducción de cada sección.
+# Variables comunes que se presentan una sola vez en las tablas de datos base.
 OMITIDAS = {
     "env": ["poblacion_miles", "produccion_bruta_gwh"],
     "soc": [],
@@ -433,9 +425,7 @@ def _bloque_base(numero: int, var: VarBase, base: pd.DataFrame,
     if var.nota:
         nota += " " + var.nota
     fuente = FUENTES_APA[var.fuente]
-    nota += (f" Elaboración propia con datos de {fuente}."
-             if var.fuente != "equipo"
-             else f" Serie recopilada por {fuente}.")
+    nota += f" Elaboración propia con datos de {fuente}."
 
     encabezados = (["País"] + [str(a) for a in ANIOS] +
                    [f"Δ {ANIOS[0]}–{ANIOS[-1]}"])
@@ -452,8 +442,8 @@ def _bloque_base(numero: int, var: VarBase, base: pd.DataFrame,
 def _armar_datos() -> tuple[dict, dict]:
     """Mismo empaquetado que generar_resumen_indicadores._armar_datos:
     {clave_serie: {paises, promedio, agregado}} + banderas de imputación
-    de ECO14. Se reutiliza para que las tablas del documento final y las
-    del resumen en Markdown no puedan divergir."""
+    de ECO14. El esquema compartido mantiene consistencia entre las tablas
+    del documento y el resumen en Markdown."""
     hojas = cargar_datos()
     df = preparar_datos(hojas)
     agregados = agregados_eco(hojas["datos_base"])
@@ -489,9 +479,13 @@ def _series_de(ficha: dict, codigo: str) -> list[dict]:
 
 def _fuente_indicador(codigo: str, dim: str) -> str:
     """Frase de atribución para la nota al pie del indicador."""
-    if dim != "eco":
-        return ("Elaboración propia a partir de las series recopiladas por "
-                "el equipo de investigación.")
+    if dim == "env":
+        return "Elaboración propia a partir de ENVs.xlsx."
+    if dim == "soc":
+        fuente = "SOCs.xlsx"
+        if codigo == "SOC3":
+            fuente += f" y {FUENTES_APA['bm_pob']}"
+        return f"Elaboración propia a partir de {fuente}."
     claves = FUENTE_INDICADOR.get(codigo, "olade").split("+")
     citas = [FUENTES_APA[c] for c in claves]
     unidas = (citas[0] if len(citas) == 1
@@ -530,24 +524,21 @@ def _bloque_indicador(numero: int, codigo: str, ficha: dict, serie: dict,
     titulo = (f"{ficha['nombre']} ({serie['clave']}){sub}, por país, "
               f"{ANIOS[0]}–{ANIOS[-1]}")
 
+    # Las filas de resumen se identifican por su etiqueta y su cálculo
+    # está en las Convenciones de cálculo (Ec. 1 y 2): la nota solo
+    # remite, no reexplica el método en cada una de las 21 tablas.
     nota = (f"Valores en {serie['unidad']}. Fórmula: {serie['formula']}. "
             f"Δ = variación {ANIOS[0]}–{ANIOS[-1]}"
             + (" en puntos porcentuales. " if ficha["delta"] == "pp"
                else ", relativa. "))
-    nota += ("El promedio de países es la media simple de los seis valores "
-             "nacionales (peso 1/6 por país). ")
-    if agr:
-        nota += ("El agregado regional es la razón de sumas "
-                 "(Σ numerador ÷ Σ denominador), equivalente "
-                 "a ponderar cada país por su denominador; es el valor que "
-                 "corresponde citar cuando el texto se refiere al bloque "
-                 "como sistema. ")
+    nota += ("Filas de resumen: promedio de países (Ec. 2) y agregado "
+             "regional (Ec. 1). " if agr
+             else "Fila de resumen: promedio de países (Ec. 2). ")
     if ficha["nota"]:
         nota += ficha["nota"] + " "
-    nota += _fuente_indicador(codigo, ficha["dim"])
     if imputados:
-        nota += (" El asterisco marca valores imputados vía CAGR, no "
-                 "observaciones directas de la fuente.")
+        nota += "El asterisco marca valores imputados vía CAGR. "
+    nota += _fuente_indicador(codigo, ficha["dim"])
 
     encabezados = (["País"] + [str(a) for a in ANIOS] +
                    [f"Δ {ANIOS[0]}–{ANIOS[-1]}"])
@@ -572,8 +563,7 @@ def _bloque_env6(numero: int, ficha: dict, datos: dict) -> dict:
     nota = (f"Valores en {ficha['unidad']}. {ficha['descripcion']} "
             f"{ficha['nota']} No se reportan filas de resumen: la tabla "
             "contrasta dos series observadas y no calcula un cociente. "
-            "Elaboración propia a partir de las series recopiladas por el "
-            "equipo de investigación.")
+            "Elaboración propia a partir de ENVs.xlsx.")
     encabezados = ["País", "Serie"] + [str(a) for a in ANIOS]
     return dict(numero=numero, titulo=titulo,
                 titulo_con_unidad=f"{titulo} (en {ficha['unidad']})",
@@ -635,17 +625,12 @@ número, su título y los datos, para intercalarlas en el cuerpo del
 monográfico sin arrastrar el aparato metodológico. La unidad de medida se
 trasladó al título, entre paréntesis, para que ninguna tabla quede sin
 declarar en qué se expresan sus cifras.</p>
-<p style="{s_p}">Las notas completas —fórmula de cálculo, criterio de
-agregación, advertencias metodológicas y fuente de cada serie— están en
-<i>tablas_apa_SIEPAC.docx</i>, con la misma numeración. Conviene
-conservarlas: el Manual APA pide que la tabla se entienda sin recurrir al
-texto, así que las tablas que dependan de una advertencia (ECO14 y sus
-valores imputados, SOC2 y la inconsistencia de Guatemala, ENV6 y su
-carácter ilustrativo) deberían llevar la nota también aquí, o bien la
-aclaración correspondiente en el párrafo que las presenta.</p>
+<p style="{s_p}">Las notas completas —fórmula, criterio de agregación y
+fuente de cada serie— están en <i>tablas_apa_SIEPAC.docx</i>, con la misma
+numeración.</p>
 <p style="{s_p}">Cobertura: {paises}, ventana {a0}–{a1}.
-«s.d.» indica que no hay dato para esa celda. El asterisco marca valores
-imputados. Documento generado automáticamente por
+«s.d.» indica que no hay dato para esa celda. El asterisco identifica valores
+calculados mediante CAGR. Documento generado automáticamente por
 <i>src/generar_tablas_apa.py</i> el {fecha}.</p>
 """
 
@@ -654,6 +639,609 @@ def _seccion(titulo: str, parrafos: list[str]) -> list[str]:
     bloque = [f'<h2 style="{S_H2}">{titulo}</h2>']
     bloque += [f'<p style="{S_P}">{p}</p>' for p in parrafos]
     return bloque
+
+
+# ---------------------------------------------------------------------------
+# CONVENCIONES DE CÁLCULO (leyenda del archivo)
+# Las notas al pie remiten a estas ecuaciones en lugar de reexplicar el
+# método en cada tabla. La numeración Ec. 1–5 es la misma del capítulo
+# cuantitativo (analisis-eco/generar_documento_eco.py), de modo que quien
+# lea la tabla dentro de la tesis encuentre la referencia ya definida.
+# Va marcado como bloque propio para poder omitirlo al insertar las
+# tablas en el monográfico, donde las ecuaciones ya están numeradas.
+# ---------------------------------------------------------------------------
+
+_ECUACIONES_LEYENDA = [
+    ("1", "Agregado regional (razón de sumas)",
+     "I<sup>RS</sup><sub>t</sub> = Σ<sub>i</sub> N<sub>i,t</sub> ÷ "
+     "Σ<sub>i</sub> D<sub>i,t</sub>"),
+    ("2", "Promedio de países (media simple)",
+     "x̄<sub>t</sub> = (1/6) Σ<sub>i</sub> I<sub>i,t</sub>"),
+    ("3", "Desviación estándar poblacional (DE)",
+     "σ<sub>t</sub> = √[(1/6) Σ<sub>i</sub> (I<sub>i,t</sub> − "
+     "x̄<sub>t</sub>)²]"),
+    ("4", "Coeficiente de variación (CV)",
+     "CV<sub>t</sub> = σ<sub>t</sub> ÷ |x̄<sub>t</sub>| × 100"),
+    ("5", "Tasa de crecimiento anual compuesta (CAGR)",
+     f"CAGR = (V<sub>{ANIOS[-1]}</sub> ÷ V<sub>{ANIOS[0]}</sub>)"
+     f"<sup>1/{len(ANIOS) - 1}</sup> − 1"),
+]
+
+
+def _leyenda_convenciones() -> list[str]:
+    """Bloque «Convenciones de cálculo»: la leyenda a la que remiten las
+    notas. Se emite como sección separada para poder omitirla al pegar
+    las tablas dentro del capítulo."""
+    celda = ("border:0;padding:3pt 10pt 3pt 0;vertical-align:top;"
+             f"font-family:{S_SERIF};font-size:10.5pt;")
+    filas = "".join(
+        f'<tr><td style="{celda}white-space:nowrap;">({n})</td>'
+        f'<td style="{celda}">{nombre}</td>'
+        f'<td style="{celda}">{formula}</td></tr>'
+        for n, nombre, formula in _ECUACIONES_LEYENDA)
+    return [
+        f'<h2 style="{S_H2}">Convenciones de cálculo</h2>',
+        f'<p style="{S_P}">Las notas al pie de las tablas remiten a las '
+        'ecuaciones siguientes, con la misma numeración que el capítulo '
+        'cuantitativo. Sea <i>I</i><sub>i,t</sub> el valor del indicador '
+        f'en el país i (i = 1, …, {len(PAISES)}) y el año t '
+        f'(t = {ANIOS[0]}, …, {ANIOS[-1]}), construido como el cociente '
+        'entre un numerador <i>N</i><sub>i,t</sub> y un denominador '
+        '<i>D</i><sub>i,t</sub> propios de cada indicador.</p>',
+        ('<table style="border-collapse:collapse;margin:0 0 12pt 0;">'
+         f'{filas}</table>'),
+        f'<p style="{S_P}">Los {len(PAISES)} países interconectados '
+        'forman el universo completo del bloque, de modo que el '
+        'tratamiento es descriptivo, la desviación estándar se calcula '
+        f'con denominador N = {len(PAISES)} (Ec. 3) y no procede la '
+        'inferencia estadística. La Ec. 1 se aplica a los indicadores '
+        'con numerador y denominador agregables; ECO14 se resume con la '
+        'mediana de países según la convención definida para esa serie. '
+        'El promedio de países (Ec. 2) '
+        'y el agregado regional (Ec. 1) responden preguntas distintas y '
+        'pueden divergir incluso en el signo de la tendencia, por lo que '
+        'ambos se reportan siempre etiquetados.</p>',
+    ]
+
+
+# ---------------------------------------------------------------------------
+# TABLAS DE ESTADÍSTICA DESCRIPTIVA DEL BLOQUE (dimensión económica)
+# Los seis países son el universo del SIEPAC, no una muestra: el marco es
+# descriptivo (niveles, dispersión, convergencia, composición) y no
+# procede inferencia. Misma numeración corrida que el resto del documento.
+# ---------------------------------------------------------------------------
+
+ECO_BLOQUE = ["ECO1", "ECO2", "ECO3", "ECO6", "ECO11", "ECO13",
+              "ECO14", "ECO15"]
+
+# El carácter censal del bloque y la definición de σ, CV y las ecuaciones
+# se declaran una sola vez en las Convenciones de cálculo del encabezado
+# del archivo; las notas de tabla remiten a ellas en lugar de repetirlas.
+
+
+def _valores_anio(datos: dict, codigo: str, i: int) -> list[float]:
+    """Los seis valores nacionales del año i-ésimo de la ventana."""
+    return [datos[codigo]["paises"][p][i] for p in PAISES
+            if not _es_nulo(datos[codigo]["paises"][p][i])]
+
+
+def _mediana(v: list[float]) -> float:
+    s = sorted(v)
+    m = len(s) // 2
+    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2
+
+
+def _de_poblacional(v: list[float]) -> float:
+    """Desviación estándar poblacional (denominador N): los seis países
+    son el universo del SIEPAC, no una muestra. Mismo criterio que
+    analisis-eco/analisis_descriptivo_eco.py."""
+    media = sum(v) / len(v)
+    return math.sqrt(sum((x - media) ** 2 for x in v) / len(v))
+
+
+def _cv_pct(v: list[float]) -> float:
+    return _de_poblacional(v) / abs(sum(v) / len(v)) * 100
+
+
+def _serie_bloque(datos: dict, codigo: str) -> list[float]:
+    """Serie del bloque: razón de sumas; en ECO14, mediana de países
+    (no existe el denominador con el que ponderar la tarifa)."""
+    agr = datos[codigo].get("agregado")
+    if agr:
+        return agr
+    return [_mediana(_valores_anio(datos, codigo, i))
+            for i in range(len(ANIOS))]
+
+
+def _cagr_txt(v0: float, v4: float) -> str:
+    """CAGR de la ventana; «s.d.» si un extremo no es positivo (el
+    exponente fraccionario no está definido con cambio de signo)."""
+    if _es_nulo(v0) or _es_nulo(v4) or v0 <= 0 or v4 <= 0:
+        return "s.d."
+    return f"{((v4 / v0) ** (1 / (len(ANIOS) - 1)) - 1) * 100:+.2f}"
+
+
+def _bloque_tendencia(numero: int, datos: dict) -> dict:
+    """Tabla única: nivel y tendencia del bloque por indicador ECO."""
+    filas = []
+    # Las participaciones se expresan como cambio en puntos porcentuales.
+    # ECO15 puede cambiar de signo, por lo que la CAGR no está definida.
+    sin_cagr = ("ECO11", "ECO13", "ECO15")
+    for cod in ECO_BLOQUE:
+        f = FICHAS[cod]
+        s = _serie_bloque(datos, cod)
+        marca = "†" if datos[cod].get("agregado") is None else ""
+        filas.append(
+            [f"{cod}. {f['nombre']} ({f['unidad']}){marca}"]
+            + [_fmt(v, f["formato"]) for v in s]
+            + [_delta(s[0], s[-1], f["delta"]),
+               "n.a." if cod in sin_cagr else _cagr_txt(s[0], s[-1])])
+    titulo = (f"Nivel y tendencia del bloque SIEPAC por indicador "
+              f"económico, {ANIOS[0]}–{ANIOS[-1]}")
+    nota = ("Cada serie es el agregado regional (Ec. 1); la daga (†) "
+            "marca ECO14, resumido con la mediana de países. "
+            f"Δ = variación {ANIOS[0]}–{ANIOS[-1]}, "
+            "relativa o en puntos porcentuales según la serie; CAGR "
+            "(Ec. 5) en % por año, «n.a.» donde no procede calcularla "
+            "sobre una participación. En ECO14, 2023–2024 (y 2022 en El "
+            "Salvador) se calculan mediante CAGR. Elaboración propia a "
+            "partir de las tablas de indicadores de este archivo.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (unidad indicada en cada fila)",
+        encabezados=["Indicador"] + [str(a) for a in ANIOS]
+                    + [f"Δ {ANIOS[0]}–{ANIOS[-1]}", "CAGR (%/año)"],
+        filas=filas, resumen=[], nota=nota, cols_izq=1)
+
+
+def _bloque_heterogeneidad(numero: int, codigo: str, datos: dict) -> dict:
+    """Una tabla por indicador: dispersión entre países, año a año.
+
+    Los valores mínimo y máximo se presentan sin identificar el país:
+    la sección describe la amplitud del bloque como sistema, y quien
+    necesite la cifra de un país concreto la tiene en las tablas de
+    indicadores por país de este mismo documento.
+    """
+    f = FICHAS[codigo]
+    fmt = f["formato"]
+    filas = []
+    for i, anio in enumerate(ANIOS):
+        v = _valores_anio(datos, codigo, i)
+        filas.append([str(anio), _fmt(sum(v) / len(v), fmt),
+                      _fmt(_mediana(v), fmt), _fmt(_de_poblacional(v), fmt),
+                      f"{_cv_pct(v):.1f}",
+                      _fmt(min(v), fmt), _fmt(max(v), fmt),
+                      _fmt(max(v) - min(v), fmt)])
+    titulo = (f"Estadística descriptiva de {f['nombre']} ({codigo}) entre "
+              f"los países del SIEPAC, por año, {ANIOS[0]}–{ANIOS[-1]}")
+    nota = (f"Estadísticos de los seis valores nacionales de cada año, "
+            f"en {f['unidad']}; DE (Ec. 3) y CV (Ec. 4). Esos valores "
+            "están en la tabla del indicador por país. ")
+    if codigo == "ECO15":
+        nota += ("El CV se calcula sobre una media cercana a cero "
+                 "con signos mixtos, de modo que no es interpretable "
+                 "como dispersión relativa y la lectura corresponde a la "
+                 "DE absoluta y al rango, en puntos porcentuales. ")
+    if codigo == "ECO14":
+        nota += ("Los estadísticos de 2023–2024 (y 2022 en El Salvador) "
+                 "incorporan valores imputados vía CAGR. ")
+    if f["nota"]:
+        nota += f["nota"] + " "
+    nota += _fuente_indicador(codigo, f["dim"])
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (en {f['unidad']}; CV en %)",
+        encabezados=["Año", "Media", "Mediana", "DE", "CV (%)",
+                     "Mínimo", "Máximo", "Rango"],
+        filas=filas, resumen=[], nota=nota, cols_izq=1)
+
+
+def _bloque_convergencia(numero: int, datos: dict) -> dict:
+    """Tabla única: convergencia sigma (trayectoria del CV) por indicador."""
+    filas = []
+    for cod in ECO_BLOQUE:
+        f = FICHAS[cod]
+        if cod == "ECO15":
+            # CV sobre media cercana a cero con signos mixtos: no es
+            # interpretable; no se publican sus CV ni se emite veredicto.
+            filas.append([f"{cod}. {f['nombre']}"]
+                         + ["—"] * len(ANIOS) + ["—", "No aplicable"])
+            continue
+        cvs = [_cv_pct(_valores_anio(datos, cod, i))
+               for i in range(len(ANIOS))]
+        delta = cvs[-1] - cvs[0]
+        filas.append([f"{cod}. {f['nombre']}"]
+                     + [f"{cv:.1f}" for cv in cvs]
+                     + [f"{delta:+.1f}",
+                        "Convergen" if delta < 0 else "Divergen"])
+    titulo = ("Convergencia sigma entre los países del SIEPAC por "
+              f"indicador económico, {ANIOS[0]}–{ANIOS[-1]}")
+    nota = ("CV de los seis valores nacionales de cada año (Ec. 4). Una "
+            "caída en la ventana (Δ negativo) indica convergencia sigma "
+            "—los países se asemejan— y un aumento, divergencia. En "
+            "ECO15 el CV no es interpretable, porque la media es "
+            "cercana a cero con signos mixtos, y su dispersión se lee "
+            "en la tabla del indicador. Para ECO14, el contraste de "
+            "convergencia utiliza 2020–2022. "
+            "Elaboración propia a partir de las tablas de indicadores "
+            "de este archivo.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (CV en %)",
+        encabezados=["Indicador"] + [f"CV {a}" for a in ANIOS]
+                    + ["Δ (pp)", "Lectura"],
+        filas=filas, resumen=[], nota=nota, cols_izq=1)
+
+
+def _tablas_bloque(inicio: int, datos: dict) -> list[dict]:
+    """Lista de tablas de estadística descriptiva del bloque, numeradas
+    desde `inicio`: tendencia, heterogeneidad (una por indicador) y
+    convergencia sigma. Todas describen al bloque como sistema, sin
+    identificar países."""
+    tablas = [(_bloque_tendencia(inicio, datos), "BLOQUE_TENDENCIA")]
+    n = inicio + 1
+    for cod in ECO_BLOQUE:
+        tablas.append((_bloque_heterogeneidad(n, cod, datos),
+                       f"BLOQUE_HET_{cod}"))
+        n += 1
+    tablas.append((_bloque_convergencia(n, datos), "BLOQUE_CONVERGENCIA"))
+    for t, codigo in tablas:
+        t.update(seccion="Estadística descriptiva del bloque (económica)",
+                 codigo=codigo, dim="eco")
+    return [t for t, _ in tablas]
+
+
+# ---------------------------------------------------------------------------
+# ESTADÍSTICA DESCRIPTIVA SOCIAL (compacta, posterior a ECO)
+# Se mantiene separada para conservar la numeración 50-59 de las tablas
+# económicas ya utilizadas en el análisis de la monografía.
+# ---------------------------------------------------------------------------
+
+SOC_REGION = [("SOC1", "SOC1"),
+              ("SOC3", "SOC3_RURAL"),
+              ("SOC3", "SOC3_URB")]
+SOC_PAISES = [("SOC1", "SOC1"),
+              ("SOC2", "SOC2_PROM"),
+              ("SOC2", "SOC2_POBRE"),
+              ("SOC3", "SOC3_RURAL"),
+              ("SOC3", "SOC3_URB")]
+SOC2_SERIES = [("SOC2", "SOC2_PROM"), ("SOC2", "SOC2_POBRE")]
+
+
+def _info_subserie(codigo: str, clave: str) -> tuple[dict, dict]:
+    ficha = FICHAS[codigo]
+    serie = next(s for s in _series_de(ficha, codigo)
+                 if s["clave"] == clave)
+    return ficha, serie
+
+
+def _nombre_subserie(codigo: str, clave: str) -> str:
+    ficha, serie = _info_subserie(codigo, clave)
+    sufijo = f" — {serie['etiqueta']}" if serie["etiqueta"] else ""
+    return f"{clave}. {ficha['nombre']}{sufijo}"
+
+
+def _bloque_tendencia_social(numero: int, datos: dict) -> dict:
+    """Nivel y variación de las series SOC con agregado regional."""
+    filas = []
+    for codigo, clave in SOC_REGION:
+        ficha, serie = _info_subserie(codigo, clave)
+        agregado = datos[clave].get("agregado")
+        if not agregado:
+            raise ValueError(f"{clave} no tiene agregado regional.")
+        filas.append(
+            [f"{_nombre_subserie(codigo, clave)} ({serie['unidad']})"]
+            + [_fmt(v, serie["formato"]) for v in agregado]
+            + [_delta(agregado[0], agregado[-1], ficha["delta"])])
+
+    titulo = ("Nivel y tendencia regional de los indicadores sociales "
+              f"agregables del SIEPAC, {ANIOS[0]}–{ANIOS[-1]}")
+    nota = ("SOC1 pondera por población total; SOC3_RURAL, por población "
+            "rural; y SOC3_URB, por población urbana. Cada fila es una "
+            "razón de sumas (Ec. 1). Δ se expresa en puntos porcentuales. "
+            "SOC3 combina la tasa de electrificación de cada zona con la "
+            "participación renovable nacional. Elaboración propia a partir de las tablas "
+            "de indicadores de este archivo.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (en %)",
+        encabezados=["Indicador"] + [str(a) for a in ANIOS]
+                    + [f"Δ {ANIOS[0]}–{ANIOS[-1]}"],
+        filas=filas, resumen=[], nota=nota, cols_izq=1)
+
+
+def _bloque_heterogeneidad_social(numero: int, datos: dict) -> dict:
+    """Dispersión nacional de SOC en los extremos de la ventana."""
+    filas = []
+    for codigo, clave in SOC_PAISES:
+        _, serie = _info_subserie(codigo, clave)
+        for i in (0, len(ANIOS) - 1):
+            valores = _valores_anio(datos, clave, i)
+            formato = serie["formato"]
+            filas.append([
+                _nombre_subserie(codigo, clave), str(ANIOS[i]),
+                str(len(valores)), _fmt(sum(valores) / len(valores), formato),
+                _fmt(_mediana(valores), formato),
+                _fmt(_de_poblacional(valores), formato),
+                _fmt(min(valores), formato), _fmt(max(valores), formato),
+                _fmt(max(valores) - min(valores), formato),
+            ])
+
+    titulo = ("Heterogeneidad de los indicadores sociales entre los países "
+              f"del SIEPAC, {ANIOS[0]} y {ANIOS[-1]}")
+    nota = ("Estadísticos descriptivos de los valores nacionales, en %; "
+            "DE poblacional (Ec. 3). n indica los países con dato. En SOC2, "
+            "la mediana y el rango complementan la media. Esta tabla "
+            "describe diferencias entre países y no sustituye el agregado "
+            "regional. Elaboración propia a partir de las tablas de "
+            "indicadores de este archivo.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (en %)",
+        encabezados=["Serie", "Año", "n", "Media", "Mediana", "DE",
+                     "Mínimo", "Máximo", "Rango"],
+        filas=filas, resumen=[], nota=nota, cols_izq=2)
+
+
+def _estadisticos_paises(valores: list[float]) -> dict[str, float]:
+    """Estadísticos poblacionales del conjunto completo de países."""
+    return {
+        "n": len(valores),
+        "media": sum(valores) / len(valores),
+        "mediana": _mediana(valores),
+        "de": _de_poblacional(valores),
+        "minimo": min(valores),
+        "maximo": max(valores),
+        "rango": max(valores) - min(valores),
+    }
+
+
+def _bloque_soc2_anual(numero: int, datos: dict) -> dict:
+    """Descripción anual completa de las dos series SOC2."""
+    filas = []
+    for codigo, clave in SOC2_SERIES:
+        _, serie = _info_subserie(codigo, clave)
+        for i, anio in enumerate(ANIOS):
+            e = _estadisticos_paises(_valores_anio(datos, clave, i))
+            filas.append([
+                serie["etiqueta"], str(anio), str(e["n"]),
+                _fmt(e["media"], ".2f"), _fmt(e["mediana"], ".2f"),
+                _fmt(e["de"], ".2f"), _fmt(e["minimo"], ".2f"),
+                _fmt(e["maximo"], ".2f"), _fmt(e["rango"], ".2f"),
+            ])
+    titulo = ("Estadística descriptiva anual del ingreso destinado a "
+              f"electricidad en los países del SIEPAC, {ANIOS[0]}–"
+              f"{ANIOS[-1]}")
+    nota = ("Estadísticos de los seis valores nacionales de cada año, en "
+            "porcentaje. La DE es poblacional porque se incluyen todos "
+            "los países del SIEPAC. La media resume el nivel conjunto; "
+            "la mediana identifica el centro de la distribución y el "
+            "rango muestra su amplitud. Elaboración propia a partir de "
+            "las tablas SOC2 de este archivo.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (en %)",
+        encabezados=["Serie", "Año", "n", "Media", "Mediana", "DE",
+                     "Mínimo", "Máximo", "Rango"],
+        filas=filas, resumen=[], nota=nota, cols_izq=2)
+
+
+def _bloque_soc2_cambio(numero: int, datos: dict) -> dict:
+    """Contrasta centro y dispersión de SOC2 entre 2020 y 2024."""
+    filas = []
+    for codigo, clave in SOC2_SERIES:
+        _, serie = _info_subserie(codigo, clave)
+        e0 = _estadisticos_paises(_valores_anio(datos, clave, 0))
+        e4 = _estadisticos_paises(_valores_anio(datos, clave, -1))
+        filas.append([
+            serie["etiqueta"], _fmt(e0["media"], ".2f"),
+            _fmt(e4["media"], ".2f"),
+            f"{e4['media'] - e0['media']:+.2f}",
+            _fmt(e0["mediana"], ".2f"),
+            _fmt(e4["mediana"], ".2f"),
+            f"{e4['mediana'] - e0['mediana']:+.2f}",
+            _fmt(e0["de"], ".2f"), _fmt(e4["de"], ".2f"),
+        ])
+    titulo = ("Cambio en el nivel y la dispersión de SOC2 entre "
+              f"{ANIOS[0]} y {ANIOS[-1]}")
+    nota = ("Valores y cambios en puntos porcentuales. Una reducción de "
+            "la DE indica mayor cercanía entre los resultados nacionales; "
+            "un aumento indica mayor heterogeneidad. La media y la "
+            "mediana se presentan juntas para distinguir el comportamiento "
+            "general de la influencia de valores extremos. Elaboración "
+            "propia a partir de las tablas SOC2 de este archivo.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (en puntos porcentuales)",
+        encabezados=["Serie", "Media 2020", "Media 2024", "Δ media",
+                     "Mediana 2020", "Mediana 2024", "Δ mediana",
+                     "DE 2020", "DE 2024"],
+        filas=filas, resumen=[], nota=nota, cols_izq=1)
+
+
+def _tablas_sociales(inicio: int, datos: dict) -> list[dict]:
+    tablas = [
+        (_bloque_tendencia_social(inicio, datos), "BLOQUE_SOC_TENDENCIA"),
+        (_bloque_heterogeneidad_social(inicio + 1, datos),
+         "BLOQUE_SOC_HETEROGENEIDAD"),
+        (_bloque_soc2_anual(inicio + 2, datos),
+         "BLOQUE_SOC2_DESCRIPTIVOS"),
+        (_bloque_soc2_cambio(inicio + 3, datos),
+         "BLOQUE_SOC2_CAMBIO"),
+    ]
+    for tabla, codigo in tablas:
+        tabla.update(
+            seccion="Estadística descriptiva del bloque (social)",
+            codigo=codigo, dim="soc")
+    return [tabla for tabla, _ in tablas]
+
+
+# ---------------------------------------------------------------------------
+# ESTADÍSTICA DESCRIPTIVA AMBIENTAL
+# Se agrega después del bloque social para conservar intacta la numeración
+# 50-63 ya utilizada en el análisis de las dimensiones ECO y SOC.
+# ---------------------------------------------------------------------------
+
+ENV_SERIES = [
+    ("ENV1", "ENV1_PC"),
+    ("ENV1", "ENV1_PIB"),
+    ("ENV2", "ENV2_SO2_PC"),
+    ("ENV2", "ENV2_PAR_PC"),
+    ("ENV2", "ENV2_SO2_PIB"),
+    ("ENV2", "ENV2_PAR_PIB"),
+    ("ENV3", "ENV3"),
+]
+
+
+def _bloque_tendencia_ambiental(numero: int, datos: dict) -> dict:
+    """Nivel y variación de los agregados regionales ENV1-ENV3."""
+    filas = []
+    for codigo, clave in ENV_SERIES:
+        ficha, serie = _info_subserie(codigo, clave)
+        agregado = datos[clave].get("agregado")
+        if not agregado:
+            raise ValueError(f"{clave} no tiene agregado regional.")
+        filas.append(
+            [f"{_nombre_subserie(codigo, clave)} ({serie['unidad']})"]
+            + [_fmt(v, serie["formato"]) for v in agregado]
+            + [_delta(agregado[0], agregado[-1], ficha["delta"])])
+
+    titulo = ("Nivel y tendencia regional de los indicadores ambientales "
+              f"del SIEPAC, {ANIOS[0]}–{ANIOS[-1]}")
+    nota = ("Cada fila corresponde al agregado regional calculado como "
+            "razón de sumas (Ec. 1), con el denominador indicado en la "
+            "unidad: población, PIB real o producción eléctrica bruta. "
+            f"Δ = variación relativa {ANIOS[0]}–{ANIOS[-1]}. En estos "
+            "indicadores de intensidad, una cifra menor representa menos "
+            "emisiones por unidad del denominador, aunque no necesariamente "
+            "una reducción de las emisiones totales. Elaboración propia a "
+            "partir de las tablas ENV1–ENV3 de este archivo.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (unidad indicada en cada fila)",
+        encabezados=["Indicador"] + [str(a) for a in ANIOS]
+                    + [f"Δ {ANIOS[0]}–{ANIOS[-1]}"],
+        filas=filas, resumen=[], nota=nota, cols_izq=1)
+
+
+def _bloque_heterogeneidad_ambiental(numero: int, codigo: str,
+                                     clave: str, datos: dict) -> dict:
+    """Dispersión anual de una subserie ambiental entre los seis países."""
+    ficha, serie = _info_subserie(codigo, clave)
+    filas = []
+    for i, anio in enumerate(ANIOS):
+        valores = _valores_anio(datos, clave, i)
+        e = _estadisticos_paises(valores)
+        filas.append([
+            str(anio), str(e["n"]),
+            _fmt(e["media"], serie["formato"]),
+            _fmt(e["mediana"], serie["formato"]),
+            _fmt(e["de"], serie["formato"]), f"{_cv_pct(valores):.1f}",
+            _fmt(e["minimo"], serie["formato"]),
+            _fmt(e["maximo"], serie["formato"]),
+            _fmt(e["rango"], serie["formato"]),
+        ])
+
+    titulo = (f"Estadística descriptiva de {ficha['nombre']} ({clave}), "
+              f"{serie['etiqueta']}, entre los países del SIEPAC, "
+              f"{ANIOS[0]}–{ANIOS[-1]}")
+    nota = (f"Estadísticos de los valores nacionales, en {serie['unidad']}; "
+            "DE poblacional (Ec. 3) y CV (Ec. 4). n indica los países con "
+            "dato. La media y la mediana describen al conjunto de países; "
+            "no sustituyen el agregado regional de la tabla de tendencia. "
+            f"{_fuente_indicador(codigo, ficha['dim'])}")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (en {serie['unidad']}; CV en %)",
+        encabezados=["Año", "n", "Media", "Mediana", "DE", "CV (%)",
+                     "Mínimo", "Máximo", "Rango"],
+        filas=filas, resumen=[], nota=nota, cols_izq=1)
+
+
+def _bloque_convergencia_ambiental(numero: int, datos: dict) -> dict:
+    """Trayectoria del CV de las intensidades ambientales nacionales."""
+    filas = []
+    for codigo, clave in ENV_SERIES:
+        cvs = [_cv_pct(_valores_anio(datos, clave, i))
+               for i in range(len(ANIOS))]
+        delta = cvs[-1] - cvs[0]
+        lectura = ("Convergen" if delta < 0 else
+                   "Divergen" if delta > 0 else "Sin cambio")
+        filas.append([_nombre_subserie(codigo, clave)]
+                     + [f"{cv:.1f}" for cv in cvs]
+                     + [f"{delta:+.1f}", lectura])
+
+    titulo = ("Convergencia sigma entre los países del SIEPAC por "
+              f"indicador ambiental, {ANIOS[0]}–{ANIOS[-1]}")
+    nota = ("CV de los seis valores nacionales de cada año (Ec. 4). Una "
+            "reducción del CV indica convergencia sigma y un aumento, "
+            "divergencia. Esta lectura describe si las intensidades "
+            "nacionales se acercan entre sí; no determina por sí sola una "
+            "mejora ambiental, que debe evaluarse junto con el nivel del "
+            "indicador. Elaboración propia a partir de las tablas ENV1–ENV3 "
+            "de este archivo.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (CV en %)",
+        encabezados=["Indicador"] + [f"CV {a}" for a in ANIOS]
+                    + ["Δ (pp)", "Lectura"],
+        filas=filas, resumen=[], nota=nota, cols_izq=1)
+
+
+def _bloque_env6_descriptivo(numero: int, datos: dict) -> dict:
+    """Descriptivos anuales de biomasa y saldo MER, sin emplear CV."""
+    filas = []
+    for etiqueta, clave in [("Inyección de biomasa", "biomasa"),
+                            ("Saldo neto en el MER", "saldo")]:
+        for i, anio in enumerate(ANIOS):
+            valores = [datos["ENV6"][pais][clave][i] for pais in PAISES]
+            e = _estadisticos_paises(valores)
+            filas.append([
+                etiqueta, str(anio), str(e["n"]),
+                _fmt(e["media"], ",.1f"), _fmt(e["mediana"], ",.1f"),
+                _fmt(e["de"], ",.1f"), _fmt(e["minimo"], ",.1f"),
+                _fmt(e["maximo"], ",.1f"), _fmt(e["rango"], ",.1f"),
+            ])
+
+    titulo = ("Estadística descriptiva anual de la inyección de biomasa y "
+              "el saldo neto en el MER (ENV6) entre los países del SIEPAC, "
+              f"{ANIOS[0]}–{ANIOS[-1]}")
+    nota = ("Estadísticos de los seis valores nacionales de cada año, en "
+            "GWh; DE poblacional (Ec. 3). El saldo conserva su signo: los "
+            "valores negativos identifican importadores netos según la "
+            "convención del indicador. No se calcula CV para el saldo "
+            "porque combina signos y su media puede aproximarse a cero. "
+            "ENV6 es un comparativo descriptivo de dos series observadas, "
+            "no un cociente. Elaboración propia a partir de la tabla ENV6 "
+            "de este archivo.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (en GWh)",
+        encabezados=["Serie", "Año", "n", "Media", "Mediana", "DE",
+                     "Mínimo", "Máximo", "Rango"],
+        filas=filas, resumen=[], nota=nota, cols_izq=2)
+
+
+def _tablas_ambientales(inicio: int, datos: dict) -> list[dict]:
+    """Tablas ambientales agregadas sin renumerar los bloques previos."""
+    tablas = [(_bloque_tendencia_ambiental(inicio, datos),
+               "BLOQUE_ENV_TENDENCIA")]
+    n = inicio + 1
+    for codigo, clave in ENV_SERIES:
+        tablas.append((
+            _bloque_heterogeneidad_ambiental(n, codigo, clave, datos),
+            f"BLOQUE_HET_{clave}"))
+        n += 1
+    tablas.append((_bloque_convergencia_ambiental(n, datos),
+                   "BLOQUE_ENV_CONVERGENCIA"))
+    n += 1
+    tablas.append((_bloque_env6_descriptivo(n, datos),
+                   "BLOQUE_ENV6_DESCRIPTIVOS"))
+    for tabla, codigo in tablas:
+        tabla.update(
+            seccion="Estadística descriptiva del bloque (ambiental)",
+            codigo=codigo, dim="env")
+    return [tabla for tabla, _ in tablas]
 
 
 def _tablas_base(inicio: int, hojas: dict, imputados: dict) -> list[dict]:
@@ -729,12 +1317,8 @@ def _referencias_html() -> list[str]:
                f"font-family:{S_SERIF};font-size:11pt;")
     bloque = [f'<h2 style="{S_H2}">Referencias de las fuentes de datos</h2>',
               f'<p style="{S_P}">Referencias en formato APA 7 de los '
-              'conjuntos de datos citados en las notas de las tablas. Las '
-              'series de las dimensiones ambiental y social fueron '
-              'recopiladas por el equipo de investigación a partir de los '
-              'informes del Ente Operador Regional y de los inventarios '
-              'nacionales; verifique la referencia exacta con el equipo '
-              'antes de incluirla en el monográfico.</p>']
+              'conjuntos citados en las notas. Las matrices ENVs.xlsx y '
+              'SOCs.xlsx se identifican como insumos del estudio.</p>']
     bloque += [f'<p style="{sangria}">{r}</p>' for r in REFERENCIAS_APA]
     return bloque
 
@@ -744,9 +1328,8 @@ def _referencias_html() -> list[str]:
 # Word abre el HTML de forma nativa y lo convierte en tablas de Word
 # reales (bordes por celda, Times New Roman, ancho ajustado al texto).
 # Se automatiza con el propio Word por COM a través de PowerShell, para
-# no añadir dependencias de Python al pipeline. Si el equipo no tiene
-# Word (u otro sistema operativo), el paso se omite con aviso: el HTML
-# sigue siendo utilizable copiando y pegando.
+# evitar dependencias adicionales de Python. En plataformas sin Word, el
+# paso se omite y el HTML permanece disponible como formato de intercambio.
 # ---------------------------------------------------------------------------
 PS_A_DOCX = r"""
 $ErrorActionPreference = 'Stop'
@@ -767,16 +1350,19 @@ try {
 
 
 def _exportar_docx(ruta_html: Path, ruta_docx: Path) -> bool:
-    """Convierte el documento HTML a .docx con Microsoft Word. Devuelve
-    True si lo logró; nunca lanza excepción (es un paso opcional que no
-    debe tumbar el pipeline)."""
+    """Convierte el HTML a DOCX y devuelve el estado del paso opcional."""
     if sys.platform != "win32":
         log.info("Conversion a .docx omitida: requiere Microsoft Word en "
                  "Windows. El HTML se puede copiar y pegar igual.")
         return False
+    # Word no sustituye de forma fiable un DOCX existente mediante SaveAs.
+    # La conversión se hace a un temporal y solo se reemplaza la salida
+    # anterior cuando Word terminó correctamente.
+    ruta_temporal = ruta_docx.with_name(f"{ruta_docx.stem}_nuevo.docx")
+    ruta_temporal.unlink(missing_ok=True)
     entorno = {**os.environ,
                "APA_HTML": str(ruta_html.resolve()),
-               "APA_DOCX": str(ruta_docx.resolve())}
+               "APA_DOCX": str(ruta_temporal.resolve())}
     try:
         proceso = subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-Command",
@@ -786,11 +1372,18 @@ def _exportar_docx(ruta_html: Path, ruta_docx: Path) -> bool:
         log.warning("No se pudo convertir a .docx (%s). Queda el HTML.",
                     error)
         return False
-    if proceso.returncode != 0 or not ruta_docx.exists():
+    if proceso.returncode != 0 or not ruta_temporal.exists():
         log.warning("No se pudo convertir a .docx; probablemente Word no "
                     "este instalado. Queda el HTML, que Word abre igual "
                     "con Archivo > Abrir.")
         log.debug("PowerShell: %s", proceso.stderr.strip()[:500])
+        return False
+    try:
+        ruta_temporal.replace(ruta_docx)
+    except OSError as error:
+        ruta_temporal.unlink(missing_ok=True)
+        log.warning("Word generó el .docx, pero no se pudo reemplazar %s "
+                    "(%s).", ruta_docx.name, error)
         return False
     tablas = proceso.stdout.strip().splitlines()
     log.info("Exportado: %s (%s tablas de Word, %.0f KB)", ruta_docx,
@@ -799,8 +1392,8 @@ def _exportar_docx(ruta_html: Path, ruta_docx: Path) -> bool:
 
 
 def _armar_documento(tablas: list[dict], base: list[dict],
-                     indicadores: list[dict], orden: str,
-                     con_notas: bool) -> list[str]:
+                     indicadores: list[dict], bloque: list[dict],
+                     orden: str, con_notas: bool) -> list[str]:
     """Cuerpo HTML completo de una de las dos versiones del documento.
 
     Ambas comparten portada, índice y tablas; la versión sin notas omite
@@ -818,15 +1411,17 @@ def _armar_documento(tablas: list[dict], base: list[dict],
                   s_p=S_P, n=len(tablas), paises=", ".join(PAISES),
                   a0=ANIOS[0], a1=ANIOS[-1],
                   fecha=date.today().isoformat())]
+    # La leyenda solo acompaña a la versión con notas: es a ella a la que
+    # esas notas remiten. En la versión sin notas no tendría referente.
+    if con_notas:
+        cuerpo += _leyenda_convenciones()
     cuerpo += _indice_html(tablas)
 
     cierre_indicadores = (
-        "Las series sin denominador disponible en el repositorio (ECO14, "
-        "SOC2 y SOC3) presentan únicamente el promedio de países, y así lo "
-        "advierte su nota." if con_notas else
-        "Las series sin denominador disponible en el repositorio (ECO14, "
-        "SOC2 y SOC3) presentan únicamente el promedio de países; la nota "
-        "que lo explica está en la versión con notas.")
+        "ECO14 y SOC2 resumen la región mediante estadísticos de los valores "
+        "nacionales, según la definición indicada en sus notas." if con_notas
+        else "ECO14 y SOC2 resumen la región mediante estadísticos de los "
+        "valores nacionales.")
     secciones = {
         "base": _seccion(
             "Tablas de datos base",
@@ -836,10 +1431,9 @@ def _armar_documento(tablas: list[dict], base: list[dict],
              "monetarias en millones de USD constantes de 2015, para que las "
              "cifras sean legibles en una tabla impresa; los libros conservan "
              "las unidades originales (kWh y USD).",
-             "Las hojas ambiental y social repiten población y producción "
-             "bruta con los mismos valores de la dimensión económica, por lo "
-             "que no se duplican aquí; el PIB del libro ambiental sí difiere "
-             "y se presenta aparte."]),
+             "Las variables comunes a varias dimensiones se presentan una "
+             "sola vez. El PIB específico de la matriz ambiental conserva su "
+             "serie de origen y se presenta por separado."]),
         "indicadores": _seccion(
             "Tablas de indicadores",
             ["Indicadores energéticos del desarrollo sostenible (IEDS, "
@@ -851,10 +1445,25 @@ def _armar_documento(tablas: list[dict], base: list[dict],
              "utiliza, porque pueden divergir incluso en el signo de la "
              "tendencia.",
              cierre_indicadores]),
+        "bloque": _seccion(
+            "Tablas de estadística descriptiva del bloque",
+            ["Estadística descriptiva del SIEPAC como sistema, calculada "
+             "sobre las tablas de indicadores anteriores. La dimensión "
+             "económica conserva sus tres cortes de nivel y tendencia, "
+             "heterogeneidad y convergencia sigma. La dimensión social "
+             "añade un resumen compacto de tendencia regional para SOC1 y "
+             "SOC3, heterogeneidad nacional para las cinco series SOC y "
+             "una descripción anual completa de nivel, centro, dispersión "
+             "y cambio para SOC2. SOC2 se presenta como comparación del "
+             "conjunto de países, no como razón de sumas regional. La "
+             "dimensión ambiental incorpora nivel regional, dispersión y "
+             "convergencia para ENV1–ENV3, además de una descripción de "
+             "las dos series observadas de ENV6."]),
     }
     orden_secciones = ([("base", base), ("indicadores", indicadores)]
                        if orden == "base"
                        else [("indicadores", indicadores), ("base", base)])
+    orden_secciones.append(("bloque", bloque))
     for clave, grupo in orden_secciones:
         cuerpo += secciones[clave]
         cuerpo += [tabla_apa(t, con_nota=con_notas) for t in grupo]
@@ -890,9 +1499,19 @@ def main() -> None:
         base = _tablas_base(len(indicadores) + 1, hojas, imputados)
         tablas = indicadores + base
 
+    # La estadística descriptiva del bloque cierra el documento en ambos
+    # órdenes: se apoya en las tablas de indicadores, así que debe leerse
+    # después de ellas.
+    bloque_eco = _tablas_bloque(len(tablas) + 1, datos)
+    bloque_soc = _tablas_sociales(len(tablas) + len(bloque_eco) + 1, datos)
+    bloque_env = _tablas_ambientales(
+        len(tablas) + len(bloque_eco) + len(bloque_soc) + 1, datos)
+    bloque = bloque_eco + bloque_soc + bloque_env
+    tablas += bloque
+
     for ruta, con_notas in [(RUTA_DOC, True), (RUTA_DOC_SIN_NOTAS, False)]:
-        cuerpo = _armar_documento(tablas, base, indicadores, args.orden,
-                                  con_notas)
+        cuerpo = _armar_documento(tablas, base, indicadores, bloque,
+                                  args.orden, con_notas)
         DIR_SALIDA.mkdir(exist_ok=True)
         ruta.write_text(
             PLANTILLA.format(
@@ -931,7 +1550,6 @@ def main() -> None:
             w.writerow([t["numero"], t["seccion"], t["dim"], t["codigo"],
                         t["titulo"], t["archivo"]])
     log.info("Exportado: %s", RUTA_INDICE)
-
     if not args.sin_docx:
         _exportar_docx(RUTA_DOC, RUTA_DOCX)
         _exportar_docx(RUTA_DOC_SIN_NOTAS, RUTA_DOCX_SIN_NOTAS)

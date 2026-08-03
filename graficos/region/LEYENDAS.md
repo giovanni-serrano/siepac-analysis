@@ -3,6 +3,7 @@
 Leyendas sugeridas para pegar bajo cada figura de `graficos/region/` en la monografía (numera las figuras según el orden final del documento). Todas las cifras salen del pipeline (`tabla_agregados.csv` en esta misma carpeta).
 
 **Nota metodológica común**: "agregado regional" = razón de sumas Σ numerador / Σ denominador de los seis países (el bloque como sistema); "promedio de países" = media simple (el país típico). Ver docs/resumen_indicadores_SIEPAC.md.
+Las figuras SOC2 se identifican como análisis descriptivo del conjunto de seis países: presentan media, mediana, dispersión y cambios nacionales, no una razón de sumas regional.
 
 ## ECO1_agregado_vs_promedio.png
 
@@ -64,6 +65,30 @@ Leyendas sugeridas para pegar bajo cada figura de `graficos/region/` en la monog
 
 > **Figura N.** SOC1 — Población sin electricidad a nivel del bloque SIEPAC, 2020–2024. Agregado regional (razón de sumas): 7.57 → 6.72 % (-0.8 pp); promedio de países (media simple): 5.80 → 4.92 (-0.9 pp). Elaboración propia con datos de SIELAC-OLADE, CEPALSTAT y Banco Mundial.
 
+## SOC3_RURAL_agregado_vs_promedio.png
+
+> **Figura N.** SOC3_RURAL — Hogares con acceso a energía renovable — Rural a nivel del bloque SIEPAC, 2020–2024. Agregado regional (razón de sumas): 58.0 → 51.2 % (-6.8 pp); promedio de países (media simple): 64.1 → 59.1 (-4.9 pp). Elaboración propia a partir de SOCs.xlsx y Banco Mundial (WDI: SP.RUR.TOTL y SP.URB.TOTL).
+
+## SOC3_URB_agregado_vs_promedio.png
+
+> **Figura N.** SOC3_URB — Hogares con acceso a energía renovable — Urbano a nivel del bloque SIEPAC, 2020–2024. Agregado regional (razón de sumas): 73.2 → 61.9 % (-11.3 pp); promedio de países (media simple): 74.2 → 64.6 (-9.6 pp). Elaboración propia a partir de SOCs.xlsx y Banco Mundial (WDI: SP.RUR.TOTL y SP.URB.TOTL).
+
+## SOC2_PROM_paises_2020_2024.png
+
+> **Figura N.** SOC2_PROM — Cambio del porcentaje de ingreso destinado a electricidad en cada país del SIEPAC entre 2020 y 2024. El punto gris hueco corresponde a 2020 y el azul a 2024; la columna derecha expresa el cambio en puntos porcentuales. El cambio nacional varió entre -3.4 y +1.5 pp. Elaboración propia a partir de SOCs.xlsx.
+
+## SOC2_POBRE_paises_2020_2024.png
+
+> **Figura N.** SOC2_POBRE — Cambio del porcentaje de ingreso destinado a electricidad en cada país del SIEPAC entre 2020 y 2024. El punto gris hueco corresponde a 2020 y el azul a 2024; la columna derecha expresa el cambio en puntos porcentuales. El cambio nacional varió entre -8.9 y +24.4 pp. Elaboración propia a partir de SOCs.xlsx.
+
+## SOC2_media_mediana_rango.png
+
+> **Figura N.** SOC2 — Evolución anual de la media simple, la mediana y el rango de los seis países del SIEPAC. En la serie de referencia, la media pasó de 3.87 % a 3.45 % y la DE de 2.39 a 1.83. En los hogares de menores ingresos, la media pasó de 23.30 % a 24.73 %, mientras la mediana cambió de 22.26 % a 13.94 %. La franja gris representa el mínimo y máximo nacional. Elaboración propia a partir de SOCs.xlsx.
+
+## SOC3_brecha_rural_urbana_agregado.png
+
+> **Figura N.** SOC3 — Agregados regionales de acceso a energía renovable por zona, 2020–2024. Rural: 58.0 % → 51.2 %; urbana: 73.2 % → 61.9 %. La brecha urbana-rural pasa de 15.2 a 10.7 puntos porcentuales. Elaboración propia a partir de SOCs.xlsx y Banco Mundial (WDI: SP.RUR.TOTL y SP.URB.TOTL).
+
 ## REGION_consumo_final.png
 
 > **Figura N.** Consumo final de electricidad del bloque SIEPAC, 2020–2024: 47.6 → 55.4 TWh (+16.5 %). Elaboración propia con datos de SIELAC-OLADE.
@@ -82,8 +107,8 @@ Leyendas sugeridas para pegar bajo cada figura de `graficos/region/` en la monog
 
 ## REGION_personas_sin_electricidad.png
 
-> **Figura N.** Personas sin acceso a electricidad en el bloque SIEPAC, 2020–2024: 3.76 → 3.50 millones. Equivale al SOC1 agregado (6.72 % del bloque en 2024). Elaboración propia con datos del equipo de tesis y CEPAL-CELADE.
+> **Figura N.** Personas sin acceso a electricidad en el bloque SIEPAC, 2020–2024: 3.76 → 3.50 millones. Equivale al SOC1 agregado (6.72 % del bloque en 2024). Elaboración propia con SOCs.xlsx y datos de CEPAL-CELADE.
 
 ## REGION_emisiones_gei.png
 
-> **Figura N.** Emisiones de GEI del sector eléctrico del bloque SIEPAC, 2020–2024: 8.2 → 12.4 Mt CO₂eq (+50.6 %). Elaboración propia con datos del equipo de tesis (dimensión ambiental).
+> **Figura N.** Emisiones de GEI del sector eléctrico del bloque SIEPAC, 2020–2024: 8.2 → 12.4 Mt CO₂eq (+50.6 %). Elaboración propia a partir de ENVs.xlsx.

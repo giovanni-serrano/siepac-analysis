@@ -306,7 +306,7 @@ function descargarCSV(nombre, columnas, filas) {{
 
 // Referencia regional de un bloque: el agregado (razón de sumas, el
 // bloque como sistema) cuando la serie tiene denominador disponible;
-// si no (ECO14, SOC2, SOC3), el promedio de países (media simple).
+// si no (ECO14 y SOC2), el promedio de países (media simple).
 function refRegional(bloque) {{
   return bloque.agregado
       ? {{ vals: bloque.agregado, nombre: "Agregado regional" }}
@@ -368,7 +368,8 @@ const BASES = {{
           "USD constantes de 2015 y producción bruta en GWh." }},
   soc: {{ clave: "base_soc", nombre: "Dimensión social",
     csv: "datos_base_SOC_SIEPAC.csv",
-    desc: "Variables de entrada de SOC1 y SOC3, todas en %. Los insumos " +
+    desc: "Variables de entrada de SOC1 y SOC3: tasas en % y población " +
+          "rural/urbana en habitantes. Los insumos " +
           "monetarios de SOC2 (cargo medio e ingresos por grupo) " +
           "permanecen en las hojas por país de la fuente, en moneda " +
           "local." }},
@@ -411,7 +412,7 @@ function renderTablaCalculo(dim) {{
   document.getElementById("descripcion").textContent =
       "Cada bloque documenta la fórmula aplicada (metodología IEDS, " +
       "OIEA/NU 2005) y los valores resultantes por país y año. En ECO14, " +
-      "el asterisco (*) marca valores imputados vía CAGR; s.d. = sin dato.";
+      "el asterisco (*) marca valores calculados mediante CAGR; s.d. = sin dato.";
   document.getElementById("nota").style.display = "none";
 
   let html = "";
@@ -506,8 +507,11 @@ function render(codigo) {{
       codigo + " — " + ficha.nombre;
   document.getElementById("descripcion").textContent = ficha.descripcion;
   const nota = document.getElementById("nota");
-  nota.textContent = ficha.nota;
-  nota.style.display = ficha.nota ? "block" : "none";
+  // `nota_figura` describe la convención visual y `nota`, el método.
+  const textoNota = [ficha.nota_figura, ficha.nota]
+      .filter(Boolean).join(" ");
+  nota.textContent = textoNota;
+  nota.style.display = textoNota ? "block" : "none";
 
   // ----- Vista especial ENV6: dos series observadas, pais a pais -----
   if (ficha.tipo === "env6") {{
@@ -583,7 +587,7 @@ function render(codigo) {{
         marker: {{ size: 8, color: COLORES[pais] }},
         hovertemplate: "%{{y:" + inf.formato + "}}" + inf.sufijo,
       }};
-      // ECO14: puntos huecos donde la tarifa fue imputada via CAGR.
+      // ECO14: puntos huecos para los valores calculados mediante CAGR.
       if (codigo === "ECO14") {{
         traza.marker.symbol = DATOS.imputados[pais].map(
             imp => imp ? "circle-open" : "circle");
@@ -650,7 +654,7 @@ const NOMBRE_DIM = {{ eco: "Dimensión económica", env: "Dimensión ambiental",
 let dimPrevia = null;
 Object.keys(FICHAS).forEach(codigo => {{
   const ficha = FICHAS[codigo];
-  // Omitir indicadores cuyas series no llegaron (archivo faltante).
+  // Omitir indicadores sin series cargadas.
   const clavePrueba = ficha.tipo === "env6" ? "ENV6"
       : (ficha.series ? ficha.series[0][0] : codigo);
   if (!(clavePrueba in DATOS)) return;

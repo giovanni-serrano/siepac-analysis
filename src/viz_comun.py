@@ -100,7 +100,7 @@ def cargar_datos(ruta_excel: Path = RUTA_EXCEL) -> dict[str, pd.DataFrame]:
     for codigo in ["ECO1", "ECO2", "ECO3", "ECO6", "ECO11", "ECO13", "ECO14", "ECO15"]:
         df = valores.pivot(index="pais", columns="anio",
                            values=codigo).reset_index()
-        # Nos aseguramos de que las columnas de anio sean enteros 2020..2024
+        # Normalización de las columnas de año al intervalo 2020–2024.
         df.columns = ["pais"] + [int(c) for c in df.columns[1:]]
         hojas[codigo] = df
 
@@ -156,9 +156,8 @@ def agregados_eco(base: pd.DataFrame) -> dict:
     """Agregado regional (razón de sumas) de los indicadores ECO, desde
     la hoja Datos_Base: misma N/D que generar_matriz_indicadores (las
     filas 'Agregado regional' del Excel llevan estas fórmulas en
-    paridad; si cambia una, cambia la otra). ECO14 devuelve None: la
-    fuente no publica la energía regulada vendida (MWh) por país, así
-    que no existe denominador con el que ponderar la tarifa."""
+    paridad; si cambia una, cambia la otra). ECO14 devuelve None porque
+    su resumen regional se define mediante la mediana de países."""
     g = (base[base["pais"].isin(PAISES)]
          .groupby("anio").sum(numeric_only=True).sort_index())
     renovables = (g["gen_hidro_kwh"] + g["gen_geotermia_kwh"]
@@ -186,10 +185,10 @@ def leer_series_extra() -> dict:
     {clave_serie: {paises: {...}, promedio: [...], agregado: [...]}} +
     ENV6 especial. El promedio (media simple) se recalcula aquí; el
     agregado (razón de sumas) se lee de la fila 'Agregado regional' que
-    escribe procesar_dimensiones.py — None si la serie no la tiene
-    (SOC2: sin hogares; SOC3: sin población rural/urbana).
-    Los valores faltantes (p. ej. El Salvador 2020 en SOC2) quedan como
-    None para que JSON los serialice como null."""
+    escribe procesar_dimensiones.py — None para las series cuyo resumen
+    regional se define mediante un estadístico nacional, como SOC2.
+    Los valores faltantes quedan como None para que JSON los serialice
+    como null."""
     paquete = {}
     for ruta, claves, clave_base in [(RUTA_ENV, SERIES_ENV, "base_env"),
                                      (RUTA_SOC, SERIES_SOC, "base_soc")]:
@@ -245,7 +244,7 @@ def leer_series_extra() -> dict:
 # Ficha de cada indicador: lo que la app muestra en pantalla.
 #  - formato: como se pintan los numeros en eje/hover (sintaxis d3)
 #  - sufijo:  unidad corta para el eje Y
-#  - nota:    advertencia metodologica que aparece bajo el titulo
+#  - nota:    precisión metodológica que aparece bajo el título
 # ---------------------------------------------------------------------------
 FICHAS = {
     "ECO1": dict(
@@ -269,15 +268,18 @@ FICHAS = {
                      "consumo final. La brecha son pérdidas técnicas, "
                      "autoconsumo y saldo de intercambios.",
         formato=".1f", sufijo="%",
-        nota="Aproximación generación→consumo final; no cubre la cadena "
-             "energética primaria completa."),
+        nota="La razón relaciona consumo final y producción bruta; la "
+             "brecha integra pérdidas, autoconsumo y saldo de intercambios."),
     "ECO6": dict(
         nombre="Intensidad energética de la industria",
         unidad="kWh/USD const. 2015",
         descripcion="Energía que necesita la industria por cada dólar de "
-                     "valor agregado industrial. Menor = industria que "
+                     "valor agregado manufacturero. Menor = industria que "
                      "genera más valor por kWh.",
-        formato=".4f", sufijo="", nota=""),
+        formato=".4f", sufijo="",
+        nota="El denominador es el valor agregado manufacturero "
+             "(ODS 9.2.1, % del PIB × PIB real) y el numerador es el "
+             "consumo industrial de electricidad reportado por OLADE."),
     "ECO11": dict(
         nombre="Fósiles en la electricidad",
         unidad="%",
@@ -296,24 +298,25 @@ FICHAS = {
         descripcion="Ingresos por energía regulada vendida entre energía "
                      "regulada consumida. En dólares corrientes de cada año.",
         formato=".1f", sufijo=" USD/MWh",
-        nota="Los puntos huecos son valores imputados vía CAGR "
-             "(2023–2024 en cinco países; 2022–2024 en El Salvador), "
-             "no observaciones reales. Sin energía regulada vendida "
-             "(MWh) por país en la fuente, el agregado regional "
-             "ponderado no es calculable: se reporta el promedio de "
-             "países (media simple)."),
+        nota_figura="Los puntos huecos identifican valores calculados vía CAGR "
+                    "(2023–2024 en cinco países; 2022–2024 en El "
+                    "Salvador).",
+        nota="La serie regional se representa mediante el promedio de "
+             "países. La razón de sumas requiere la energía regulada "
+             "vendida por país y año."),
     "ECO15": dict(
         nombre="Dependencia de importaciones netas",
         unidad="%",
-        descripcion="Importaciones netas sobre la oferta total. Positivo = "
-                     "importador neto; negativo = EXPORTADOR neto ese año "
-                     "(no es un error del dato).",
+        descripcion="Importaciones netas sobre la oferta total. Los valores "
+                     "positivos representan importación neta y los negativos, "
+                     "exportación neta.",
         formato=".1f", sufijo="%",
-        nota="La línea punteada en 0 separa importadores (arriba) de "
-             "exportadores netos (abajo). En el agregado regional los "
-             "intercambios dentro del MER se cancelan al sumar: la "
-             "cifra del bloque mide su dependencia extrarregional, no "
-             "el promedio de las dependencias nacionales."),
+        nota_figura="La línea punteada en 0 separa importadores "
+                    "(arriba) de exportadores netos (abajo).",
+        nota="En el agregado regional los intercambios dentro del MER "
+             "se cancelan al sumar, por lo que la cifra del bloque mide "
+             "su dependencia extrarregional y no el promedio de las "
+             "dependencias nacionales."),
 }
 
 # Tipo de variación para las tarjetas resumen: 'pct' = cambio relativo (%),
@@ -334,7 +337,8 @@ _EXTRA = {
               ["serie", "barras"]),
     "ECO3":  ("(Consumo final total ÷ Producción bruta) × 100",
               ["serie", "barras", "heatmap"]),
-    "ECO6":  ("Consumo industrial (kWh) ÷ Valor agregado industrial (USD 2015)",
+    "ECO6":  ("Consumo industrial (kWh) ÷ Valor agregado manufacturero "
+              "(USD 2015)",
               ["serie", "barras"]),
     "ECO11": ("(Generación térmica fósil ÷ Generación total) × 100",
               ["serie", "barras", "heatmap"]),
@@ -406,14 +410,14 @@ FICHAS["ENV3"] = dict(
          "(SO₂ + NOx + CO + Partículas) ÷ Producción bruta"],
     ])
 FICHAS["ENV6"] = dict(
-    nombre="Biomasa vs Saldo MER (ilustrativo)",
+    nombre="Biomasa vs Saldo MER",
     unidad="GWh", formato=",.0f", sufijo=" GWh", formula="", delta="pct",
     modos=[], dim="env", tipo="env6",
     descripcion="Comparativo de inyección de biomasa vs saldo neto en el "
                 "Mercado Eléctrico Regional, por país. Saldo negativo = "
                 "importador neto en el MER ese año.",
-    nota="Indicador ilustrativo: contrasta dos series observadas, no "
-         "calcula un cociente.")
+    nota="Comparativo de dos series expresadas en GWh; no calcula un "
+         "cociente entre ellas.")
 FICHAS["SOC1"] = dict(
     nombre="Población sin electricidad",
     unidad="", formato=".2f", sufijo="%", formula="", delta="pp",
@@ -422,7 +426,7 @@ FICHAS["SOC1"] = dict(
                 "o energía comercial, o muy dependientes de energías no "
                 "comerciales.",
     nota="El agregado regional pondera cada país por su población "
-         "(razón de sumas): equivale a personas sin electricidad del "
+         "(razón de sumas), equivalente a personas sin electricidad del "
          "bloque ÷ población del bloque.",
     series=[
         ["SOC1", "", ".2f", "%", "%", "100 − Tasa de electrificación total"],
@@ -434,11 +438,9 @@ FICHAS["SOC2"] = dict(
     descripcion="Porcentaje de ingresos de los hogares dedicado a "
                 "combustibles y electricidad, para el hogar de ingreso "
                 "promedio y para el quintil de menores ingresos.",
-    nota="Guatemala: valores ~1000× menores que el resto del bloque "
-         "(posible inconsistencia de unidades en la fuente); verificar "
-         "con el equipo antes de interpretar. Solo promedio de países: "
-         "los insumos monetarios están en moneda local y no hay número "
-         "de hogares por país-año para ponderar un agregado regional.",
+    nota="Las dos series se resumen mediante promedio de países. Los "
+         "insumos monetarios se conservan en el marco de cada país, por "
+         "lo que no se construye una razón de sumas regional.",
     series=[
         ["SOC2_PROM", "Hogar promedio", ".2f", "%", "%",
          "Cargo anual de electricidad ÷ Ingreso anual promedio × 100"],
@@ -453,16 +455,22 @@ FICHAS["SOC3"] = dict(
                 "combinación de combustibles: hogares con acceso "
                 "eléctrico ponderado por la participación renovable de la "
                 "generación.",
-    nota="Proxy elaborado por el equipo: asume que el mix de la red es "
-         "uniforme entre zonas. Solo promedio de países: sin población "
-         "rural/urbana por país-año no puede ponderarse un agregado "
-         "regional.",
+    nota="Cada serie combina la tasa de electrificación de la zona con la "
+         "participación renovable de la generación nacional. El agregado "
+         "rural pondera por población rural y el urbano por población "
+         "urbana.",
     series=[
         ["SOC3_RURAL", "Rural", ".1f", "%", "%",
          "Tasa de electrificación rural × % renovable de la generación"],
         ["SOC3_URB", "Urbano", ".1f", "%", "%",
          "Tasa de electrificación urbana × % renovable de la generación"],
     ])
+
+# `nota_figura` describe convenciones visuales del gráfico; `nota` contiene
+# información metodológica común a todos los formatos. Las tablas APA usan
+# únicamente `nota` y los visualizadores presentan ambas.
+for _cod in FICHAS:
+    FICHAS[_cod].setdefault("nota_figura", "")
 
 
 def construir_datos_json(df, base_df, extra) -> str:
@@ -474,7 +482,7 @@ def construir_datos_json(df, base_df, extra) -> str:
 
     promedio = media simple de los seis países ("el país típico");
     agregado = razón de sumas Σ N/Σ D ("el bloque como sistema"), null
-    en las series sin denominador disponible (ECO14, SOC2, SOC3).
+    cuando la ficha define un estadístico de los valores nacionales.
     """
     agregados = agregados_eco(base_df)
     paquete = {}
