@@ -95,6 +95,8 @@ python src/etl_generacion_por_fuente.py
 python src/consolidar_matriz.py
 python src/generar_matriz_indicadores.py
 python src/procesar_dimensiones.py
+python src/generar_tablas_apa.py
+python src/exportar_grafico_eco_cg.py
 python src/generar_explorador.py
 python src/generar_panel.py
 ```
@@ -139,6 +141,12 @@ siepac-analysis/
   población en habitantes.
 - Tarifa (ECO14): los valores calculados mediante CAGR se identifican como
   `imputado_CAGR` y se sombrean en el Excel.
+- `eco_cg_siepac.csv` es un insumo procesado incorporado por el equipo. El
+  pipeline valida su cobertura completa y genera sus tablas APA 7 y la figura
+  `analisis-eco/salidas/figuras_alt/ECO_CG_bloque.png`. La mediana, la media
+  simple y la dispersión describen proxies nacionales de distintos niveles
+  metodológicos; no se calcula un costo agregado regional. La serie es
+  complementaria y no se contabiliza como un noveno indicador IEDS.
 - En ECO15, los valores negativos representan exportación neta.
 - ECO3 es una aproximación generación → consumo final.
 - Los agregados de SOC3 ponderan la serie rural por población rural y la

@@ -13,8 +13,8 @@ python src/generar_tablas_apa.py
 
 | Archivo | Para qué sirve |
 | --- | --- |
-| **`tablas_apa_SIEPAC.docx`** | **Las 73 tablas con su nota metodológica.** Para el anexo y para consultar fórmulas y fuentes. |
-| **`tablas_apa_SIEPAC_sin_notas.docx`** | **Las mismas 73 tablas, solo tablas.** Para intercalar en el cuerpo del monográfico. |
+| **`tablas_apa_SIEPAC.docx`** | **Las 75 tablas con su nota metodológica.** Para el anexo y para consultar fórmulas y fuentes. |
+| **`tablas_apa_SIEPAC_sin_notas.docx`** | **Las mismas 75 tablas, solo tablas.** Para intercalar en el cuerpo del monográfico. |
 | `tablas_apa_SIEPAC*.html` | Los mismos dos documentos en HTML (de ahí se generan los .docx). Útiles para revisarlos en el navegador. |
 | `individuales/Tabla_NN_codigo.html` | Cada tabla suelta, con nota, cuando solo se necesita una. |
 | `indice_tablas.csv` | Número, sección, código y título de cada tabla. Sirve para armar el «Índice de tablas» del monográfico. |

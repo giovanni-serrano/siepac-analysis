@@ -7,7 +7,8 @@ Salidas            : — (las de cada script: CSVs, Excel, HTML y PNG)
 
 Ejecuta los ETL, la consolidación, los generadores de indicadores, las
 tablas APA, los dos visualizadores y la exportación de gráficos a PNG en
-el orden correcto de dependencias y se detiene en el primer script con error
+el orden correcto de dependencias. Incluye la figura descriptiva de la serie
+económica complementaria ECO-CG y se detiene en el primer script con error
 (incluida una VALIDACIÓN FALLIDA).
 
 Uso:  python src/run_pipeline.py   (ejecutar desde la raíz del proyecto)
@@ -39,6 +40,7 @@ ORDEN = [
     "procesar_dimensiones.py",
     "generar_resumen_indicadores.py",
     "generar_tablas_apa.py",
+    "exportar_grafico_eco_cg.py",
     "generar_explorador.py",
     "generar_panel.py",
     "exportar_graficos.py",

@@ -10,7 +10,7 @@ el SIEPAC — ventana 2020–2024.
 **Fuentes de datos:** SIELAC·OLADE, CEPALSTAT·CEPAL, Banco Mundial (WDI),
 matrices ambiental y social del estudio, y EOR (Mercado Eléctrico Regional).
 **Documento generado automáticamente** por
-`src/generar_resumen_indicadores.py` el 2026-08-03;
+`src/generar_resumen_indicadores.py` el 2026-08-15;
 los valores provienen del mismo pipeline que alimenta los visualizadores.
 
 ## Cómo leer este documento

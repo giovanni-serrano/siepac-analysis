@@ -3,9 +3,10 @@ generar_tablas_apa.py — Tablas en formato APA 7.ª edición, listas para Word
 ====================================================
 Etapa del pipeline : presentación de resultados (posterior a
                      generar_resumen_indicadores.py)
-Entradas           : data/processed/indicadores_ECO_valores.csv y los libros
+Entradas           : data/processed/indicadores_ECO_valores.csv,
+                     data/processed/eco_cg_siepac.csv y los libros
                      indicadores_ECO/ENV/SOC_SIEPAC.xlsx (hojas Datos_Base y
-                     de indicadores), todo vía viz_comun
+                     de indicadores), principalmente vía viz_comun
 Salidas            : tablas-apa/tablas_apa_SIEPAC.docx (todas las tablas con
                      su nota metodológica), tablas_apa_SIEPAC_sin_notas.docx
                      (las mismas tablas sin nota, para el cuerpo del texto),
@@ -68,6 +69,11 @@ from pathlib import Path
 import pandas as pd
 
 from config_siepac import RAIZ_PROYECTO
+from eco_cg_comun import (BANDERAS_ECO_CG, CODIGO_ECO_CG,
+                          COLUMNA_ECO_CG, ETIQUETA_ECO_CG, FICHA_ECO_CG,
+                          FUENTES_ECO_CG, NIVEL_ECO_CG,
+                          NOTA_CALIDAD_ECO_CG, ORDEN_ECO_CG_DOCUMENTO,
+                          cargar_eco_cg, serie_mediana_eco_cg)
 from viz_comun import (ANIOS, FICHAS, PAISES, RUTA_ENV, RUTA_EXCEL, RUTA_SOC,
                        agregados_eco, cargar_datos, leer_series_extra,
                        preparar_datos)
@@ -104,6 +110,7 @@ FUENTES_APA = {
     "ods": "CEPAL (2026) y UNIDO (2026)",
     "env": "la matriz ENVs.xlsx",
     "soc": "la matriz SOCs.xlsx",
+    "eco_cg": FUENTES_ECO_CG,
 }
 
 REFERENCIAS_APA = [
@@ -206,6 +213,12 @@ BASE_ECO = [
             "USD corrientes por MWh", 1, ".1f", "pct", "media", "cepal",
             "Los valores marcados con asterisco se calculan mediante tasa "
             "de crecimiento anual compuesta (CAGR)."),
+    VarBase(COLUMNA_ECO_CG, "Costo de generación eléctrica",
+            "USD corrientes/MWh", 1, ".2f", "pct", "sin_resumen", "eco_cg",
+            "Serie económica complementaria; no constituye un noveno "
+            "indicador IEDS. Los proxies nacionales no son "
+            "conceptualmente homólogos y no forman un costo agregado del "
+            "SIEPAC."),
 ]
 
 BASE_ENV = [
@@ -336,7 +349,12 @@ def tabla_apa(tabla: dict, con_nota: bool = True) -> str:
     cols_izq = tabla["cols_izq"]
     titulo = tabla["titulo"] if con_nota else tabla["titulo_con_unidad"]
 
-    partes = [f'<div style="{S_BLOQUE}">',
+    # La tabla de convergencia económica creció con ECO-CG. Cerramos la tabla
+    # anterior con un salto para que su rótulo no quede aislado en el corte.
+    estilo_bloque = S_BLOQUE + (
+        "page-break-after:always;" if tabla["numero"] == 60 else ""
+    )
+    partes = [f'<div style="{estilo_bloque}">',
               f'<p style="{S_NUMERO}">Tabla {tabla["numero"]}</p>',
               f'<p style="{S_TITULO}">{titulo}</p>',
               f'<table style="{S_TABLA}"><thead><tr>']
@@ -372,7 +390,12 @@ def _leer_datos_base() -> dict[str, pd.DataFrame]:
     """Hojas Datos_Base de los tres libros. La económica trae el
     encabezado en la primera fila; las de ENV/SOC llevan dos líneas de
     presentación antes (mismo criterio que viz_comun.leer_series_extra)."""
-    hojas = {"eco": pd.read_excel(RUTA_EXCEL, sheet_name="Datos_Base")}
+    base_eco = pd.read_excel(RUTA_EXCEL, sheet_name="Datos_Base")
+    eco_cg = cargar_eco_cg().rename(
+        columns={CODIGO_ECO_CG: COLUMNA_ECO_CG})
+    base_eco = base_eco.merge(
+        eco_cg, on=["pais", "anio"], how="left", validate="one_to_one")
+    hojas = {"eco": base_eco}
     for dim, ruta in [("env", RUTA_ENV), ("soc", RUTA_SOC)]:
         if not ruta.exists():
             log.warning("No encontrado: %s - se omiten las tablas de datos "
@@ -398,8 +421,8 @@ def _bloque_base(numero: int, var: VarBase, base: pd.DataFrame,
         filas.append([pais] + celdas +
                      [_delta(vals[0], vals[-1], var.delta)])
 
-    # Fila de cierre: total del bloque si la magnitud es sumable, media
-    # simple si es una razón o un porcentaje (que no se pueden sumar).
+    # Fila de cierre: total del bloque si la magnitud es sumable y media
+    # simple si es una razón o un porcentaje que no se puede sumar.
     agregada = []
     for i in range(len(ANIOS)):
         vals = [series_pais[p][i] for p in PAISES if series_pais[p][i] is not None]
@@ -409,8 +432,10 @@ def _bloque_base(numero: int, var: VarBase, base: pd.DataFrame,
             agregada.append(sum(vals))
         else:
             agregada.append(sum(vals) / len(vals))
-    etiqueta = ("Total SIEPAC" if var.resumen == "suma"
-                else "Promedio de países (media simple)")
+    if var.resumen == "suma":
+        etiqueta = "Total SIEPAC"
+    else:
+        etiqueta = "Promedio de países (media simple)"
     resumen = [[etiqueta] + [_fmt(v, var.formato) for v in agregada] +
                [_delta(agregada[0], agregada[-1], var.delta)]]
 
@@ -419,13 +444,19 @@ def _bloque_base(numero: int, var: VarBase, base: pd.DataFrame,
             f"Δ = variación {ANIOS[0]}–{ANIOS[-1]}"
             + (" en puntos porcentuales." if var.delta == "pp"
                else ", relativa.") + " ")
-    nota += ("La última fila es la suma de los seis países."
-             if var.resumen == "suma"
-             else "La última fila es la media simple de los seis países.")
+    if var.resumen == "suma":
+        nota += "La última fila es la suma de los seis países."
+    else:
+        nota += "La última fila es la media simple de los seis países."
     if var.nota:
         nota += " " + var.nota
-    fuente = FUENTES_APA[var.fuente]
-    nota += f" Elaboración propia con datos de {fuente}."
+    if var.fuente == "eco_cg":
+        nota += (" Elaboración propia a partir del archivo procesado "
+                 "eco_cg_siepac.csv incorporado por el equipo de "
+                 "investigación.")
+    else:
+        fuente = FUENTES_APA[var.fuente]
+        nota += f" Elaboración propia con datos de {fuente}."
 
     encabezados = (["País"] + [str(a) for a in ANIOS] +
                    [f"Δ {ANIOS[0]}–{ANIOS[-1]}"])
@@ -433,6 +464,35 @@ def _bloque_base(numero: int, var: VarBase, base: pd.DataFrame,
                 titulo_con_unidad=f"{titulo} (en {var.unidad})",
                 encabezados=encabezados, filas=filas, resumen=resumen,
                 nota=nota, cols_izq=1)
+
+
+def _bloque_base_eco_cg(numero: int, base: pd.DataFrame) -> dict:
+    """Matriz de proxies ECO-CG con nivel y banderas metodológicas.
+
+    A diferencia de las demás variables base, esta tabla no cierra con una
+    fila regional: los instrumentos nacionales no son conceptualmente
+    homólogos. La estructura replica la Tabla 4 de la sección metodológica.
+    """
+    pivote = base.pivot(index="pais", columns="anio",
+                        values=COLUMNA_ECO_CG)
+    filas = []
+    for pais in ORDEN_ECO_CG_DOCUMENTO:
+        valores = []
+        for anio in ANIOS:
+            valor = float(pivote.loc[pais, anio])
+            valores.append(_fmt(valor, ".2f")
+                           + BANDERAS_ECO_CG.get((pais, anio), ""))
+        filas.append([pais, str(NIVEL_ECO_CG[pais])] + valores)
+
+    titulo = (f"Matriz {ETIQUETA_ECO_CG} de los países del SIEPAC, "
+              f"{ANIOS[0]}–{ANIOS[-1]}")
+    nota = (f"Valores en {FICHA_ECO_CG['unidad']}. {NOTA_CALIDAD_ECO_CG} "
+            f"Elaboración propia a partir de {FUENTES_ECO_CG}.")
+    return dict(
+        numero=numero, titulo=titulo,
+        titulo_con_unidad=f"{titulo} (en {FICHA_ECO_CG['unidad']})",
+        encabezados=["País", "Nivel"] + [str(a) for a in ANIOS],
+        filas=filas, resumen=[], nota=nota, cols_izq=1)
 
 
 # ---------------------------------------------------------------------------
@@ -459,6 +519,24 @@ def _armar_datos() -> tuple[dict, dict]:
                     .round(6).tolist()]
         datos[codigo] = {"paises": por_pais, "promedio": promedio,
                          "agregado": agregados.get(codigo)}
+
+    # ECO_CG es una serie económica complementaria y por eso no se añade a
+    # FICHAS (el catálogo reservado a los IEDS). Sí se empaqueta aquí para
+    # que participe en las tablas descriptivas del bloque.
+    eco_cg = cargar_eco_cg()
+    por_pais_cg = {
+        pais: (eco_cg[eco_cg["pais"] == pais]
+               .sort_values("anio")[CODIGO_ECO_CG].round(6).tolist())
+        for pais in PAISES
+    }
+    promedio_cg = (eco_cg.groupby("anio")[CODIGO_ECO_CG]
+                   .mean().reindex(ANIOS).round(6).tolist())
+    datos[CODIGO_ECO_CG] = {
+        "paises": por_pais_cg,
+        "promedio": promedio_cg,
+        "mediana": serie_mediana_eco_cg(eco_cg),
+        "agregado": None,
+    }
     datos.update(leer_series_extra())
     imputados = {
         pais: df[df["pais"] == pais].sort_values("anio")["tarifa_imputada"]
@@ -479,6 +557,8 @@ def _series_de(ficha: dict, codigo: str) -> list[dict]:
 
 def _fuente_indicador(codigo: str, dim: str) -> str:
     """Frase de atribución para la nota al pie del indicador."""
+    if codigo == CODIGO_ECO_CG:
+        return f"Elaboración propia a partir de {FUENTES_ECO_CG}."
     if dim == "env":
         return "Elaboración propia a partir de ENVs.xlsx."
     if dim == "soc":
@@ -695,8 +775,11 @@ def _leyenda_convenciones() -> list[str]:
         'tratamiento es descriptivo, la desviación estándar se calcula '
         f'con denominador N = {len(PAISES)} (Ec. 3) y no procede la '
         'inferencia estadística. La Ec. 1 se aplica a los indicadores '
-        'con numerador y denominador agregables; ECO14 se resume con la '
-        'mediana de países según la convención definida para esa serie. '
+        'con numerador y denominador agregables. ECO14 y ECO-CG se '
+        'resumen con la mediana de países; ninguna de las dos medidas se '
+        'denomina agregado regional por falta de un ponderador compatible. '
+        'En ECO-CG, además, los proxies nacionales pertenecen a distintos '
+        'niveles metodológicos. '
         'El promedio de países (Ec. 2) '
         'y el agregado regional (Ec. 1) responden preguntas distintas y '
         'pueden divergir incluso en el signo de la tendencia, por lo que '
@@ -712,7 +795,8 @@ def _leyenda_convenciones() -> list[str]:
 # ---------------------------------------------------------------------------
 
 ECO_BLOQUE = ["ECO1", "ECO2", "ECO3", "ECO6", "ECO11", "ECO13",
-              "ECO14", "ECO15"]
+              "ECO14", CODIGO_ECO_CG, "ECO15"]
+FICHAS_BLOQUE_ECO = {**FICHAS, CODIGO_ECO_CG: FICHA_ECO_CG}
 
 # El carácter censal del bloque y la definición de σ, CV y las ecuaciones
 # se declaran una sola vez en las Convenciones de cálculo del encabezado
@@ -744,8 +828,9 @@ def _cv_pct(v: list[float]) -> float:
 
 
 def _serie_bloque(datos: dict, codigo: str) -> list[float]:
-    """Serie del bloque: razón de sumas; en ECO14, mediana de países
-    (no existe el denominador con el que ponderar la tarifa)."""
+    """Serie de nivel: agregado, salvo ECO14 y ECO-CG (mediana)."""
+    if codigo == CODIGO_ECO_CG:
+        return datos[codigo]["mediana"]
     agr = datos[codigo].get("agregado")
     if agr:
         return agr
@@ -768,24 +853,34 @@ def _bloque_tendencia(numero: int, datos: dict) -> dict:
     # ECO15 puede cambiar de signo, por lo que la CAGR no está definida.
     sin_cagr = ("ECO11", "ECO13", "ECO15")
     for cod in ECO_BLOQUE:
-        f = FICHAS[cod]
+        f = FICHAS_BLOQUE_ECO[cod]
         s = _serie_bloque(datos, cod)
-        marca = "†" if datos[cod].get("agregado") is None else ""
+        if cod == "ECO14":
+            marca = "†"
+        elif cod == CODIGO_ECO_CG:
+            marca = "‡"
+        else:
+            marca = ""
+        etiqueta = ETIQUETA_ECO_CG if cod == CODIGO_ECO_CG else cod
         filas.append(
-            [f"{cod}. {f['nombre']} ({f['unidad']}){marca}"]
+            [f"{etiqueta}. {f['nombre']} ({f['unidad']}){marca}"]
             + [_fmt(v, f["formato"]) for v in s]
             + [_delta(s[0], s[-1], f["delta"]),
                "n.a." if cod in sin_cagr else _cagr_txt(s[0], s[-1])])
-    titulo = (f"Nivel y tendencia del bloque SIEPAC por indicador "
-              f"económico, {ANIOS[0]}–{ANIOS[-1]}")
-    nota = ("Cada serie es el agregado regional (Ec. 1); la daga (†) "
-            "marca ECO14, resumido con la mediana de países. "
+    titulo = (f"Nivel y tendencia de las series económicas del SIEPAC, "
+              f"{ANIOS[0]}–{ANIOS[-1]}")
+    nota = ("Las series con numerador y denominador compatibles se resumen "
+            "mediante el agregado regional (Ec. 1). La daga (†) marca "
+            "ECO14, resumido con la mediana de países por falta de "
+            "ponderador. La doble daga (‡) marca ECO-CG, resumido con la "
+            "mediana descriptiva de los proxies nacionales; no constituye "
+            "un costo agregado del SIEPAC. "
             f"Δ = variación {ANIOS[0]}–{ANIOS[-1]}, "
             "relativa o en puntos porcentuales según la serie; CAGR "
             "(Ec. 5) en % por año, «n.a.» donde no procede calcularla "
             "sobre una participación. En ECO14, 2023–2024 (y 2022 en El "
             "Salvador) se calculan mediante CAGR. Elaboración propia a "
-            "partir de las tablas de indicadores de este archivo.")
+            "partir de las tablas de valores económicos de este archivo.")
     return dict(
         numero=numero, titulo=titulo,
         titulo_con_unidad=f"{titulo} (unidad indicada en cada fila)",
@@ -802,17 +897,19 @@ def _bloque_heterogeneidad(numero: int, codigo: str, datos: dict) -> dict:
     necesite la cifra de un país concreto la tiene en las tablas de
     indicadores por país de este mismo documento.
     """
-    f = FICHAS[codigo]
+    f = FICHAS_BLOQUE_ECO[codigo]
     fmt = f["formato"]
     filas = []
     for i, anio in enumerate(ANIOS):
         v = _valores_anio(datos, codigo, i)
+        formato_cv = ".2f" if codigo == CODIGO_ECO_CG else ".1f"
         filas.append([str(anio), _fmt(sum(v) / len(v), fmt),
                       _fmt(_mediana(v), fmt), _fmt(_de_poblacional(v), fmt),
-                      f"{_cv_pct(v):.1f}",
+                      format(_cv_pct(v), formato_cv),
                       _fmt(min(v), fmt), _fmt(max(v), fmt),
                       _fmt(max(v) - min(v), fmt)])
-    titulo = (f"Estadística descriptiva de {f['nombre']} ({codigo}) entre "
+    etiqueta = ETIQUETA_ECO_CG if codigo == CODIGO_ECO_CG else codigo
+    titulo = (f"Estadística descriptiva de {f['nombre']} ({etiqueta}) entre "
               f"los países del SIEPAC, por año, {ANIOS[0]}–{ANIOS[-1]}")
     nota = (f"Estadísticos de los seis valores nacionales de cada año, "
             f"en {f['unidad']}; DE (Ec. 3) y CV (Ec. 4). Esos valores "
@@ -825,7 +922,14 @@ def _bloque_heterogeneidad(numero: int, codigo: str, datos: dict) -> dict:
     if codigo == "ECO14":
         nota += ("Los estadísticos de 2023–2024 (y 2022 en El Salvador) "
                  "incorporan valores imputados vía CAGR. ")
-    if f["nota"]:
+    if codigo == CODIGO_ECO_CG:
+        nota += ("Serie económica complementaria; no constituye un noveno "
+                 "indicador IEDS. Son estadísticos no ponderados y no "
+                 "constituyen un costo "
+                 "regional ni corrigen la diferencia entre niveles "
+                 "metodológicos. Los resultados de 2024 incluyen las "
+                 "banderas de calidad de la matriz ECO-CG. ")
+    if f["nota"] and codigo != CODIGO_ECO_CG:
         nota += f["nota"] + " "
     nota += _fuente_indicador(codigo, f["dim"])
     return dict(
@@ -840,7 +944,7 @@ def _bloque_convergencia(numero: int, datos: dict) -> dict:
     """Tabla única: convergencia sigma (trayectoria del CV) por indicador."""
     filas = []
     for cod in ECO_BLOQUE:
-        f = FICHAS[cod]
+        f = FICHAS_BLOQUE_ECO[cod]
         if cod == "ECO15":
             # CV sobre media cercana a cero con signos mixtos: no es
             # interpretable; no se publican sus CV ni se emite veredicto.
@@ -850,20 +954,27 @@ def _bloque_convergencia(numero: int, datos: dict) -> dict:
         cvs = [_cv_pct(_valores_anio(datos, cod, i))
                for i in range(len(ANIOS))]
         delta = cvs[-1] - cvs[0]
-        filas.append([f"{cod}. {f['nombre']}"]
+        etiqueta = ETIQUETA_ECO_CG if cod == CODIGO_ECO_CG else cod
+        if cod == CODIGO_ECO_CG:
+            lectura = "No aplicable"
+        else:
+            lectura = "Convergen" if delta < 0 else "Divergen"
+        filas.append([f"{etiqueta}. {f['nombre']}"]
                      + [f"{cv:.1f}" for cv in cvs]
-                     + [f"{delta:+.1f}",
-                        "Convergen" if delta < 0 else "Divergen"])
-    titulo = ("Convergencia sigma entre los países del SIEPAC por "
-              f"indicador económico, {ANIOS[0]}–{ANIOS[-1]}")
+                     + [f"{delta:+.1f}", lectura])
+    titulo = ("Convergencia sigma entre los países del SIEPAC por serie "
+              f"económica, {ANIOS[0]}–{ANIOS[-1]}")
     nota = ("CV de los seis valores nacionales de cada año (Ec. 4). Una "
             "caída en la ventana (Δ negativo) indica convergencia sigma "
             "—los países se asemejan— y un aumento, divergencia. En "
             "ECO15 el CV no es interpretable, porque la media es "
             "cercana a cero con signos mixtos, y su dispersión se lee "
             "en la tabla del indicador. Para ECO14, el contraste de "
-            "convergencia utiliza 2020–2022. "
-            "Elaboración propia a partir de las tablas de indicadores "
+            "convergencia utiliza 2020–2022. Los CV de ECO-CG se muestran "
+            "solo como estadísticos descriptivos; no se emite un dictamen "
+            "de convergencia porque los proxies no son conceptualmente "
+            "homólogos. "
+            "Elaboración propia a partir de las tablas de valores económicos "
             "de este archivo.")
     return dict(
         numero=numero, titulo=titulo,
@@ -1257,8 +1368,12 @@ def _tablas_base(inicio: int, hojas: dict, imputados: dict) -> list[dict]:
                 log.warning("Columna ausente en Datos_Base %s: %s (se omite)",
                             dim.upper(), var.columna)
                 continue
-            marcas = imputados if var.columna == "tarifa_usd_mwh" else None
-            tabla = _bloque_base(n, var, hojas[dim], marcas)
+            if var.columna == COLUMNA_ECO_CG:
+                tabla = _bloque_base_eco_cg(n, hojas[dim])
+            else:
+                marcas = (imputados
+                           if var.columna == "tarifa_usd_mwh" else None)
+                tabla = _bloque_base(n, var, hojas[dim], marcas)
             tabla.update(seccion=f"Datos base ({nombre})",
                          codigo=var.columna, dim=dim)
             tablas.append(tabla)
@@ -1430,7 +1545,8 @@ def _armar_documento(tablas: list[dict], base: list[dict],
              "energéticas se presentan en GWh (1 GWh = 10⁶ kWh) y las "
              "monetarias en millones de USD constantes de 2015, para que las "
              "cifras sean legibles en una tabla impresa; los libros conservan "
-             "las unidades originales (kWh y USD).",
+             "las unidades originales (kWh y USD). El costo de generación "
+             "complementario se conserva en USD/MWh.",
              "Las variables comunes a varias dimensiones se presentan una "
              "sola vez. El PIB específico de la matriz ambiental conserva su "
              "serie de origen y se presenta por separado."]),
@@ -1458,7 +1574,10 @@ def _armar_documento(tablas: list[dict], base: list[dict],
              "conjunto de países, no como razón de sumas regional. La "
              "dimensión ambiental incorpora nivel regional, dispersión y "
              "convergencia para ENV1–ENV3, además de una descripción de "
-             "las dos series observadas de ENV6."]),
+             "las dos series observadas de ENV6. ECO-CG se incorpora como "
+             "serie económica complementaria y no como un noveno IEDS; "
+             "sus medidas centrales son descriptivas y no forman un costo "
+             "agregado del SIEPAC."]),
     }
     orden_secciones = ([("base", base), ("indicadores", indicadores)]
                        if orden == "base"
