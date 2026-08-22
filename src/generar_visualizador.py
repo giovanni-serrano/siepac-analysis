@@ -195,11 +195,17 @@ def _validar(paquete: dict, fichas: dict, enlaces: dict) -> None:
         raise ValueError("VALIDACIÓN FALLIDA: " + "; ".join(errores))
 
 
+def _sanear_plotly_js(codigo: str) -> str:
+    """Escapa los dos controles C0 incluidos por Plotly antes de publicar."""
+    return codigo.replace("\x01", r"\x01").replace("\x1a", r"\x1a")
+
+
 PLANTILLA = r'''<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#173f64">
 <meta name="description" content="Indicadores regionales económicos, sociales y ambientales del SIEPAC, 2020–2024.">
 <title>Visualizador regional SIEPAC · 2020–2024</title>
 <script>__PLOTLYJS__</script>
@@ -216,7 +222,8 @@ PLANTILLA = r'''<!DOCTYPE html>
   body { margin:0; background:var(--papel); color:var(--tinta);
     font-family:"Segoe UI",system-ui,-apple-system,sans-serif; }
   button,input,select { font:inherit; }
-  button { cursor:pointer; }
+  button,a,select,input { touch-action:manipulation; }
+  button { cursor:pointer; -webkit-tap-highlight-color:transparent; }
   a { color:var(--azul-2); }
   :focus-visible { outline:3px solid #f2a65a; outline-offset:3px; }
   .skip { position:absolute; left:-9999px; top:8px; z-index:100; }
@@ -229,12 +236,15 @@ PLANTILLA = r'''<!DOCTYPE html>
     display:flex; align-items:center; gap:10px; font-weight:800; }
   .brand-mark { width:34px; height:34px; border-radius:10px;
     display:grid; place-items:center; background:var(--azul); color:#fff; }
-  nav { display:flex; gap:4px; overflow-x:auto; flex:1; }
+  nav { display:flex; gap:4px; overflow-x:auto; flex:1; min-width:0;
+    scrollbar-width:none; }
+  nav::-webkit-scrollbar,.tabs::-webkit-scrollbar { display:none; }
   nav button { border:0; background:none; border-radius:999px; color:var(--gris);
     padding:9px 14px; white-space:nowrap; font-size:14px; font-weight:650; }
   nav button:hover,nav button.on { background:#edf2f5; color:var(--azul); }
   .periodo { color:var(--gris); font-size:13px; white-space:nowrap; }
-  main { max-width:1240px; margin:auto; min-height:78vh; padding:0 24px 72px; }
+  main { max-width:1240px; margin:auto; min-height:78vh; padding:0 24px 72px;
+    scroll-margin-top:76px; }
   .hero { padding:68px 0 38px; display:grid; grid-template-columns:1.45fr .75fr;
     gap:48px; align-items:end; }
   .eyebrow { color:var(--naranja); text-transform:uppercase; letter-spacing:.12em;
@@ -292,7 +302,7 @@ PLANTILLA = r'''<!DOCTYPE html>
   .tabs button { border:0; border-bottom:3px solid transparent; background:none;
     color:var(--gris); padding:12px 15px; white-space:nowrap; font-weight:700; }
   .tabs button.on { color:var(--azul); border-bottom-color:var(--naranja); }
-  .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;
     margin-bottom:18px; }
   .kpi { background:#fff; border:1px solid var(--borde); border-radius:13px;
     padding:15px 17px; }
@@ -317,6 +327,8 @@ PLANTILLA = r'''<!DOCTYPE html>
   .link-btn,.download { display:inline-block; border:1px solid var(--azul);
     border-radius:9px; padding:9px 13px; background:#fff; color:var(--azul);
     font-weight:700; text-decoration:none; }
+  .brand,nav button,.tabs button,.back,.selector,.search,.link-btn,.download {
+    min-height:44px; }
   .download { background:var(--azul); color:#fff; }
   .table-wrap { overflow:auto; max-height:480px; margin-top:16px;
     border:1px solid var(--borde); border-radius:12px; }
@@ -334,13 +346,43 @@ PLANTILLA = r'''<!DOCTYPE html>
     display:flex; justify-content:space-between; gap:30px; font-size:13px; }
   .footer-in strong { color:#fff; }
   .empty { padding:30px; color:var(--gris); text-align:center; }
+  @media (max-width:1000px) {
+    .hero { grid-template-columns:1fr; gap:28px; padding-top:52px; }
+  }
   @media (max-width:800px) {
     .top { padding:0 14px; gap:12px; } .brand span:last-child,.periodo { display:none; }
-    main { padding:0 14px 56px; } .hero { grid-template-columns:1fr; padding-top:44px; }
+    main { padding:0 14px 56px; } .hero { padding-top:44px; }
     .tools { align-items:stretch; flex-direction:column; } .search { min-width:0; width:100%; }
     .detail-head { grid-template-columns:1fr; } .selector { width:100%; }
-    .kpis,.method-grid { grid-template-columns:1fr; } #chart { height:430px; }
-    .footer-in { flex-direction:column; } .grid { grid-template-columns:1fr; }
+    .method-grid { grid-template-columns:1fr; }
+    nav.hay-mas { -webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 30px),transparent);
+      mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 30px),transparent); }
+    nav.hay-previo:not(.hay-mas) { -webkit-mask-image:linear-gradient(to right,transparent,#000 30px,#000 100%);
+      mask-image:linear-gradient(to right,transparent,#000 30px,#000 100%); }
+    nav.hay-previo.hay-mas { -webkit-mask-image:linear-gradient(to right,transparent,#000 30px,#000 calc(100% - 30px),transparent);
+      mask-image:linear-gradient(to right,transparent,#000 30px,#000 calc(100% - 30px),transparent); }
+  }
+  @media (max-width:640px) {
+    .grid,.kpis { grid-template-columns:1fr; }
+    .panel { padding:10px; }
+    #chart { height:480px; }
+    .finding { font-size:14px; }
+    .detail-head h1 { font-size:clamp(29px,9vw,40px); }
+    .footer-in { flex-direction:column; }
+  }
+  @media (max-width:420px) {
+    .top { height:64px; }
+    .hero-stats { grid-template-columns:1fr; }
+    h1 { font-size:clamp(32px,11vw,42px); }
+  }
+  @media (max-height:500px) and (orientation:landscape) {
+    header { position:static; }
+    .hero { padding-top:30px; }
+    #chart { height:380px; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    html { scroll-behavior:auto; }
+    .card { transition:none; }
   }
 </style>
 </head>
@@ -377,6 +419,8 @@ const DIMS={eco:["Económica","Costos, estructura y eficiencia","var(--eco)"],
   env:["Ambiental","Emisiones y desempeño ambiental","var(--env)"]};
 let estado={codigo:null,serie:0,vista:"region",filtro:"all"};
 const app=document.getElementById("app");
+const navPrincipal=document.querySelector("nav");
+const VISTAS=[["region","Región"],["paises","Países"],["datos","Datos y método"]];
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 function decimales(fmt){const m=String(fmt||"").match(/\.(\d+)f/);return m?+m[1]:2;}
@@ -392,7 +436,12 @@ function principal(cod,b){if(cod==="ECO14")return {valores:serieMediana(b),etiqu
   if(cod==="ECO_CG")return {valores:b.mediana,etiqueta:"Mediana de proxies nacionales"};
   if(b.agregado)return {valores:b.agregado,etiqueta:"Agregado regional (razón de sumas)"};
   return {valores:b.promedio,etiqueta:"Promedio de países (media simple)"};}
-function activarNav(dim){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.dim===dim));}
+function actualizarPistaNav(){const previo=navPrincipal.scrollLeft>2;
+  const mas=navPrincipal.scrollLeft+navPrincipal.clientWidth<navPrincipal.scrollWidth-2;
+  navPrincipal.classList.toggle("hay-previo",previo);navPrincipal.classList.toggle("hay-mas",mas);}
+function activarNav(dim){let activo=null;document.querySelectorAll("nav button").forEach(b=>{const on=b.dataset.dim===dim;
+  b.classList.toggle("on",on);if(on){b.setAttribute("aria-current","page");activo=b;}else b.removeAttribute("aria-current");});
+  if(activo)requestAnimationFrame(()=>{activo.scrollIntoView({block:"nearest",inline:"nearest"});actualizarPistaNav();});}
 function valorTarjeta(cod){const inf=infoSerie(cod,0),b=DATOS[inf.clave],p=principal(cod,b);
   return num(p.valores.at(-1),inf.formato)+(inf.sufijo||"");}
 function etiquetaCodigo(c){return c==="ECO_CG"?"ECO-CG":c;}
@@ -426,7 +475,13 @@ function mostrarInicio(filtro="all") {estado={codigo:null,serie:0,vista:"region"
 
 function abrirDetalle(cod){estado.codigo=cod;estado.serie=0;estado.vista="region";activarNav(FICHAS[cod].dim);renderDetalle();}
 function elegirSerie(i){estado.serie=+i;renderDetalle();}
-function elegirVista(v){estado.vista=v;renderDetalle();}
+function elegirVista(v,enfocar=false){estado.vista=v;renderDetalle();
+  if(enfocar)requestAnimationFrame(()=>document.getElementById(`tab-${v}`)?.focus());}
+function navegarTabs(e){const teclas=["ArrowLeft","ArrowRight","Home","End"];
+  if(!teclas.includes(e.key))return;e.preventDefault();let i=VISTAS.findIndex(x=>x[0]===estado.vista);
+  if(e.key==="Home")i=0;else if(e.key==="End")i=VISTAS.length-1;
+  else i=(i+(e.key==="ArrowRight"?1:-1)+VISTAS.length)%VISTAS.length;
+  elegirVista(VISTAS[i][0],true);}
 function cambio(vals,tipo){const a=vals[0],b=vals.at(-1);if(a===null||b===null||a===0)return "s.d.";
   return tipo==="pp"?`${(b-a>=0?"+":"")}${num(b-a,".1f")} pp`:`${(b/a-1>=0?"+":"")}${num((b/a-1)*100,".1f")}%`;}
 function rango2024(b,fmt,suf){const v=PAISES.map(p=>b.paises[p].at(-1)).filter(x=>x!==null);
@@ -437,9 +492,9 @@ function renderDetalle(){const cod=estado.codigo,f=FICHAS[cod],inf=infoSerie(cod
   app.innerHTML=`<button class="back" onclick="mostrarInicio('${f.dim}')">← Volver a indicadores</button>
     <section class="detail-head"><div><div class="eyebrow">${esc(etiquetaCodigo(cod))} · ${esc(DIMS[f.dim][0])}</div><h1>${esc(f.nombre)}</h1>
     <p>${esc(f.descripcion)}</p></div>${opciones}</section>
-    <div class="tabs" role="tablist" aria-label="Vistas del indicador">
-      ${[["region","Región"],["paises","Países"],["datos","Datos y método"]].map(x=>`<button role="tab" aria-selected="${estado.vista===x[0]}" class="${estado.vista===x[0]?"on":""}" onclick="elegirVista('${x[0]}')">${x[1]}</button>`).join("")}</div>
-    <section id="vista"></section>`;
+    <div class="tabs" role="tablist" aria-label="Vistas del indicador" onkeydown="navegarTabs(event)">
+      ${VISTAS.map(x=>`<button id="tab-${x[0]}" role="tab" aria-selected="${estado.vista===x[0]}" aria-controls="vista" tabindex="${estado.vista===x[0]?0:-1}" class="${estado.vista===x[0]?"on":""}" onclick="elegirVista('${x[0]}',true)">${x[1]}</button>`).join("")}</div>
+    <section id="vista" role="tabpanel" aria-labelledby="tab-${estado.vista}" tabindex="0"></section>`;
   if(estado.vista==="region")vistaRegion(cod,f,inf,b,p);else if(estado.vista==="paises")vistaPaises(cod,f,inf,b,p);else vistaDatos(cod,f,inf,b,p);
   window.scrollTo(0,0);
 }
@@ -447,10 +502,13 @@ function renderDetalle(){const cod=estado.codigo,f=FICHAS[cod],inf=infoSerie(cod
 function kpis(cod,f,inf,b,p){return `<div class="kpis"><div class="kpi"><span>${esc(p.etiqueta)} · 2024</span><b>${num(p.valores.at(-1),inf.formato)}${esc(inf.sufijo)}</b></div>
   <div class="kpi"><span>Cambio 2020–2024</span><b>${cambio(p.valores,f.delta)}</b></div>
   <div class="kpi"><span>Mínimo–máximo entre países · 2024</span><b>${rango2024(b,inf.formato,inf.sufijo)}</b></div></div>`;}
-function baseLayout(inf){return {paper_bgcolor:"#fff",plot_bgcolor:"#fff",font:{family:"Segoe UI, sans-serif",color:"#17212b",size:13},
-  margin:{l:96,r:28,t:28,b:80},hovermode:"x unified",legend:{orientation:"h",y:-.18,x:.5,xanchor:"center"},
-  xaxis:{tickvals:ANIOS,gridcolor:"#f1f3f4",fixedrange:true},yaxis:{gridcolor:"#e7ebee",ticksuffix:inf.sufijo,zerolinecolor:"#9aa4ad",fixedrange:true,automargin:true}};}
-const plotCfg={responsive:true,displaylogo:false,modeBarButtonsToRemove:["select2d","lasso2d","autoScale2d"]};
+function baseLayout(inf,vista){const movil=window.matchMedia("(max-width:640px)").matches;
+  return {paper_bgcolor:"#fff",plot_bgcolor:"#fff",font:{family:"Segoe UI, sans-serif",color:"#17212b",size:movil?11:13},
+    margin:movil?{l:52,r:10,t:20,b:vista==="paises"?170:125}:{l:96,r:28,t:28,b:80},hovermode:"x unified",
+    legend:movil?{orientation:"v",y:-.2,yanchor:"top",x:0,font:{size:10},itemwidth:34}:{orientation:"h",y:-.18,x:.5,xanchor:"center"},
+    xaxis:{tickvals:ANIOS,gridcolor:"#f1f3f4",fixedrange:true,tickfont:{size:movil?10:12}},
+    yaxis:{gridcolor:"#e7ebee",ticksuffix:movil?"":inf.sufijo,zerolinecolor:"#9aa4ad",fixedrange:true,automargin:true,tickfont:{size:movil?10:12}}};}
+const plotCfg={responsive:true,displaylogo:false,displayModeBar:false,scrollZoom:false};
 function extremos(b){return ANIOS.map((_,i)=>{const v=PAISES.map(p=>b.paises[p][i]).filter(x=>x!==null);return [Math.min(...v),Math.max(...v)];});}
 function resumenAccesible(p,inf,b){const i=ANIOS.length-1,e=extremos(b)[i];return `${p.etiqueta}: ${num(p.valores[i],inf.formato)}${inf.sufijo} en ${ANIOS[i]}. El rango nacional va de ${num(e[0],inf.formato)} a ${num(e[1],inf.formato)}${inf.sufijo}.`;}
 
@@ -459,7 +517,7 @@ function vistaRegion(cod,f,inf,b,p){document.getElementById("vista").innerHTML=k
     {x:ANIOS,y:ex.map(x=>x[0]),mode:"lines",line:{width:0},fill:"tonexty",fillcolor:"rgba(95,107,118,.16)",name:"Mínimo–máximo entre países"},
     {x:ANIOS,y:b.promedio,mode:"lines+markers",name:"Promedio de países (media simple)",line:{color:"#7b8791",width:2,dash:"dash"},marker:{size:7}}];
   tr.push({x:ANIOS,y:p.valores,mode:"lines+markers",name:p.etiqueta,line:{color:cod==="ECO_CG"?"#c85d22":"#1f4e79",width:4},marker:{size:9}});
-  const ly=baseLayout(inf);if(cod==="ECO15")ly.shapes=[{type:"line",x0:ANIOS[0],x1:ANIOS.at(-1),y0:0,y1:0,line:{color:"#68737d",dash:"dot"}}];
+  const ly=baseLayout(inf,"region");if(cod==="ECO15")ly.shapes=[{type:"line",x0:ANIOS[0],x1:ANIOS.at(-1),y0:0,y1:0,line:{color:"#68737d",dash:"dot"}}];
   if(cod==="ECO14"){ly.shapes=(ly.shapes||[]).concat([{type:"rect",xref:"x",yref:"paper",x0:2022.5,x1:2024.2,y0:0,y1:1,fillcolor:"rgba(0,0,0,.05)",line:{width:0},layer:"below"}]);ly.annotations=[{x:2023.5,y:1.04,yref:"paper",text:"imputación CAGR",showarrow:false,font:{size:11,color:"#5f6b76"}}];}
   Plotly.newPlot("chart",tr,ly,plotCfg);
 }
@@ -467,7 +525,7 @@ function vistaRegion(cod,f,inf,b,p){document.getElementById("vista").innerHTML=k
 function vistaPaises(cod,f,inf,b,p){document.getElementById("vista").innerHTML=kpis(cod,f,inf,b,p)+`<div class="panel"><div id="chart" role="img" aria-label="Comparación de los seis países para ${esc(f.nombre)}"></div><p class="chart-summary">Cada país conserva la misma prominencia visual; use la leyenda para aislar una serie.</p></div>${cod==="ECO14"?'<div class="note">Los marcadores huecos identifican valores imputados mediante CAGR.</div>':""}`;
   const tr=PAISES.map(pais=>({x:ANIOS,y:b.paises[pais],mode:"lines+markers",name:pais,line:{color:COLORES[pais],width:2.5},
     marker:{size:8,symbol:cod==="ECO14"?DATOS.imputados[pais].map(x=>x?"circle-open":"circle"):"circle"}}));
-  const ly=baseLayout(inf);if(cod==="ECO15")ly.shapes=[{type:"line",x0:ANIOS[0],x1:ANIOS.at(-1),y0:0,y1:0,line:{color:"#68737d",dash:"dot"}}];Plotly.newPlot("chart",tr,ly,plotCfg);
+  const ly=baseLayout(inf,"paises");if(cod==="ECO15")ly.shapes=[{type:"line",x0:ANIOS[0],x1:ANIOS.at(-1),y0:0,y1:0,line:{color:"#68737d",dash:"dot"}}];Plotly.newPlot("chart",tr,ly,plotCfg);
 }
 
 function tablaSerie(inf,b,p){let h=`<div class="table-wrap"><table><caption style="position:absolute;left:-9999px">Valores de ${esc(inf.clave)} por país y año</caption><thead><tr><th scope="col">País o referencia</th>${ANIOS.map(a=>`<th scope="col">${a}</th>`).join("")}</tr></thead><tbody>`;
@@ -491,7 +549,10 @@ function mostrarMetodo(){activarNav("metodo");app.innerHTML=`<section class="met
   <article class="method-card"><h3>Excepciones transparentes</h3><p>ECO14 y ECO-CG usan la mediana porque no existe un ponderador regional compatible. ENV6 suma dos magnitudes observadas y no calcula un cociente.</p></article>
   <article class="method-card"><h3>Reproducibilidad</h3><p>Las cifras, fórmulas, tablas y figuras proceden del mismo pipeline. Una corrección se realiza en el dato o generador de origen.</p></article></div>
   <div class="links"><a class="link-btn" href="../docs/resumen_indicadores_SIEPAC.md">Resumen metodológico</a><a class="link-btn" href="../salidas/tesis/tablas/tablas_apa_SIEPAC.html">Tablas APA 7</a></div></section>`;app.focus();window.scrollTo(0,0);}
+navPrincipal.addEventListener("scroll",actualizarPistaNav,{passive:true});
+window.addEventListener("resize",actualizarPistaNav);
 mostrarInicio("all");
+requestAnimationFrame(actualizarPistaNav);
 </script>
 </body>
 </html>
@@ -511,7 +572,7 @@ def main() -> None:
     _validar(paquete, fichas, enlaces)
 
     html = (PLANTILLA
-            .replace("__PLOTLYJS__", pyo.get_plotlyjs())
+            .replace("__PLOTLYJS__", _sanear_plotly_js(pyo.get_plotlyjs()))
             .replace("__DATOS__", json.dumps(paquete, ensure_ascii=False))
             .replace("__FICHAS__", json.dumps(fichas, ensure_ascii=False))
             .replace("__ANIOS__", json.dumps(ANIOS))

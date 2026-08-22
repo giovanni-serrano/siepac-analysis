@@ -12,6 +12,7 @@ from generar_visualizador import (  # noqa: E402
     FICHAS,
     RUTA_SALIDA,
     _fichas_visualizador,
+    _sanear_plotly_js,
 )
 
 
@@ -37,6 +38,19 @@ class TestVisualizador(unittest.TestCase):
         self.assertNotIn('"base_soc"', contenido)
         self.assertNotIn("__DATOS__", contenido)
         self.assertNotIn("__PLOTLYJS__", contenido)
+        self.assertIn('@media (max-width:640px)', contenido)
+        self.assertIn('@media (prefers-reduced-motion:reduce)', contenido)
+        self.assertIn('aria-controls="vista"', contenido)
+        self.assertIn('role="tabpanel"', contenido)
+        self.assertIn('function navegarTabs', contenido)
+        self.assertIn('displayModeBar:false', contenido)
+        controles = [ord(c) for c in contenido
+                     if ord(c) < 32 and c not in "\t\n\r"]
+        self.assertEqual(controles, [])
+
+    def test_sanitiza_controles_incrustados_por_plotly(self):
+        self.assertEqual(_sanear_plotly_js("a\x01b\x1ac"),
+                         r"a\x01b\x1ac")
 
 
 if __name__ == "__main__":
