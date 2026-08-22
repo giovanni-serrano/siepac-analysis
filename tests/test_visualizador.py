@@ -44,6 +44,10 @@ class TestVisualizador(unittest.TestCase):
         self.assertIn('role="tabpanel"', contenido)
         self.assertIn('function navegarTabs', contenido)
         self.assertIn('displayModeBar:false', contenido)
+        self.assertIn('class="chart-mobile-meta"', contenido)
+        self.assertIn('showlegend:!movil', contenido)
+        self.assertIn('Abrir figura para la tesis', contenido)
+        self.assertIn('para móvil use la vista Región', contenido)
         controles = [ord(c) for c in contenido
                      if ord(c) < 32 and c not in "\t\n\r"]
         self.assertEqual(controles, [])

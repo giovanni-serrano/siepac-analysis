@@ -311,6 +311,17 @@ PLANTILLA = r'''<!DOCTYPE html>
   .panel { background:#fff; border:1px solid var(--borde); border-radius:16px;
     padding:18px; box-shadow:0 2px 8px rgba(23,33,43,.035); }
   #chart { width:100%; height:520px; }
+  .chart-mobile-meta { display:none; }
+  .chart-unit { color:var(--gris); font-size:12px; font-weight:750; }
+  .chart-legend-mobile { display:flex; flex-wrap:wrap; gap:9px 14px; }
+  .legend-item { display:flex; align-items:center; gap:7px; color:var(--gris);
+    font-size:12px; line-height:1.25; }
+  .legend-swatch { width:22px; height:3px; border-radius:999px;
+    flex:0 0 auto; background:var(--azul-2); }
+  .legend-swatch.dashed { height:0; border-top:2px dashed #7b8791;
+    background:none; }
+  .legend-swatch.band { height:10px; border-radius:2px;
+    background:var(--banda); }
   .chart-summary { margin:10px 4px 0; color:var(--gris); line-height:1.55;
     font-size:13px; }
   .finding { margin:16px 4px 2px; border-left:4px solid var(--azul-2);
@@ -327,6 +338,7 @@ PLANTILLA = r'''<!DOCTYPE html>
   .link-btn,.download { display:inline-block; border:1px solid var(--azul);
     border-radius:9px; padding:9px 13px; background:#fff; color:var(--azul);
     font-weight:700; text-decoration:none; }
+  .print-note { align-self:center; color:var(--gris); font-size:12px; }
   .brand,nav button,.tabs button,.back,.selector,.search,.link-btn,.download {
     min-height:44px; }
   .download { background:var(--azul); color:#fff; }
@@ -365,7 +377,8 @@ PLANTILLA = r'''<!DOCTYPE html>
   @media (max-width:640px) {
     .grid,.kpis { grid-template-columns:1fr; }
     .panel { padding:10px; }
-    #chart { height:480px; }
+    #chart { height:360px; }
+    .chart-mobile-meta { display:grid; gap:11px; padding:2px 8px 10px; }
     .finding { font-size:14px; }
     .detail-head h1 { font-size:clamp(29px,9vw,40px); }
     .footer-in { flex-direction:column; }
@@ -378,7 +391,7 @@ PLANTILLA = r'''<!DOCTYPE html>
   @media (max-height:500px) and (orientation:landscape) {
     header { position:static; }
     .hero { padding-top:30px; }
-    #chart { height:380px; }
+    #chart { height:320px; }
   }
   @media (prefers-reduced-motion:reduce) {
     html { scroll-behavior:auto; }
@@ -421,6 +434,7 @@ let estado={codigo:null,serie:0,vista:"region",filtro:"all"};
 const app=document.getElementById("app");
 const navPrincipal=document.querySelector("nav");
 const VISTAS=[["region","Región"],["paises","Países"],["datos","Datos y método"]];
+const CONSULTA_MOVIL=window.matchMedia("(max-width:640px)");
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 function decimales(fmt){const m=String(fmt||"").match(/\.(\d+)f/);return m?+m[1]:2;}
@@ -486,6 +500,13 @@ function cambio(vals,tipo){const a=vals[0],b=vals.at(-1);if(a===null||b===null||
   return tipo==="pp"?`${(b-a>=0?"+":"")}${num(b-a,".1f")} pp`:`${(b/a-1>=0?"+":"")}${num((b/a-1)*100,".1f")}%`;}
 function rango2024(b,fmt,suf){const v=PAISES.map(p=>b.paises[p].at(-1)).filter(x=>x!==null);
   return `${num(Math.min(...v),fmt)}–${num(Math.max(...v),fmt)}${suf||""}`;}
+function esMovil(){return CONSULTA_MOVIL.matches;}
+function itemLeyenda(etiqueta,clase="",color=""){return `<span class="legend-item"><i class="legend-swatch ${clase}" ${color?`style="background:${color}"`:""}></i>${esc(etiqueta)}</span>`;}
+function metaGraficoRegion(inf,p,cod){const color=cod==="ECO_CG"?"#c85d22":"#1f4e79";return `<div class="chart-mobile-meta">
+  <span class="chart-unit">Unidad: ${esc(inf.unidad)}</span><div class="chart-legend-mobile" aria-label="Leyenda del gráfico">
+  ${itemLeyenda(p.etiqueta,"",color)}${itemLeyenda("Promedio de países","dashed")}${itemLeyenda("Rango mínimo–máximo","band")}</div></div>`;}
+function metaGraficoPaises(inf){return `<div class="chart-mobile-meta"><span class="chart-unit">Unidad: ${esc(inf.unidad)}</span>
+  <div class="chart-legend-mobile" aria-label="Leyenda del gráfico">${PAISES.map(p=>itemLeyenda(p,"",COLORES[p])).join("")}</div></div>`;}
 
 function renderDetalle(){const cod=estado.codigo,f=FICHAS[cod],inf=infoSerie(cod,estado.serie),b=DATOS[inf.clave],p=principal(cod,b);
   const opciones=f.series&&f.series.length>1?`<label>Serie<br><select class="selector" onchange="elegirSerie(this.value)">${f.series.map((s,i)=>`<option value="${i}" ${i===estado.serie?"selected":""}>${esc(s[1])}</option>`).join("")}</select></label>`:"";
@@ -502,17 +523,17 @@ function renderDetalle(){const cod=estado.codigo,f=FICHAS[cod],inf=infoSerie(cod
 function kpis(cod,f,inf,b,p){return `<div class="kpis"><div class="kpi"><span>${esc(p.etiqueta)} · 2024</span><b>${num(p.valores.at(-1),inf.formato)}${esc(inf.sufijo)}</b></div>
   <div class="kpi"><span>Cambio 2020–2024</span><b>${cambio(p.valores,f.delta)}</b></div>
   <div class="kpi"><span>Mínimo–máximo entre países · 2024</span><b>${rango2024(b,inf.formato,inf.sufijo)}</b></div></div>`;}
-function baseLayout(inf,vista){const movil=window.matchMedia("(max-width:640px)").matches;
+function baseLayout(inf,vista){const movil=esMovil();
   return {paper_bgcolor:"#fff",plot_bgcolor:"#fff",font:{family:"Segoe UI, sans-serif",color:"#17212b",size:movil?11:13},
-    margin:movil?{l:52,r:10,t:20,b:vista==="paises"?170:125}:{l:96,r:28,t:28,b:80},hovermode:"x unified",
-    legend:movil?{orientation:"v",y:-.2,yanchor:"top",x:0,font:{size:10},itemwidth:34}:{orientation:"h",y:-.18,x:.5,xanchor:"center"},
+    margin:movil?{l:48,r:8,t:14,b:36}:{l:96,r:28,t:28,b:80},hovermode:"x unified",showlegend:!movil,
+    legend:{orientation:"h",y:-.18,x:.5,xanchor:"center"},
     xaxis:{tickvals:ANIOS,gridcolor:"#f1f3f4",fixedrange:true,tickfont:{size:movil?10:12}},
     yaxis:{gridcolor:"#e7ebee",ticksuffix:movil?"":inf.sufijo,zerolinecolor:"#9aa4ad",fixedrange:true,automargin:true,tickfont:{size:movil?10:12}}};}
 const plotCfg={responsive:true,displaylogo:false,displayModeBar:false,scrollZoom:false};
 function extremos(b){return ANIOS.map((_,i)=>{const v=PAISES.map(p=>b.paises[p][i]).filter(x=>x!==null);return [Math.min(...v),Math.max(...v)];});}
 function resumenAccesible(p,inf,b){const i=ANIOS.length-1,e=extremos(b)[i];return `${p.etiqueta}: ${num(p.valores[i],inf.formato)}${inf.sufijo} en ${ANIOS[i]}. El rango nacional va de ${num(e[0],inf.formato)} a ${num(e[1],inf.formato)}${inf.sufijo}.`;}
 
-function vistaRegion(cod,f,inf,b,p){document.getElementById("vista").innerHTML=kpis(cod,f,inf,b,p)+`<div class="panel"><div id="chart" role="img" aria-label="Evolución regional de ${esc(f.nombre)}"></div><p class="finding"><strong>Conclusión regional.</strong> ${esc(f.hallazgo_regional)}</p><p class="chart-summary"><strong>Resumen del gráfico.</strong> ${esc(resumenAccesible(p,inf,b))}</p></div>${f.nota?`<div class="note"><strong>Nota metodológica.</strong> ${esc(f.nota)}</div>`:""}`;
+function vistaRegion(cod,f,inf,b,p){document.getElementById("vista").innerHTML=kpis(cod,f,inf,b,p)+`<div class="panel"><div id="chart" role="img" aria-label="Evolución regional de ${esc(f.nombre)}"></div>${metaGraficoRegion(inf,p,cod)}<p class="finding"><strong>Conclusión regional.</strong> ${esc(f.hallazgo_regional)}</p><p class="chart-summary"><strong>Resumen del gráfico.</strong> ${esc(resumenAccesible(p,inf,b))}</p></div>${f.nota?`<div class="note"><strong>Nota metodológica.</strong> ${esc(f.nota)}</div>`:""}`;
   const ex=extremos(b),tr=[{x:ANIOS,y:ex.map(x=>x[1]),mode:"lines",line:{width:0},hoverinfo:"skip",showlegend:false},
     {x:ANIOS,y:ex.map(x=>x[0]),mode:"lines",line:{width:0},fill:"tonexty",fillcolor:"rgba(95,107,118,.16)",name:"Mínimo–máximo entre países"},
     {x:ANIOS,y:b.promedio,mode:"lines+markers",name:"Promedio de países (media simple)",line:{color:"#7b8791",width:2,dash:"dash"},marker:{size:7}}];
@@ -522,7 +543,7 @@ function vistaRegion(cod,f,inf,b,p){document.getElementById("vista").innerHTML=k
   Plotly.newPlot("chart",tr,ly,plotCfg);
 }
 
-function vistaPaises(cod,f,inf,b,p){document.getElementById("vista").innerHTML=kpis(cod,f,inf,b,p)+`<div class="panel"><div id="chart" role="img" aria-label="Comparación de los seis países para ${esc(f.nombre)}"></div><p class="chart-summary">Cada país conserva la misma prominencia visual; use la leyenda para aislar una serie.</p></div>${cod==="ECO14"?'<div class="note">Los marcadores huecos identifican valores imputados mediante CAGR.</div>':""}`;
+function vistaPaises(cod,f,inf,b,p){document.getElementById("vista").innerHTML=kpis(cod,f,inf,b,p)+`<div class="panel"><div id="chart" role="img" aria-label="Comparación de los seis países para ${esc(f.nombre)}"></div>${metaGraficoPaises(inf)}<p class="chart-summary">Cada país conserva la misma prominencia visual; use la leyenda para aislar una serie.</p></div>${cod==="ECO14"?'<div class="note">Los marcadores huecos identifican valores imputados mediante CAGR.</div>':""}`;
   const tr=PAISES.map(pais=>({x:ANIOS,y:b.paises[pais],mode:"lines+markers",name:pais,line:{color:COLORES[pais],width:2.5},
     marker:{size:8,symbol:cod==="ECO14"?DATOS.imputados[pais].map(x=>x?"circle-open":"circle"):"circle"}}));
   const ly=baseLayout(inf,"paises");if(cod==="ECO15")ly.shapes=[{type:"line",x0:ANIOS[0],x1:ANIOS.at(-1),y0:0,y1:0,line:{color:"#68737d",dash:"dot"}}];Plotly.newPlot("chart",tr,ly,plotCfg);
@@ -534,7 +555,7 @@ function tablaSerie(inf,b,p){let h=`<div class="table-wrap"><table><caption styl
   if(p.etiqueta!=="Promedio de países (media simple)")h+=`<tr class="summary"><td>${esc(p.etiqueta)}</td>${p.valores.map(v=>`<td>${num(v,inf.formato)}</td>`).join("")}</tr>`;
   return h+="</tbody></table></div>";}
 function enlaces(cod,clave){const fig=SALIDAS.figuras[clave]||SALIDAS.figuras[cod==="ECO_CG"?"ECO_CG":cod]||SALIDAS.figuras.ENV6;
-  const tab=SALIDAS.tablas[clave]||SALIDAS.tablas[cod];return `<div class="links">${fig?`<a class="link-btn" href="${esc(fig)}">Abrir figura oficial</a>`:""}${tab?`<a class="link-btn" href="${esc(tab)}">Abrir tabla APA 7</a>`:""}<button class="download" onclick="descargarCSV()">Descargar CSV</button></div>`;}
+  const tab=SALIDAS.tablas[clave]||SALIDAS.tablas[cod];return `<div class="links">${fig?`<a class="link-btn" href="${esc(fig)}">Abrir figura para la tesis</a>`:""}${tab?`<a class="link-btn" href="${esc(tab)}">Abrir tabla APA 7</a>`:""}<button class="download" onclick="descargarCSV()">Descargar CSV</button>${fig?'<span class="print-note">PNG horizontal de alta resolución; para móvil use la vista Región.</span>':""}</div>`;}
 function vistaDatos(cod,f,inf,b,p){document.getElementById("vista").innerHTML=`<div class="method-grid"><article class="method-card"><h3>Definición</h3><p>${esc(f.descripcion)}</p><p><strong>Unidad:</strong> ${esc(inf.unidad||f.unidad)}</p></article>
   <article class="method-card"><h3>Fórmula o construcción</h3><p>${esc(inf.formula||f.formula||"Comparación descriptiva de series observadas")}</p><p><strong>Referencia principal:</strong> ${esc(p.etiqueta)}</p></article></div>
   ${f.nota?`<div class="note"><strong>Nota metodológica.</strong> ${esc(f.nota)}</div>`:""}${tablaSerie(inf,b,p)}${enlaces(cod,inf.clave)}`;
@@ -551,6 +572,7 @@ function mostrarMetodo(){activarNav("metodo");app.innerHTML=`<section class="met
   <div class="links"><a class="link-btn" href="../docs/resumen_indicadores_SIEPAC.md">Resumen metodológico</a><a class="link-btn" href="../salidas/tesis/tablas/tablas_apa_SIEPAC.html">Tablas APA 7</a></div></section>`;app.focus();window.scrollTo(0,0);}
 navPrincipal.addEventListener("scroll",actualizarPistaNav,{passive:true});
 window.addEventListener("resize",actualizarPistaNav);
+CONSULTA_MOVIL.addEventListener("change",()=>{if(estado.codigo&&estado.vista!=="datos")renderDetalle();});
 mostrarInicio("all");
 requestAnimationFrame(actualizarPistaNav);
 </script>
