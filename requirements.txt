@@ -2,19 +2,17 @@
 # la reproducción completa; versiones posteriores deberían funcionar).
 # Requiere Python 3.10 o superior.
 #
-# Verificado el 2026-07-26 con pandas 3.0.5, openpyxl 3.1.5, plotly 6.9.0,
-# kaleido 1.3.0 y playwright 1.61.0: pipeline completo 18/18 scripts OK y
+# Verificado el 2026-08-22 con pandas 3.0.5, openpyxl 3.1.5, plotly 6.9.0,
+# kaleido 1.3.0 y playwright 1.61.0: pipeline completo 20/20 scripts OK y
 # salidas numéricamente idénticas a las de pandas 2.x.
 pandas>=2.0
 openpyxl>=3.1
 plotly>=5.18
 
-# Exportación de los gráficos del explorador a PNG (exportar_graficos.py).
+# Capturas reproducibles de los visualizadores para el README.
 # Tras instalarlo, descargar el navegador una sola vez con:
 #     python -m playwright install chromium
 playwright>=1.40
 
-# Motor de exportación estática de Plotly, que usa exportar_graficos_region.py
-# a través de pio.write_image(). Sin él ese script falla; no se instala solo
-# con plotly.
+# Motor de exportación estática de Plotly usado por generar_figuras_tesis.py.
 kaleido>=0.2

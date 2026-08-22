@@ -1,193 +1,153 @@
 # siepac-analysis
 
-Evaluación del suministro eléctrico en los 6 países del SIEPAC (2020–2024)
-mediante Indicadores Energéticos de Desarrollo Sostenible (OIEA/NU, 2005),
-en tres dimensiones: económica, social y ambiental.
-Tesis de Ingeniería Eléctrica — UNI, Nicaragua.
+Pipeline reproducible de la fase cuantitativa de la tesis **«Evaluación del
+suministro de energía eléctrica en el SIEPAC: perspectivas económicas,
+sociales y ambientales»**, desarrollada en la Universidad Nacional de
+Ingeniería (UNI), Nicaragua.
 
-## Vista previa
+El proyecto calcula 15 Indicadores Energéticos de Desarrollo Sostenible
+(IEDS) para Guatemala, El Salvador, Honduras, Nicaragua, Costa Rica y Panamá
+durante 2020–2024. Distingue explícitamente entre el promedio simple de países
+y el agregado regional del SIEPAC.
 
-Los dos productos finales son apps HTML autocontenidas (en `graficos/`):
-un **panel** tipo producto con portada, KPIs y detalle por indicador, y un
-**explorador** con menú lateral, tablas de datos base y metodología de
-cálculo.
+## Productos
 
-![Panel SIEPAC — portada con KPIs regionales y galería de indicadores](docs/Panel.png)
+- `graficos/visualizador_siepac.html`: producto regional único; integra
+  agregado, promedio, banda mínimo–máximo, países, datos y metodología.
+- `graficos/panel_siepac.html`: vista ejecutiva autocontenida.
+- `graficos/0_explorador_indicadores.html`: datos, fórmulas y series por
+  indicador. Estas dos aplicaciones se conservan temporalmente para comprobar
+  paridad antes de retirarlas.
+- `salidas/tesis/figuras/`: las 22 figuras regionales oficiales usadas por la
+  monografía.
+- `salidas/tesis/tablas/`: tablas en formato APA 7, incluida la Tabla 7
+  regional de SOC2 del cuerpo de la tesis; el índice enlaza las 75 tablas
+  dentro de un único HTML consolidado.
+- `salidas/tesis/manifiesto.csv`: inventario generado que relaciona cada
+  figura y tabla con su código, título y archivo.
+- `docs/resumen_indicadores_SIEPAC.md`: ficha metodológica y cifras completas.
+- `docs/arquitectura_visualizador_regional.md`: contrato para consolidar las
+  dos apps actuales en un único visualizador regional, sin perder el historial
+  del repositorio.
 
-![Explorador de indicadores — vista de detalle de ECO1 con serie temporal por país](docs/Explorador_Indicadores.png)
+![Panel SIEPAC — portada con KPIs regionales](docs/Panel.png)
 
-## Pipeline
+![Explorador — detalle de un indicador](docs/Explorador_Indicadores.png)
 
-```mermaid
-flowchart TD
-    RAW["data/raw/<br>(OLADE, CEPAL y Banco Mundial)"] --> ETL["10 ETL<br>src/etl_*.py"]
-    ETL --> CSV["data/processed/*.csv<br>(tidy, unidades base)"]
-    CSV --> CONS["consolidar_matriz.py"]
-    CONS --> MAT["matrices consolidadas<br>tidy y wide"]
-    MAT --> IND["generar_matriz_indicadores.py"]
-    IND --> ECO["indicadores_ECO_SIEPAC.xlsx<br>(fórmulas auditables)"]
-    IND --> VAL["indicadores_ECO_valores.csv<br>(valores planos para las apps)"]
-    EQUIPO["data/raw_equipo/<br>(ENVs.xlsx, SOCs.xlsx)"] --> DIM["procesar_dimensiones.py"]
-    DIM --> ENVSOC["indicadores_ENV_SIEPAC.xlsx<br>indicadores_SOC_SIEPAC.xlsx"]
-    ECO --> VIZ["generar_explorador.py<br>generar_panel.py"]
-    VAL --> VIZ
-    ENVSOC --> VIZ
-    VIZ --> HTML["apps HTML autocontenidas<br>graficos/"]
-```
+## Reproducción
 
-Las constantes compartidas (países, años, rutas, conversiones) viven en
-`src/config_siepac.py`; las utilidades comunes de los ETL, en
-`src/etl_comun.py`; el código común de los dos visualizadores, en
-`src/viz_comun.py`.
+Requiere Python 3.10 o posterior. Desde la raíz del proyecto:
 
-## Requisitos
-
-- Python **3.10 o superior**
-- `pip install -r requirements.txt` (pandas, openpyxl, plotly)
-
-## Datos crudos: dos formas de acercarse a este repositorio
-
-Ocho de las fuentes oficiales crudas **no viven en este repositorio**: los
-términos de OLADE/SIELAC y de CEPAL prohíben redistribuir el archivo
-descargado, aunque ambos contemplan usar los datos citando la
-procedencia, que es lo que hace este proyecto. Los dos extractos del Banco
-Mundial —PIB y población rural/urbana— se versionan bajo CC-BY 4.0 y con
-atribución. Por eso hay dos puntos de entrada distintos:
-
-- **Auditable, siempre.** El código, los indicadores calculados
-  (`data/processed/*.xlsx`), los visualizadores (`graficos/`) y el
-  resumen metodológico (`docs/`) están completos y son públicos. Alcanza
-  para revisar cómo se calculó cada cifra sin necesitar los archivos
-  crudos.
-- **Ejecutable de punta a punta**, si además obtienes tu propia copia de
-  esas ocho fuentes. `data/raw/MANIFIESTO.md` documenta, para cada una,
-  la ruta exacta de descarga en el portal de origen y el hash SHA-256 de
-  la copia con la que se verificaron los cálculos de este proyecto.
-  Después de descargarlas:
-
-  ```
-  python src/verificar_datos_raw.py
-  ```
-
-  compara cada copia con el hash documentado y reporta cualquier diferencia.
-
-## Cómo reproducir
-
-Desde la raíz del proyecto, todo el pipeline con un solo comando:
-
-```
+```bash
+pip install -r requirements.txt
 python src/run_pipeline.py
 ```
 
-O script por script, en este orden:
+El orquestador ejecuta los ETL, valida cobertura y unidades, consolida las
+matrices, calcula indicadores y regenera tablas, figuras, manifiesto y apps
+HTML. Se detiene ante cualquier validación obligatoria fallida.
 
-```
-python src/etl_consumo_final_total.py
-python src/etl_consumo_industrial.py
-python src/etl_poblacion_total.py
-python src/etl_poblacion_rural_urbana.py
-python src/etl_pib.py
-python src/etl_valor_agregado_industrial.py   # requiere pib.csv, por eso va después
-python src/etl_produccion_bruta.py
-python src/etl_importaciones_exportaciones.py
-python src/etl_tarifa_electrica_media.py
-python src/etl_generacion_por_fuente.py
-python src/consolidar_matriz.py
-python src/generar_matriz_indicadores.py
-python src/procesar_dimensiones.py
-python src/generar_tablas_apa.py
-python src/exportar_grafico_eco_cg.py
-python src/generar_explorador.py
-python src/generar_panel.py
+El orden completo es:
+
+```text
+10 ETL de fuentes oficiales
+→ etl_soc2.py
+→ consolidar_matriz.py
+→ generar_matriz_indicadores.py
+→ procesar_dimensiones.py
+→ generar_resumen_indicadores.py
+→ generar_tablas_apa.py
+→ generar_figuras_tesis.py
+→ generar_manifiesto_tesis.py
+→ generar_visualizador.py
+→ generar_explorador.py y generar_panel.py (compatibilidad temporal)
 ```
 
-Los ETL validan esquema, cobertura, unidades y reconciliaciones antes de
-escribir cada CSV. Las validaciones obligatorias detienen el proceso; las
-comprobaciones informativas se registran como `WARNING`.
+## Flujo de datos
 
-Los dos HTML de `graficos/` son autocontenidos: abren con doble clic,
-sin servidor y sin internet (Plotly va embebido).
-
-## Estructura de carpetas
-
+```mermaid
+flowchart LR
+    RAW["data/raw/<br>fuentes oficiales"] --> ETL["ETL por variable"]
+    EQ["data/raw_equipo/<br>ENV, SOC y ECO-CG"] --> ETL
+    ETL --> PROC["data/processed/<br>matrices e indicadores"]
+    PROC --> DOC["docs/<br>resumen metodológico"]
+    PROC --> APPS["graficos/<br>apps HTML"]
+    PROC --> OUT["salidas/tesis/<br>22 figuras + 75 tablas + manifiesto"]
 ```
+
+Las decisiones compartidas se concentran en:
+
+- `src/config_siepac.py`: rutas, países, años y conversiones.
+- `src/etl_comun.py`: utilidades comunes de extracción y validación.
+- `src/viz_comun.py`: fichas metodológicas (`FICHAS`), agregados y paleta.
+- `src/figuras_comun.py`: estilo común de las figuras de la tesis.
+
+## Datos de entrada
+
+Ocho fuentes oficiales crudas no se redistribuyen porque los términos de
+OLADE/SIELAC y CEPAL restringen su publicación. Para reproducir desde cero,
+descárgalas siguiendo `data/raw/MANIFIESTO.md` y verifica las copias con:
+
+```bash
+python src/verificar_datos_raw.py
+```
+
+Los extractos del Banco Mundial incluidos en el repositorio se distribuyen
+bajo CC BY 4.0. Los libros y CSV construidos por el equipo viven en
+`data/raw_equipo/`:
+
+- `ENVs.xlsx`: datos de la dimensión ambiental.
+- `SOCs.xlsx`: SOC1, SOC3 y sus variables base.
+- `soc2_agregacion_regional/base_integrada.csv`: fuente canónica de SOC2.
+- `eco_cg_siepac.csv`: serie económica complementaria de costo de generación.
+
+## Estructura
+
+```text
 siepac-analysis/
 ├── data/
-│   ├── raw/                  # fuentes crudas descargadas (una carpeta por variable,
-│   │   │                     #   cada una con su Fuente.txt de trazabilidad)
-│   │   ├── consumo_final_total/
-│   │   ├── consumo_industrial/
-│   │   ├── generacion_por_tipo_de_fuente/
-│   │   ├── importaciones_exportaciones/
-│   │   ├── pib/
-│   │   ├── poblacion_rural_urbana/
-│   │   ├── poblacion_total/
-│   │   ├── produccion_bruta/
-│   │   ├── tarifa_electrica_media/
-│   │   └── valor_agregado_industrial/
-│   ├── raw_equipo/           # matrices de entrada (ENVs.xlsx, SOCs.xlsx)
-│   └── processed/            # salidas del pipeline (los CSV se regeneran)
-├── docs/                     # capturas de pantalla para este README
-├── graficos/                 # apps HTML autocontenidas (abren con doble clic)
-├── src/                      # todo el código del pipeline
+│   ├── raw/                       # fuentes oficiales por variable
+│   ├── raw_equipo/                # insumos elaborados por el equipo
+│   └── processed/                 # matrices generadas y auditables
+├── docs/                          # documentación y capturas del README
+├── graficos/                      # visualizador regional + apps transitorias
+├── salidas/tesis/
+│   ├── figuras/                   # 22 PNG regionales oficiales
+│   ├── tablas/                    # tablas APA 7 e índice
+│   └── manifiesto.csv             # inventario de entrega
+├── src/                           # ETL y generadores
+├── tests/                         # pruebas de regresión
 ├── requirements.txt
 └── LICENSE
 ```
 
-## Notas metodológicas
+## Criterios metodológicos esenciales
 
-- Unidades base del proyecto: energía en kWh, variables macro en USD
-  constantes de 2015 (valor entero), tarifa en USD corrientes/MWh,
-  población en habitantes.
-- Tarifa (ECO14): los valores calculados mediante CAGR se identifican como
-  `imputado_CAGR` y se sombrean en el Excel.
-- `eco_cg_siepac.csv` es un insumo procesado incorporado por el equipo. El
-  pipeline valida su cobertura completa y genera sus tablas APA 7 y la figura
-  `analisis-eco/salidas/figuras_alt/ECO_CG_bloque.png`. La mediana, la media
-  simple y la dispersión describen proxies nacionales de distintos niveles
-  metodológicos; no se calcula un costo agregado regional. La serie es
-  complementaria y no se contabiliza como un noveno indicador IEDS.
-- En ECO15, los valores negativos representan exportación neta.
-- ECO3 es una aproximación generación → consumo final.
-- Los agregados de SOC3 ponderan la serie rural por población rural y la
-  urbana por población urbana; ambas combinan la tasa de electrificación
-  de la zona con la participación renovable de la generación nacional.
-- El Excel de indicadores económicos contiene fórmulas que referencian la
-  hoja Datos_Base (auditables celda a celda); los visualizadores leen los
-  mismos valores desde `indicadores_ECO_valores.csv`, calculados en pandas
-  en paridad con esas fórmulas.
+- **Agregado regional:** razón de sumas; representa al SIEPAC como sistema.
+- **Promedio de países:** media simple; representa al país típico del bloque.
+- **SOC2:** el agregado usa clientes residenciales como proxy de unidades
+  consumidoras y calcula una razón de sumas para el ingreso promedio y el
+  estrato vulnerable. No equivale a una estimación censal de hogares.
+- **ECO14:** se resume con la mediana de países porque falta el denominador
+  regional; 2023–2024 es imputación mediante CAGR.
+- **ECO-CG:** serie complementaria, no un noveno indicador económico; sus
+  proxies nacionales no forman un costo regional aditivo.
+- **ECO15:** un valor negativo representa exportación neta.
+- **ENV6:** contrasta dos magnitudes observadas; no calcula un cociente.
 
-## Cómo contribuir
-
-Cada variable tiene su ETL independiente (`src/etl_<variable>.py`), que lee
-solo su carpeta `data/raw/<variable>/` y escribe un único CSV en
-`data/processed/`. Para **actualizar datos**: reemplaza el archivo dentro de
-la carpeta raw correspondiente (el ETL lo localiza por patrón, no por nombre
-exacto), corre ese ETL y luego el resto del pipeline (`python
-src/run_pipeline.py` lo hace completo). Para **cambiar la lógica** de una
-variable solo se toca su ETL: mientras el CSV de salida conserve las mismas
-columnas, el resto del pipeline no cambia. Países, años y rutas se ajustan
-una sola vez en `src/config_siepac.py`.
-
-## Fuentes
-
-OLADE/sieLAC, CEPALSTAT, Banco Mundial, EOR/CRIE. Detalle en los
-`Fuente.txt` de cada carpeta `data/raw/`.
+La definición de cada indicador se mantiene una sola vez en `FICHAS`, dentro
+de `src/viz_comun.py`. Los HTML, Excel, PNG, Markdown y tablas son productos
+generados: una corrección debe hacerse en el dato o script de origen y luego
+regenerarse.
 
 ## Autores
 
-Proyecto desarrollado como tesis de Ingeniería Eléctrica, UNI Nicaragua.
-
-- **Luis Giovanni Serrano Bello** — pipeline de datos, dimensión económica, visualizadores
-- **Mariángeles Aracelly Olivares López** — dimensión social
-- **Jonathan Noel García Mendoza** — dimensión ambiental
+- Luis Giovanni Serrano Bello — pipeline, dimensión económica y
+  visualizadores.
+- Mariángeles Aracelly Olivares López — dimensión social.
+- Jonathan Noel García Mendoza — dimensión ambiental.
 
 ## Licencia
 
-El código se distribuye bajo licencia [MIT](LICENSE). Los datos crudos
-pertenecen a sus fuentes. Los de OLADE/SIELAC y CEPAL **no se
-redistribuyen aquí** porque sus términos no lo permiten: se documentan en
-`data/raw/MANIFIESTO.md` para obtener una copia local desde la fuente.
-Los extractos del Banco Mundial sí se incluyen, bajo CC-BY 4.0 y con
-atribución. Los indicadores calculados y los visualizadores son obra derivada del
-análisis, elaborados citando cada fuente.
+El código se distribuye bajo [MIT](LICENSE). Los datos crudos conservan las
+condiciones de sus fuentes; consulta `data/raw/MANIFIESTO.md`.

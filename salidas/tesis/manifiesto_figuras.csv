@@ -1,0 +1,23 @@
+﻿figura_sugerida,dimension,codigo,archivo,medida_principal,titulo
+1,eco,ECO1,ECO1_bloque.png,Agregado regional (razón de sumas),Uso de energía per cápita
+2,eco,ECO2,ECO2_bloque.png,Agregado regional (razón de sumas),Uso de energía por unidad de PIB
+3,eco,ECO3,ECO3_bloque.png,Agregado regional (razón de sumas),Eficiencia de conversión y distribución
+4,eco,ECO6,ECO6_bloque.png,Agregado regional (razón de sumas),Intensidad energética de la industria
+5,eco,ECO11,ECO11_bloque.png,Agregado regional (razón de sumas),Fósiles en la electricidad
+6,eco,ECO13,ECO13_bloque.png,Agregado regional (razón de sumas),Renovables en la electricidad
+7,eco,ECO14,ECO14_bloque.png,Mediana de países (sin ponderador),Precio medio de la electricidad
+8,eco,ECO15,ECO15_bloque.png,Agregado regional (razón de sumas),Dependencia de importaciones netas
+9,eco,ECO-CG,ECO_CG_bloque.png,Mediana descriptiva,Costo de generación eléctrica
+10,soc,SOC1,SOC1_bloque.png,Agregado regional (razón de sumas),Población sin electricidad
+11,soc,SOC2_PROM,SOC2_PROM_bloque.png,Agregado regional (razón de sumas),Ingreso destinado a electricidad — Hogar promedio
+12,soc,SOC2_VULNERABLE,SOC2_VULNERABLE_bloque.png,Agregado regional (razón de sumas),Ingreso destinado a electricidad — Estrato vulnerable
+13,soc,SOC3_RURAL,SOC3_RURAL_bloque.png,Agregado regional (razón de sumas),Hogares con acceso a energía renovable — Rural
+14,soc,SOC3_URB,SOC3_URB_bloque.png,Agregado regional (razón de sumas),Hogares con acceso a energía renovable — Urbano
+15,env,ENV1_PC,ENV1_PC_bloque.png,Agregado regional (razón de sumas),Emisiones de GEI del sector eléctrico — Per cápita
+16,env,ENV1_PIB,ENV1_PIB_bloque.png,Agregado regional (razón de sumas),Emisiones de GEI del sector eléctrico — Por unidad de PIB
+17,env,ENV2_SO2_PC,ENV2_SO2_PC_bloque.png,Agregado regional (razón de sumas),Contaminantes atmosféricos urbanos — SO₂ per cápita
+18,env,ENV2_PAR_PC,ENV2_PAR_PC_bloque.png,Agregado regional (razón de sumas),Contaminantes atmosféricos urbanos — Partículas per cápita
+19,env,ENV2_SO2_PIB,ENV2_SO2_PIB_bloque.png,Agregado regional (razón de sumas),Contaminantes atmosféricos urbanos — SO₂ por PIB
+20,env,ENV2_PAR_PIB,ENV2_PAR_PIB_bloque.png,Agregado regional (razón de sumas),Contaminantes atmosféricos urbanos — Partículas por PIB
+21,env,ENV3,ENV3_bloque.png,Agregado regional (razón de sumas),Emisiones atmosféricas del sistema — Escala eléctrica
+22,env,ENV6,ENV6_bloque.png,Totales regionales observados,Biomasa vs Saldo MER

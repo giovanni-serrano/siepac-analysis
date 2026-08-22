@@ -10,7 +10,7 @@ el SIEPAC — ventana 2020–2024.
 **Fuentes de datos:** SIELAC·OLADE, CEPALSTAT·CEPAL, Banco Mundial (WDI),
 matrices ambiental y social del estudio, y EOR (Mercado Eléctrico Regional).
 **Documento generado automáticamente** por
-`src/generar_resumen_indicadores.py` el 2026-08-15;
+`src/generar_resumen_indicadores.py` el 2026-08-22;
 los valores provienen del mismo pipeline que alimenta los visualizadores.
 
 ## Cómo leer este documento
@@ -34,8 +34,8 @@ Cada tabla cierra con dos resúmenes que responden preguntas distintas:
 
 Ambos son legítimos pero pueden divergir mucho (incluso en el signo de
 la tendencia, como en ECO15): al citar cifras regionales debe indicarse
-cuál de los dos se usa. ECO14 y SOC2 se representan mediante promedio de
-países; el criterio se especifica en la ficha de cada indicador.
+cuál de los dos se usa. ECO14 se representa mediante la mediana de países;
+SOC2 presenta razón de sumas regional a partir de magnitudes proxy en USD.
 
 
 ## Dimensión económica
@@ -349,11 +349,11 @@ Porcentaje de hogares (o de población) sin electricidad o energía comercial, o
 
 ### SOC2 · Ingreso destinado a electricidad
 
-Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, para el hogar de ingreso promedio y para el quintil de menores ingresos.
+Porcentaje del ingreso anual de referencia del hogar destinado a electricidad, para el hogar promedio y el estrato vulnerable.
 
-> Nota metodológica: Las dos series se resumen mediante promedio de países. Los insumos monetarios se conservan en el marco de cada país, por lo que no se construye una razón de sumas regional.
+> Nota metodológica: El agregado regional es una razón de sumas construida en USD. SOC2_PROM expande por clientes residenciales; SOC2_VULNERABLE usa clientes vulnerables proxy (20 % en cinco países y 29.6 % en Nicaragua). Cliente residencial se usa como aproximación de unidad residencial consumidora conectada.
 
-**SOC2_PROM — Hogar promedio** · Unidad: % · Fórmula: Cargo anual de electricidad ÷ Ingreso anual promedio × 100
+**SOC2_PROM — Hogar promedio** · Unidad: % · Fórmula: Cargo anual medio residencial ÷ ingreso anual PROM × 100
 
 | País | 2020 | 2021 | 2022 | 2023 | 2024 | Δ 2020→2024 |
 |---|---|---|---|---|---|---|
@@ -361,11 +361,12 @@ Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, pa
 | El Salvador | 2.06 | 2.03 | 1.87 | 1.73 | 1.76 | -0.3 pp |
 | Guatemala | 2.34 | 2.39 | 2.35 | 2.37 | 2.38 | +0.0 pp |
 | Honduras | 5.10 | 5.14 | 5.88 | 6.30 | 6.55 | +1.5 pp |
-| Nicaragua | 8.71 | 7.27 | 7.08 | 6.09 | 5.31 | -3.4 pp |
-| Panamá | 2.60 | 2.41 | 2.58 | 2.52 | 2.79 | +0.2 pp |
-| **Promedio de países** (media simple) | **3.87** | **3.52** | **3.59** | **3.47** | **3.45** | **-0.4 pp** |
+| Nicaragua | 8.71 | 7.27 | 7.08 | 6.09 | 5.19 | -3.5 pp |
+| Panamá | 1.08 | 1.01 | 1.09 | 1.07 | 1.18 | +0.1 pp |
+| **Promedio de países** (media simple) | **3.62** | **3.29** | **3.34** | **3.23** | **3.16** | **-0.5 pp** |
+| **Agregado regional** (razón de sumas) | **2.14** | **2.00** | **2.05** | **2.03** | **2.11** | **-0.0 pp** |
 
-**SOC2_POBRE — Quintil más pobre** · Unidad: % · Fórmula: Cargo anual ÷ Ingreso anual del quintil más pobre × 100
+**SOC2_VULNERABLE — Estrato vulnerable** · Unidad: % · Fórmula: Cargo anual medio residencial ÷ ingreso anual vulnerable × 100
 
 | País | 2020 | 2021 | 2022 | 2023 | 2024 | Δ 2020→2024 |
 |---|---|---|---|---|---|---|
@@ -373,9 +374,10 @@ Porcentaje de ingresos de los hogares dedicado a combustibles y electricidad, pa
 | El Salvador | 7.24 | 7.55 | 7.01 | 6.91 | 7.23 | -0.0 pp |
 | Guatemala | 8.65 | 8.80 | 8.66 | 8.74 | 8.79 | +0.1 pp |
 | Honduras | 49.08 | 51.34 | 61.73 | 65.87 | 73.49 | +24.4 pp |
-| Nicaragua | 22.79 | 19.02 | 18.53 | 15.92 | 13.91 | -8.9 pp |
-| Panamá | 30.30 | 28.09 | 28.69 | 25.62 | 30.99 | +0.7 pp |
-| **Promedio de países** (media simple) | **23.30** | **21.76** | **23.24** | **23.07** | **24.73** | **+1.4 pp** |
+| Nicaragua | 22.79 | 19.02 | 18.53 | 15.92 | 13.57 | -9.2 pp |
+| Panamá | 13.46 | 12.55 | 12.89 | 11.57 | 14.07 | +0.6 pp |
+| **Promedio de países** (media simple) | **20.49** | **19.17** | **20.61** | **20.73** | **21.85** | **+1.4 pp** |
+| **Agregado regional** (razón de sumas) | **13.66** | **12.74** | **12.63** | **12.44** | **12.95** | **-0.7 pp** |
 
 
 ### SOC3 · Hogares con acceso a energía renovable

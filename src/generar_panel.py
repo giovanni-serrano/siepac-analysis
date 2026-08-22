@@ -314,9 +314,8 @@ const BASES = {
       "bruta en GWh." },
   soc: { clave: "base_soc", csv: "datos_base_SOC_SIEPAC.csv",
     desc: "Variables de entrada de SOC1 y SOC3: tasas en % y población " +
-          "rural/urbana en habitantes. Los insumos " +
-      "monetarios de SOC2 permanecen en las hojas por país de la " +
-      "fuente, en moneda local." },
+      "rural/urbana en habitantes. SOC2 incorpora cargo e ingresos " +
+      "anuales en USD, clientes residenciales y la proporción vulnerable." },
 };
 
 // ------------------------- estado global -------------------------
@@ -373,7 +372,7 @@ function deltaTexto(cod, vals) {
 }
 // Referencia regional de un bloque: el agregado (razón de sumas, el
 // bloque como sistema) cuando la serie tiene denominador disponible;
-// si no (ECO14 y SOC2), el promedio de países (media simple).
+// si no (ECO14), el promedio de países (media simple).
 function refRegional(bloque) {
   return bloque.agregado
       ? { vals: bloque.agregado, nombre: "Agregado regional" }

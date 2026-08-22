@@ -1,5 +1,5 @@
 """
-viz_comun.py — Código compartido de los dos visualizadores
+viz_comun.py — Código compartido de los visualizadores
 ====================================================
 Etapa del pipeline : visualización (módulo común, no se ejecuta directo)
 Entradas           : data/processed/indicadores_ECO_valores.csv,
@@ -9,9 +9,10 @@ Salidas            : — (lo importan generar_explorador.py y generar_panel.py)
 Alimenta           : — (fichas y datos de las 3 dimensiones para las apps)
 Fuente de datos    : salidas del pipeline
 
-Módulo común de generar_explorador.py y generar_panel.py: rutas de
-insumos, constantes de estética, fichas descriptivas de los indicadores
-y las funciones de carga/empaquetado de datos. Antes este código estaba
+Módulo común de generar_visualizador.py, generar_explorador.py y
+generar_panel.py: rutas de insumos, constantes de estética, fichas
+descriptivas de los indicadores y las funciones de carga/empaquetado. Antes
+este código estaba
 duplicado en bloque en ambos scripts (herencia del extinto
 visualizaciones_siepac.py); aquí vive una sola copia.
 
@@ -47,7 +48,8 @@ RUTA_ENV = DIR_PROCESSED / "indicadores_ENV_SIEPAC.xlsx"
 RUTA_SOC = DIR_PROCESSED / "indicadores_SOC_SIEPAC.xlsx"
 SERIES_ENV = ["ENV1_PC", "ENV1_PIB", "ENV2_SO2_PC", "ENV2_PAR_PC",
               "ENV2_SO2_PIB", "ENV2_PAR_PIB", "ENV3"]
-SERIES_SOC = ["SOC1", "SOC2_PROM", "SOC2_POBRE", "SOC3_RURAL", "SOC3_URB"]
+SERIES_SOC = ["SOC1", "SOC2_PROM", "SOC2_VULNERABLE",
+              "SOC3_RURAL", "SOC3_URB"]
 
 # ---------------------------------------------------------------------------
 # PALETA Y ESTÉTICA (tonos cálidos y sobrios sobre fondo crema)
@@ -185,8 +187,7 @@ def leer_series_extra() -> dict:
     {clave_serie: {paises: {...}, promedio: [...], agregado: [...]}} +
     ENV6 especial. El promedio (media simple) se recalcula aquí; el
     agregado (razón de sumas) se lee de la fila 'Agregado regional' que
-    escribe procesar_dimensiones.py — None para las series cuyo resumen
-    regional se define mediante un estadístico nacional, como SOC2.
+    escribe procesar_dimensiones.py.
     Los valores faltantes quedan como None para que JSON los serialice
     como null."""
     paquete = {}
@@ -435,17 +436,19 @@ FICHAS["SOC2"] = dict(
     nombre="Ingreso destinado a electricidad",
     unidad="", formato=".2f", sufijo="%", formula="", delta="pp",
     modos=["serie", "barras", "heatmap"], dim="soc",
-    descripcion="Porcentaje de ingresos de los hogares dedicado a "
-                "combustibles y electricidad, para el hogar de ingreso "
-                "promedio y para el quintil de menores ingresos.",
-    nota="Las dos series se resumen mediante promedio de países. Los "
-         "insumos monetarios se conservan en el marco de cada país, por "
-         "lo que no se construye una razón de sumas regional.",
+    descripcion="Porcentaje del ingreso anual de referencia del hogar "
+                "destinado a electricidad, para el hogar promedio y el "
+                "estrato vulnerable.",
+    nota="El agregado regional es una razón de sumas construida en USD. "
+         "SOC2_PROM expande por clientes residenciales; "
+         "SOC2_VULNERABLE usa clientes vulnerables proxy (20 % en cinco "
+         "países y 29.6 % en Nicaragua). Cliente residencial se usa como "
+         "aproximación de unidad residencial consumidora conectada.",
     series=[
         ["SOC2_PROM", "Hogar promedio", ".2f", "%", "%",
-         "Cargo anual de electricidad ÷ Ingreso anual promedio × 100"],
-        ["SOC2_POBRE", "Quintil más pobre", ".2f", "%", "%",
-         "Cargo anual ÷ Ingreso anual del quintil más pobre × 100"],
+         "Cargo anual medio residencial ÷ ingreso anual PROM × 100"],
+        ["SOC2_VULNERABLE", "Estrato vulnerable", ".2f", "%", "%",
+         "Cargo anual medio residencial ÷ ingreso anual vulnerable × 100"],
     ])
 FICHAS["SOC3"] = dict(
     nombre="Hogares con acceso a energía renovable",

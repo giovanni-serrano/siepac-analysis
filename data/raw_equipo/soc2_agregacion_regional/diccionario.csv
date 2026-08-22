@@ -1,0 +1,26 @@
+Elemento,Definición / regla,Tipo,Fuente
+pais,País miembro del SIEPAC.,Dato/clave,Ambos Excel
+anio,Año de observación 2020–2024.,Dato/clave,Ambos Excel
+clientes_residenciales,Número de clientes residenciales; fuente autoritativa específica de clientes.,Dato fuente,SOC2_CLIENTES_RESIDENCIALES_SIEPAC_2020_2024.xlsx
+proporcion_clientes_siepac,Clientes del país / clientes totales SIEPAC del año.,Cálculo,Derivado
+cargo_anual_usd,Cargo anual medio residencial en USD por cliente.,Dato fuente,SOC2_SIEPAC_tidy_wide_CORREGIDO.xlsx
+ingreso_prom_usd,Ingreso anual de referencia PROM por hogar en USD según metodología nacional.,Dato fuente / referencia,SOC2_SIEPAC_tidy_wide_CORREGIDO.xlsx
+ingreso_vulnerable_usd,Ingreso anual del estrato vulnerable en USD según metodología nacional.,Dato fuente / referencia,SOC2_SIEPAC_tidy_wide_CORREGIDO.xlsx
+proporcion_vulnerable,"0.20 salvo Nicaragua 0.296, adaptación aceptada.",Dato metodológico,Contexto SOC2
+clientes_vulnerables_proxy,clientes_residenciales × proporcion_vulnerable.,Proxy calculado,Derivado
+soc2_prom_nacional,Cargo anual / ingreso PROM ×100; se conserva el valor aceptado de fuente.,Resultado nacional,SOC2 corregido
+soc2_vulnerable_nacional,Cargo anual / ingreso vulnerable ×100; se conserva el valor aceptado de fuente.,Resultado nacional,SOC2 corregido
+gasto_prom_proxy,cargo_anual_usd × clientes_residenciales.,Proxy calculado,Derivado
+ingreso_prom_proxy,ingreso_prom_usd × clientes_residenciales.,Proxy calculado,Derivado
+gasto_vulnerable_proxy,cargo_anual_usd × clientes_vulnerables_proxy.,Proxy calculado,Derivado
+ingreso_vulnerable_proxy,ingreso_vulnerable_usd × clientes_vulnerables_proxy.,Proxy calculado,Derivado
+Media simple,Promedio aritmético de los seis SOC2 nacionales: caracteriza al país típico.,Método de contraste,Derivado
+Media ponderada por clientes,Promedio de porcentajes nacionales ponderado por clientes residenciales: caracteriza la carga porcentual media de los valores nacionales según volumen de clientes.,Método de contraste,Derivado
+Razón de sumas PROM,Σ(cargo×clientes) / Σ(ingreso_PROM×clientes) ×100.,Método principal propuesto,Contexto SOC2 + derivado
+Razón de sumas VUL,Σ(cargo×clientes_vulnerables_proxy) / Σ(ingreso_vulnerable×clientes_vulnerables_proxy) ×100.,Método principal propuesto,Contexto SOC2 + derivado
+Interpretación principal,Participación del gasto residencial agregado aproximado en el ingreso agregado aproximado de las unidades residenciales representadas.,Interpretación,Contexto SOC2
+No representa,"No es porcentaje censal de hogares, no es media del país típico, no demuestra causalidad y no mide consumo físico ni calidad del servicio.",Limitación,Análisis metodológico
+Supuesto cliente≈unidad consumidora,Cada cuenta/cliente residencial aproxima una unidad residencial consumidora conectada; no equivale a hogar censal exacto.,Proxy / limitación,Contexto SOC2
+Supuesto PROM,"El ingreso nacional PROM de referencia se aplica a cada cliente representado; en países donde PROM se construye con quintiles 2–5, ello es una estandarización proxy, no un total observado de ingreso de todos los clientes.",Limitación,Análisis metodológico
+Supuesto vulnerable,La proporción vulnerable metodológica se aplica al universo de clientes residenciales para aproximar clientes vulnerables.,Proxy / limitación,Contexto SOC2
+OIEA SOC2,Indicador de asequibilidad: gasto comercial de energía del hogar dividido por ingreso disponible/consumo privado; la definición y ponderación del ingreso pueden modificar el valor.,Marco conceptual,Indicadores energéticos del desarrollo sostenible: directrices y metodologías

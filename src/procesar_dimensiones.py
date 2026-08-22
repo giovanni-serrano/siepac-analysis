@@ -2,7 +2,9 @@
 procesar_dimensiones.py — Indicadores de las dimensiones ambiental y social
 ====================================================
 Etapa del pipeline : indicadores
-Entradas           : data/raw_equipo/ENVs.xlsx, data/raw_equipo/SOCs.xlsx y
+Entradas           : data/raw_equipo/ENVs.xlsx, data/raw_equipo/SOCs.xlsx,
+                     data/processed/soc2_pais_anio.csv,
+                     data/processed/soc2_regional.csv y
                      data/processed/poblacion_rural_urbana.csv
 Salidas            : data/processed/indicadores_ENV_SIEPAC.xlsx y
                      data/processed/indicadores_SOC_SIEPAC.xlsx
@@ -22,7 +24,8 @@ estructura del libro de la dimensión económica:
 Reglas de transformación:
   - SOC1 viene con años descendentes y países en columnas -> se
     transpone; la columna TOTAL (suma entre países) se descarta.
-  - SOC2 se resume mediante promedio simple de los resultados nacionales.
+  - SOC2 usa la base única en USD y calcula el agregado regional mediante
+    razón de sumas de gasto e ingreso aproximados.
   - SOC3 combina electrificación y participación renovable. El agregado
     rural se pondera por población rural y el urbano por población urbana.
   - ENV1 intensidad viene como fórmula de Excel -> se lee el valor en
@@ -54,6 +57,8 @@ log = logging.getLogger(Path(__file__).stem)
 RUTA_ENV_RAW = RAIZ_PROYECTO / "data" / "raw_equipo" / "ENVs.xlsx"
 RUTA_SOC_RAW = RAIZ_PROYECTO / "data" / "raw_equipo" / "SOCs.xlsx"
 RUTA_POB_ZONA = DIR_PROCESSED / "poblacion_rural_urbana.csv"
+RUTA_SOC2 = DIR_PROCESSED / "soc2_pais_anio.csv"
+RUTA_SOC2_REGIONAL = DIR_PROCESSED / "soc2_regional.csv"
 DIR_OUT = DIR_PROCESSED
 
 # ------------------------------ estilos -----------------------------------
@@ -159,33 +164,21 @@ def leer_soc(ruta: Path) -> dict[str, pd.DataFrame]:
         [[reg[(p, a)] for a in ANIOS] for p in PAISES],
         index=PAISES, columns=ANIOS)
 
-    # --- SOC2: hoja TOTAL, dos bloques (promedio / quintil mas pobre) ---
-    ws = wb["SOC 2 TOTAL"]
-    mapa = {"NIC": "Nicaragua", "CR": "Costa Rica", "HD": "Honduras",
-            "ES": "El Salvador", "GUA": "Guatemala", "PAN": "Panamá"}
-    filas = list(ws.iter_rows(values_only=True))
-    encabezados = filas[1][1:7]          # NIC CR HD ES GUA PAN
-
-    # Las filas de datos son las que empiezan con un anio; las primeras 5
-    # pertenecen al bloque "hogar promedio" y las siguientes 5 al bloque
-    # "quintil mas pobre" (posiciones robustas ante filas vacias).
-    filas_dato = [f for f in filas
-                  if isinstance(f[0], (int, float)) and f[0] in ANIOS]
-    assert len(filas_dato) == 10, f"SOC2: se esperaban 10 filas de datos, hay {len(filas_dato)}"
-
-    def bloque(grupo):
-        reg = {}
-        for f in grupo:
-            anio = int(f[0])
-            for j, sigla in enumerate(encabezados):
-                v = f[1 + j]
-                reg[(mapa[sigla], anio)] = (None if v is None else float(v))
-        return pd.DataFrame(
-            [[reg[(p, a)] for a in ANIOS] for p in PAISES],
-            index=PAISES, columns=ANIOS)
-
-    series["SOC2_PROM"] = bloque(filas_dato[:5])
-    series["SOC2_POBRE"] = bloque(filas_dato[5:])
+    # --- SOC2: salida normalizada del ETL específico ------------------
+    if not RUTA_SOC2.exists():
+        sys.exit("VALIDACIÓN FALLIDA — falta soc2_pais_anio.csv; ejecutar "
+                 "antes etl_soc2.py.")
+    soc2 = pd.read_csv(RUTA_SOC2)
+    esperadas = set(PAISES) | {""}
+    if len(soc2) != 30 or soc2.duplicated(["pais", "anio"]).any():
+        sys.exit("VALIDACIÓN FALLIDA — SOC2 procesado no contiene 30 "
+                 "claves país-año únicas.")
+    if set(soc2["pais"]) != esperadas - {""}:
+        sys.exit("VALIDACIÓN FALLIDA — países inesperados en SOC2.")
+    for clave in ("SOC2_PROM", "SOC2_VULNERABLE"):
+        series[clave] = (soc2.pivot(index="pais", columns="anio",
+                                    values=clave)
+                         .reindex(index=PAISES, columns=ANIOS))
 
     # --- SOC3: tabla tidy oculta en columnas K..Y ---
     # Se filtra por contenido (col K = pais valido, col L = anio) porque
@@ -207,10 +200,8 @@ def leer_soc(ruta: Path) -> dict[str, pd.DataFrame]:
             n_filas += 1
     assert n_filas == 30, f"SOC3: se esperaban 30 filas pais-anio, hay {n_filas}"
 
-    # Datos base de la dimension: tasas de electrificacion y % renovable
-    # (insumos de SOC1 y SOC3). Los insumos monetarios de SOC2 (cargo e
-    # ingresos) permanecen en las hojas por pais de la fuente, en moneda
-    # local, por lo que no se consolidan aqui.
+    # Datos base de la dimensión: tasas de electrificación y % renovable
+    # (SOC1/SOC3), más los insumos unitarios en USD y ponderadores de SOC2.
     reg_b = {}
     for f in wb["SOC 3"].iter_rows(values_only=True):
         if f[10] in PAISES and f[11] is not None:
@@ -234,6 +225,15 @@ def leer_soc(ruta: Path) -> dict[str, pd.DataFrame]:
           "pct_sin_electricidad": float(series["SOC1"].loc[p, a]),
           **reg_b[(p, a)]}
          for p in PAISES for a in ANIOS])
+    columnas_soc2 = [
+        "pais", "anio", "clientes_residenciales", "cargo_anual_usd",
+        "ingreso_prom_usd", "ingreso_vulnerable_usd",
+        "proporcion_vulnerable", "clientes_vulnerables_proxy",
+        "gasto_prom_proxy_usd", "ingreso_prom_proxy_usd",
+        "gasto_vulnerable_proxy_usd", "ingreso_vulnerable_proxy_usd",
+        "fuente_dato",
+    ]
+    series["BASE_SOC2"] = soc2[columnas_soc2].copy()
     return series
 
 
@@ -244,8 +244,7 @@ def leer_soc(ruta: Path) -> dict[str, pd.DataFrame]:
 def hoja_serie(wb, nombre, df, titulo, formula, num_fmt, agregado=None):
     """Hoja estandar de una serie. `agregado` (lista por anio o None) es
     la razon de sumas Σnum/Σden — pondera cada pais por su denominador —
-    calculada en main() con el denominador propio de cada serie. Las series
-    resumidas mediante estadísticos nacionales, como SOC2, omiten esa fila."""
+    calculada en main() con el denominador propio de cada serie."""
     ws = wb.create_sheet(nombre)
     ws["A1"] = titulo
     ws["A1"].font = F_TIT
@@ -340,7 +339,8 @@ def hoja_metodologia(wb, filas, titulo):
 # del indicador, tomado de la tabla BASE de la dimension. Con ese peso,
 # la media ponderada de los valores nacionales equivale a Σnum/Σden del
 # bloque. SOC1 pondera por poblacion total (poblacion_total.csv del ETL);
-# SOC2 se conserva como promedio de países y no utiliza ponderador regional.
+# SOC2 se agrega directamente desde sus magnitudes proxy en USD; no entra en
+# este catálogo de ponderadores porque etl_soc2.py ya produce la razón de sumas.
 PESOS_AGREGADO = {
     "ENV1_PC": "poblacion_miles",
     "ENV1_PIB": "pib_usd_const2015",
@@ -402,15 +402,16 @@ CAT_SOC = [
      "población: personas sin electricidad del bloque ÷ población "
      "del bloque)."),
     ("SOC2_PROM", "SOC2 — Ingreso destinado a electricidad (hogar promedio)",
-    "%", "Cargo anual de electricidad ÷ Ingreso anual del hogar promedio "
-    "× 100", "0.00",
-     "Las dos series se resumen mediante promedio de países. Los insumos "
-     "monetarios se conservan en el marco de cada país, por lo que no se "
-     "construye una razón de sumas regional."),
-    ("SOC2_POBRE", "SOC2 — Ingreso destinado a electricidad (quintil más "
-     "pobre)", "%",
-     "Cargo anual ÷ Ingreso anual del quintil de menores ingresos × 100",
-     "0.00", "Mismo criterio de agregación que SOC2 (hogar promedio)."),
+     "%", "Cargo anual medio residencial ÷ ingreso anual de referencia "
+     "del hogar × 100", "0.00",
+     "El agregado regional es la razón entre el gasto residencial proxy y "
+     "el ingreso PROM proxy, ambos expandidos por clientes residenciales."),
+    ("SOC2_VULNERABLE", "SOC2 — Ingreso destinado a electricidad (estrato "
+     "vulnerable)", "%",
+     "Cargo anual medio residencial ÷ ingreso anual del estrato vulnerable "
+     "× 100", "0.00",
+     "El agregado regional usa clientes vulnerables proxy: 20 % en cinco "
+     "países y 29.6 % en Nicaragua."),
     ("SOC3_RURAL", "SOC3 — Hogares rurales con acceso a energía renovable",
      "%", "Tasa de electrificación rural × % renovable de la generación",
      "0.00", "Combina la tasa de electrificación rural con la participación "
@@ -485,6 +486,18 @@ def main():
     if soc["BASE"][columnas_zona[2:]].isna().any().any():
         sys.exit("VALIDACIÓN FALLIDA — faltan ponderadores SOC3 tras "
                  "cruzar población rural/urbana.")
+    soc["BASE"] = soc["BASE"].merge(
+        soc["BASE_SOC2"], on=["pais", "anio"], how="left",
+        validate="one_to_one")
+
+    if not RUTA_SOC2_REGIONAL.exists():
+        sys.exit("VALIDACIÓN FALLIDA — falta soc2_regional.csv; ejecutar "
+                 "antes etl_soc2.py.")
+    soc2_regional = pd.read_csv(RUTA_SOC2_REGIONAL).set_index("anio")
+    agregados_soc2 = {
+        clave: [float(soc2_regional.loc[a, clave]) for a in ANIOS]
+        for clave in ("SOC2_PROM", "SOC2_VULNERABLE")
+    }
 
     # ------- libro ambiental -------
     wb = Workbook(); wb.remove(wb.active)
@@ -519,6 +532,8 @@ def main():
         elif clave in pesos_soc3:
             agregado = media_ponderada(_valores_de(soc[clave]),
                                        pesos_soc3[clave])
+        elif clave in agregados_soc2:
+            agregado = agregados_soc2[clave]
         else:
             agregado = None
         hoja_serie(wb, clave, soc[clave], f"{titulo} ({unidad})",
@@ -526,10 +541,10 @@ def main():
     hoja_base(wb, soc["BASE"],
         "Datos base — dimensión social (variables de entrada)",
         "Tasas y participaciones en %; población rural, urbana y total "
-        "en habitantes. Los insumos monetarios de SOC2 "
-        "(cargo medio e ingresos por grupo) permanecen en las hojas por "
-        "país de SOCs.xlsx, en moneda local. Fuentes: SOCs.xlsx y Banco "
-        "Mundial WDI (SP.RUR.TOTL y SP.URB.TOTL).")
+        "en habitantes. SOC2 conserva cargo e ingresos anuales en USD, "
+        "clientes residenciales y clientes vulnerables proxy. Fuentes: "
+        "SOCs.xlsx, base única SOC2 del equipo y Banco Mundial WDI "
+        "(SP.RUR.TOTL y SP.URB.TOTL).")
     hoja_metodologia(
         wb, [[c, t, u, f, n] for c, t, u, f, _, n in CAT_SOC],
         "Indicadores de la dimensión social — SIEPAC 2020–2024")

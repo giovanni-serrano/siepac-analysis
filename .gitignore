@@ -15,9 +15,6 @@ BITACORA_PERSONAL.md
 AGENTS.md
 CLAUDE.md
 
-# Versión alternativa local del visualizador, no publicada.
-version-alt/
-
 # Protocolo de investigación: documento interno de trabajo, no publicado.
 protocolo/
 
@@ -45,22 +42,19 @@ data/processed/*.csv
 # Respaldo manual del Paso 0 (no debe subir al repo)
 data/processed_OLD/
 
-# Imágenes PNG de los gráficos (uso personal; se regeneran con
-# exportar_graficos.py). Los visualizadores HTML de graficos/ SÍ se
-# versionan; solo se ignoran estas subcarpetas.
+# Tablas APA: se versionan el HTML consolidado y el índice. Los DOCX son
+# representaciones regenerables del mismo contenido.
+salidas/tesis/tablas/*.docx
+
+# Archivo local de la estructura anterior. La versión pública fue sustituida
+# por salidas/tesis/; se ignora para no publicar copias desactualizadas.
+tablas-apa/
+
+# PNG locales del exportador histórico por país. Las figuras oficiales
+# versionadas se generan en salidas/tesis/figuras/.
 graficos/eco/
 graficos/env/
 graficos/soc/
-
-# Tablas APA: se versionan el documento HTML, el índice y el README (el
-# producto curado); se ignoran el .docx —binario que git no puede
-# comparar y que Word regenera en segundos— y las 75 tablas sueltas, que
-# son copias de conveniencia del mismo documento. Todo se reconstruye
-# con generar_tablas_apa.py.
-tablas-apa/*.docx
-tablas-apa/individuales/
-tablas-apa/ANALISIS_SOC2_TESIS.md
-tablas-apa/matriz_poblacion_rural_urbana_*.xlsx
 
 # Datos crudos cuyas fuentes prohíben redistribuir el archivo descargado
 # (ambos términos verificados el 2026-07-26; las citas textuales están en

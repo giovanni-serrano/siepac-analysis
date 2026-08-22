@@ -4,14 +4,15 @@ generar_tablas_apa.py — Tablas en formato APA 7.ª edición, listas para Word
 Etapa del pipeline : presentación de resultados (posterior a
                      generar_resumen_indicadores.py)
 Entradas           : data/processed/indicadores_ECO_valores.csv,
-                     data/processed/eco_cg_siepac.csv y los libros
+                     data/raw_equipo/eco_cg_siepac.csv y los libros
                      indicadores_ECO/ENV/SOC_SIEPAC.xlsx (hojas Datos_Base y
                      de indicadores), principalmente vía viz_comun
-Salidas            : tablas-apa/tablas_apa_SIEPAC.docx (todas las tablas con
-                     su nota metodológica), tablas_apa_SIEPAC_sin_notas.docx
+Salidas            : salidas/tesis/tablas/tablas_apa_SIEPAC.docx (todas las
+                     tablas con su nota metodológica),
+                     tablas_apa_SIEPAC_sin_notas.docx
                      (las mismas tablas sin nota, para el cuerpo del texto),
-                     los dos en .html, individuales/*.html (una tabla por
-                     archivo) e indice_tablas.csv
+                     los dos en .html, indice_tablas.csv y la Tabla 7
+                     regional de SOC2
 Alimenta           : — (producto final para la redacción del monográfico)
 Fuente de datos    : salidas del pipeline
 
@@ -58,17 +59,15 @@ import html
 import logging
 import math
 import os
-import re
 import subprocess
 import sys
-import unicodedata
 from collections import namedtuple
 from datetime import date
 from pathlib import Path
 
 import pandas as pd
 
-from config_siepac import RAIZ_PROYECTO
+from config_siepac import DIR_SALIDAS_TESIS, RAIZ_PROYECTO
 from eco_cg_comun import (BANDERAS_ECO_CG, CODIGO_ECO_CG,
                           COLUMNA_ECO_CG, ETIQUETA_ECO_CG, FICHA_ECO_CG,
                           FUENTES_ECO_CG, NIVEL_ECO_CG,
@@ -85,8 +84,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(Path(__file__).stem)
 
-DIR_SALIDA = RAIZ_PROYECTO / "tablas-apa"
-DIR_INDIVIDUALES = DIR_SALIDA / "individuales"
+DIR_SALIDA = DIR_SALIDAS_TESIS / "tablas"
 RUTA_DOC = DIR_SALIDA / "tablas_apa_SIEPAC.html"
 RUTA_DOCX = DIR_SALIDA / "tablas_apa_SIEPAC.docx"
 # Segunda version: las mismas tablas sin la nota al pie, para intercalar
@@ -94,6 +92,8 @@ RUTA_DOCX = DIR_SALIDA / "tablas_apa_SIEPAC.docx"
 RUTA_DOC_SIN_NOTAS = DIR_SALIDA / "tablas_apa_SIEPAC_sin_notas.html"
 RUTA_DOCX_SIN_NOTAS = DIR_SALIDA / "tablas_apa_SIEPAC_sin_notas.docx"
 RUTA_INDICE = DIR_SALIDA / "indice_tablas.csv"
+RUTA_SOC2_TESIS = DIR_SALIDA / "tabla_07_soc2_regional_tesis.html"
+RUTA_SOC2_TESIS_CSV = DIR_SALIDA / "tabla_07_soc2_regional_tesis.csv"
 
 NOMBRE_DIM = {"eco": "económica", "env": "ambiental", "soc": "social"}
 
@@ -109,7 +109,7 @@ FUENTES_APA = {
     "bm_pob": "Banco Mundial (2026b)",
     "ods": "CEPAL (2026) y UNIDO (2026)",
     "env": "la matriz ENVs.xlsx",
-    "soc": "la matriz SOCs.xlsx",
+    "soc": "SOCs.xlsx y la base única SOC2 elaborada por el equipo",
     "eco_cg": FUENTES_ECO_CG,
 }
 
@@ -315,13 +315,6 @@ def _delta(v0, v4, tipo: str) -> str:
     return f"{(v4 / v0 - 1) * 100:+.1f} %"
 
 
-def _slug(texto: str) -> str:
-    """Nombre de archivo sin tildes ni signos, para los HTML sueltos."""
-    plano = (unicodedata.normalize("NFKD", texto)
-             .encode("ascii", "ignore").decode("ascii").lower())
-    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", plano)).strip("-")
-
-
 # ---------------------------------------------------------------------------
 # CONSTRUCCIÓN DE UNA TABLA APA
 # ---------------------------------------------------------------------------
@@ -354,7 +347,8 @@ def tabla_apa(tabla: dict, con_nota: bool = True) -> str:
     estilo_bloque = S_BLOQUE + (
         "page-break-after:always;" if tabla["numero"] == 60 else ""
     )
-    partes = [f'<div style="{estilo_bloque}">',
+    partes = [f'<div id="tabla-{tabla["numero"]:02d}" '
+              f'style="{estilo_bloque}">',
               f'<p style="{S_NUMERO}">Tabla {tabla["numero"]}</p>',
               f'<p style="{S_TITULO}">{titulo}</p>',
               f'<table style="{S_TABLA}"><thead><tr>']
@@ -380,6 +374,43 @@ def tabla_apa(tabla: dict, con_nota: bool = True) -> str:
         partes.append(f'<p style="{S_NOTA}"><i>Nota.</i> {tabla["nota"]}</p>')
     partes.append("</div>")
     return "\n".join(partes)
+
+
+def _exportar_tabla_soc2_tesis(datos: dict) -> None:
+    """Regenera la Tabla 7 del cuerpo de la tesis desde el agregado SOC2."""
+    prom = datos["SOC2_PROM"].get("agregado")
+    vulnerable = datos["SOC2_VULNERABLE"].get("agregado")
+    if not prom or not vulnerable:
+        raise ValueError("VALIDACIÓN FALLIDA: SOC2 no tiene agregado regional")
+
+    filas = [[str(anio), f"{p:.3f}", f"{v:.3f}", f"{v - p:.3f}"]
+             for anio, p, v in zip(ANIOS, prom, vulnerable)]
+    tabla = dict(
+        numero=7,
+        titulo=f"SOC2 regional agregado del SIEPAC, {ANIOS[0]}–{ANIOS[-1]}",
+        titulo_con_unidad=(f"SOC2 regional agregado del SIEPAC, "
+                           f"{ANIOS[0]}–{ANIOS[-1]} (en %)"),
+        encabezados=["Año", "SOC2_PROM (%)", "SOC2_VULNERABLE (%)",
+                     "Brecha VUL–PROM (pp)"],
+        filas=filas,
+        resumen=[],
+        nota=("Valores en porcentaje, calculados mediante razón de sumas; "
+              "pp = puntos porcentuales."),
+        cols_izq=1,
+    )
+    RUTA_SOC2_TESIS.write_text(
+        PLANTILLA.format(
+            titulo="Tabla 7 — SOC2 regional agregado",
+            cuerpo=tabla_apa(tabla)),
+        encoding="utf-8",
+    )
+    with open(RUTA_SOC2_TESIS_CSV, "w", newline="", encoding="utf-8-sig") as f:
+        escritor = csv.writer(f)
+        escritor.writerow(["anio", "SOC2_PROM", "SOC2_VULNERABLE",
+                           "brecha_vulnerable_prom_pp"])
+        escritor.writerows([[anio, p, v, v - p]
+                            for anio, p, v in zip(ANIOS, prom, vulnerable)])
+    log.info("Exportada Tabla 7 de la tesis: %s", RUTA_SOC2_TESIS)
 
 
 # ---------------------------------------------------------------------------
@@ -687,10 +718,9 @@ agregación y fuente.</p>
 <p style="{s_p}"><b>Cómo llevarlas a Word:</b> seleccione la tabla completa
 en esta página —desde la línea «Tabla&nbsp;<i>n</i>» hasta el final de la
 nota—, cópiela con Ctrl+C y péguela en Word con Ctrl+V. Word conserva la
-estructura, los bordes y la cursiva. Si prefiere pegar una sola tabla,
-cada una tiene además su propio archivo en la carpeta
-<i>individuales/</i>. La numeración es correlativa dentro de este
-documento; si en el monográfico las tablas aparecen intercaladas con
+estructura, los bordes y la cursiva. El índice enlaza directamente a cada
+tabla dentro de este mismo archivo. La numeración es correlativa dentro de
+este documento; si en el monográfico las tablas aparecen intercaladas con
 otras, renumérelas según su orden final de aparición.</p>
 <p style="{s_p}">Cobertura: {paises}, ventana {a0}–{a1}.
 «s.d.» indica que no hay dato para esa celda. Documento generado
@@ -1009,14 +1039,17 @@ def _tablas_bloque(inicio: int, datos: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 SOC_REGION = [("SOC1", "SOC1"),
+              ("SOC2", "SOC2_PROM"),
+              ("SOC2", "SOC2_VULNERABLE"),
               ("SOC3", "SOC3_RURAL"),
               ("SOC3", "SOC3_URB")]
 SOC_PAISES = [("SOC1", "SOC1"),
               ("SOC2", "SOC2_PROM"),
-              ("SOC2", "SOC2_POBRE"),
+              ("SOC2", "SOC2_VULNERABLE"),
               ("SOC3", "SOC3_RURAL"),
               ("SOC3", "SOC3_URB")]
-SOC2_SERIES = [("SOC2", "SOC2_PROM"), ("SOC2", "SOC2_POBRE")]
+SOC2_SERIES = [("SOC2", "SOC2_PROM"),
+               ("SOC2", "SOC2_VULNERABLE")]
 
 
 def _info_subserie(codigo: str, clave: str) -> tuple[dict, dict]:
@@ -1047,9 +1080,11 @@ def _bloque_tendencia_social(numero: int, datos: dict) -> dict:
 
     titulo = ("Nivel y tendencia regional de los indicadores sociales "
               f"agregables del SIEPAC, {ANIOS[0]}–{ANIOS[-1]}")
-    nota = ("SOC1 pondera por población total; SOC3_RURAL, por población "
-            "rural; y SOC3_URB, por población urbana. Cada fila es una "
-            "razón de sumas (Ec. 1). Δ se expresa en puntos porcentuales. "
+    nota = ("SOC1 pondera por población total; SOC2 reconstruye gasto e "
+            "ingreso agregados aproximados en USD; SOC3_RURAL pondera por "
+            "población rural y SOC3_URB, por población urbana. Cada fila "
+            "es una razón de sumas (Ec. 1). Δ se expresa en puntos "
+            "porcentuales. "
             "SOC3 combina la tasa de electrificación de cada zona con la "
             "participación renovable nacional. Elaboración propia a partir de las tablas "
             "de indicadores de este archivo.")
@@ -1420,8 +1455,10 @@ def _indice_html(tablas: list[dict]) -> list[str]:
                          f'padding-top:10pt;"><b>{t["seccion"]}</b></td></tr>')
             seccion_previa = t["seccion"]
         filas.append(
-            f'<tr><td style="{S_TD_IZQ}white-space:nowrap;">Tabla '
-            f'{t["numero"]}</td><td style="{S_TD_IZQ}">{t["titulo"]}</td></tr>')
+            f'<tr><td style="{S_TD_IZQ}white-space:nowrap;">'
+            f'<a href="#tabla-{t["numero"]:02d}" '
+            f'style="color:inherit;">Tabla {t["numero"]}</a></td>'
+            f'<td style="{S_TD_IZQ}">{t["titulo"]}</td></tr>')
     return [f'<h2 style="{S_H2}">Índice de tablas</h2>',
             f'<table style="{S_TABLA}"><tbody>'] + filas + ["</tbody></table>"]
 
@@ -1533,10 +1570,11 @@ def _armar_documento(tablas: list[dict], base: list[dict],
     cuerpo += _indice_html(tablas)
 
     cierre_indicadores = (
-        "ECO14 y SOC2 resumen la región mediante estadísticos de los valores "
-        "nacionales, según la definición indicada en sus notas." if con_notas
-        else "ECO14 y SOC2 resumen la región mediante estadísticos de los "
-        "valores nacionales.")
+        "ECO14 se resume mediante la mediana de países por falta de "
+        "ponderador. SOC2 sí presenta agregado regional por razón de sumas "
+        "a partir de gasto e ingreso aproximados." if con_notas
+        else "ECO14 usa la mediana de países; SOC2 presenta agregado "
+        "regional por razón de sumas.")
     secciones = {
         "base": _seccion(
             "Tablas de datos base",
@@ -1570,8 +1608,8 @@ def _armar_documento(tablas: list[dict], base: list[dict],
              "añade un resumen compacto de tendencia regional para SOC1 y "
              "SOC3, heterogeneidad nacional para las cinco series SOC y "
              "una descripción anual completa de nivel, centro, dispersión "
-             "y cambio para SOC2. SOC2 se presenta como comparación del "
-             "conjunto de países, no como razón de sumas regional. La "
+             "y cambio para SOC2. SOC2 conserva la comparación nacional y "
+             "añade la razón de sumas regional como medida del bloque. La "
              "dimensión ambiental incorpora nivel regional, dispersión y "
              "convergencia para ENV1–ENV3, además de una descripción de "
              "las dos series observadas de ENV6. ECO-CG se incorpora como "
@@ -1631,7 +1669,7 @@ def main() -> None:
     for ruta, con_notas in [(RUTA_DOC, True), (RUTA_DOC_SIN_NOTAS, False)]:
         cuerpo = _armar_documento(tablas, base, indicadores, bloque,
                                   args.orden, con_notas)
-        DIR_SALIDA.mkdir(exist_ok=True)
+        DIR_SALIDA.mkdir(parents=True, exist_ok=True)
         ruta.write_text(
             PLANTILLA.format(
                 titulo=("Tablas APA - Fase cuantitativa SIEPAC" if con_notas
@@ -1643,23 +1681,9 @@ def main() -> None:
                  "" if con_notas else ", sin notas",
                  ruta.stat().st_size / 1024)
 
-    DIR_INDIVIDUALES.mkdir(exist_ok=True)
-
-    # Se limpian las tablas sueltas de corridas anteriores: al cambiar
-    # --orden cambia el numero de cada tabla y quedarian archivos viejos
-    # con numeracion contradictoria mezclados con los nuevos.
-    for viejo in DIR_INDIVIDUALES.glob("Tabla_*.html"):
-        viejo.unlink()
-
     for t in tablas:
-        nombre = f"Tabla_{t['numero']:02d}_{_slug(t['codigo'])}.html"
-        (DIR_INDIVIDUALES / nombre).write_text(
-            PLANTILLA.format(titulo=html.escape(f"Tabla {t['numero']}"),
-                             cuerpo=tabla_apa(t)),
-            encoding="utf-8")
-        t["archivo"] = f"individuales/{nombre}"
-    log.info("Exportadas %d tablas sueltas en: %s", len(tablas),
-             DIR_INDIVIDUALES)
+        t["archivo"] = ("tablas_apa_SIEPAC.html#tabla-"
+                        f"{t['numero']:02d}")
 
     with open(RUTA_INDICE, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
@@ -1669,6 +1693,7 @@ def main() -> None:
             w.writerow([t["numero"], t["seccion"], t["dim"], t["codigo"],
                         t["titulo"], t["archivo"]])
     log.info("Exportado: %s", RUTA_INDICE)
+    _exportar_tabla_soc2_tesis(datos)
     if not args.sin_docx:
         _exportar_docx(RUTA_DOC, RUTA_DOCX)
         _exportar_docx(RUTA_DOC_SIN_NOTAS, RUTA_DOCX_SIN_NOTAS)

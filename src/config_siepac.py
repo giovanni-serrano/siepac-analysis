@@ -16,8 +16,10 @@ from pathlib import Path
 # Raíz del proyecto: este archivo vive en src/, así que subimos un nivel.
 RAIZ_PROYECTO = Path(__file__).resolve().parents[1]
 DIR_RAW = RAIZ_PROYECTO / "data" / "raw"
+DIR_RAW_EQUIPO = RAIZ_PROYECTO / "data" / "raw_equipo"
 DIR_PROCESSED = RAIZ_PROYECTO / "data" / "processed"
 DIR_GRAFICOS = RAIZ_PROYECTO / "graficos"
+DIR_SALIDAS_TESIS = RAIZ_PROYECTO / "salidas" / "tesis"
 
 # Los 6 países del SIEPAC, grafía canónica del proyecto (con tildes).
 PAISES_SIEPAC = ["Costa Rica", "El Salvador", "Guatemala",

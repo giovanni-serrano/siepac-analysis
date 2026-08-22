@@ -1,11 +1,10 @@
 """
 eco_cg_comun.py — Serie complementaria de costos de generación
 ====================================================
-Etapa del pipeline : validación y preparación de un insumo procesado externo
-Entradas           : data/processed/eco_cg_siepac.csv
+Etapa del pipeline : validación y preparación de un insumo del equipo
+Entradas           : data/raw_equipo/eco_cg_siepac.csv
 Salidas            : — (funciones compartidas por tablas y figuras)
-Alimenta           : generar_tablas_apa.py, exportar_grafico_eco_cg.py y
-                     analisis-eco/analisis_descriptivo_eco.py
+Alimenta           : generar_tablas_apa.py y generar_figuras_tesis.py
 Fuente de datos    : archivo incorporado por el equipo de investigación
 
 La serie ECO_CG no es un indicador IEDS adicional. Es un complemento de la
@@ -23,13 +22,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from config_siepac import ANIOS_ANALISIS, DIR_PROCESSED, PAISES_SIEPAC
+from config_siepac import ANIOS_ANALISIS, DIR_RAW_EQUIPO, PAISES_SIEPAC
 
 
 CODIGO_ECO_CG = "ECO_CG"
 ETIQUETA_ECO_CG = "ECO-CG"
 COLUMNA_ECO_CG = "eco_cg_usd_mwh"
-RUTA_ECO_CG = DIR_PROCESSED / "eco_cg_siepac.csv"
+RUTA_ECO_CG = DIR_RAW_EQUIPO / "eco_cg_siepac.csv"
 
 ORDEN_ECO_CG_DOCUMENTO = [
     "Guatemala", "Honduras", "El Salvador", "Nicaragua", "Costa Rica",

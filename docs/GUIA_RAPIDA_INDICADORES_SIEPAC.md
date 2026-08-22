@@ -1,9 +1,9 @@
-# Guía de agregación regional — indicadores SIEPAC
+# Guía de agregación regional — indicadores SIEPAC (2020–2024)
 
 Este documento resume el criterio de agregación empleado para representar
 los seis países del SIEPAC como un bloque. Las cifras completas se encuentran
-en `graficos/region/tabla_agregados.csv` y las figuras en
-`graficos/region/`.
+en `docs/resumen_indicadores_SIEPAC.md`; las figuras oficiales y su inventario
+se generan en `salidas/tesis/`.
 
 ## Criterios de cálculo
 
@@ -14,9 +14,9 @@ en `graficos/region/tabla_agregados.csv` y las figuras en
 - Ambos resultados se identifican por separado porque responden a unidades
   de análisis distintas.
 
-Los gráficos `*_agregado_vs_promedio.png` presentan el agregado regional en
-azul y el promedio de países en gris punteado. El valor del último año se
-etiqueta directamente sobre cada serie.
+Los gráficos `*_bloque.png` presentan la medida principal en azul, el
+promedio de países en gris punteado y la banda mínimo–máximo nacional. El
+valor del último año se etiqueta directamente sobre cada serie.
 
 ## Indicadores con agregado regional
 
@@ -24,40 +24,37 @@ etiqueta directamente sobre cada serie.
 
 - **Cálculo:** Σ consumo final (kWh) ÷ Σ población.
 - **Resultado:** 959 → 1 063 kWh/hab (+10.9 %).
-- **Gráficos:** `ECO1_agregado_vs_promedio.png` y
-  `REGION_consumo_final.png`.
+- **Gráfico:** `ECO1_bloque.png`.
 
 ### ECO2 · Energía por unidad de PIB
 
 - **Cálculo:** Σ consumo final ÷ Σ PIB real en USD constantes de 2015.
 - **Resultado:** 0.195 → 0.179 kWh/USD (−8.3 %).
-- **Gráfico:** `ECO2_agregado_vs_promedio.png`.
+- **Gráfico:** `ECO2_bloque.png`.
 
 ### ECO3 · Eficiencia de conversión y distribución
 
 - **Cálculo:** Σ consumo final ÷ Σ producción bruta × 100.
 - **Resultado:** 82.4 → 82.6 % (+0.2 pp).
-- **Gráfico:** `ECO3_agregado_vs_promedio.png`.
+- **Gráfico:** `ECO3_bloque.png`.
 
 ### ECO6 · Intensidad energética de la industria
 
 - **Cálculo:** Σ consumo industrial ÷ Σ valor agregado manufacturero.
 - **Resultado:** 0.370 → 0.497 kWh/USD (+34.4 %).
-- **Gráfico:** `ECO6_agregado_vs_promedio.png`.
+- **Gráfico:** `ECO6_bloque.png`.
 
 ### ECO11 · Participación fósil
 
 - **Cálculo:** Σ generación fósil ÷ Σ generación total × 100.
 - **Resultado:** 25.0 → 33.0 % (+8.0 pp).
-- **Gráficos:** `ECO11_agregado_vs_promedio.png` y
-  `REGION_renovable_vs_fosil.png`.
+- **Gráfico:** `ECO11_bloque.png`.
 
 ### ECO13 · Participación renovable
 
 - **Cálculo:** Σ generación renovable ÷ Σ generación total × 100.
 - **Resultado:** 75.0 → 67.0 % (−8.0 pp).
-- **Gráficos:** `ECO13_agregado_vs_promedio.png` y
-  `REGION_generacion_fuentes.png`.
+- **Gráfico:** `ECO13_bloque.png`.
 
 ### ECO15 · Dependencia de importaciones netas
 
@@ -65,16 +62,25 @@ etiqueta directamente sobre cada serie.
 - **Resultado:** 1.65 → 2.17 % (+0.5 pp).
 - Los intercambios internos del MER se cancelan al sumar el bloque; el saldo
   agregado representa el intercambio extrarregional.
-- **Gráficos:** `ECO15_agregado_vs_promedio.png` y
-  `REGION_intercambios.png`.
+- **Gráfico:** `ECO15_bloque.png`.
 
 ### SOC1 · Población sin electricidad
 
 - **Cálculo:** personas sin electricidad del bloque ÷ población total del
   bloque × 100.
 - **Resultado:** 7.57 → 6.72 % (−0.8 pp).
-- **Gráficos:** `SOC1_agregado_vs_promedio.png` y
-  `REGION_personas_sin_electricidad.png`.
+- **Gráfico:** `SOC1_bloque.png`.
+
+### SOC2 · Ingreso destinado a electricidad
+
+- **Cálculo hogar promedio:** Σ(cargo anual × clientes residenciales) ÷
+  Σ(ingreso promedio × clientes residenciales) × 100.
+- **Cálculo vulnerable:** la misma razón de sumas usando el ingreso vulnerable
+  y los clientes vulnerables aproximados.
+- **Resultado 2024:** 2.11 % para el hogar promedio y 12.95 % para el estrato
+  vulnerable. Es un proxy regional, no una estimación censal de hogares.
+- **Gráficos:** `SOC2_PROM_bloque.png` y
+  `SOC2_VULNERABLE_bloque.png`.
 
 ### SOC3 · Acceso a energía renovable rural y urbano
 
@@ -84,9 +90,7 @@ etiqueta directamente sobre cada serie.
   población urbana. Resultado: 73.2 → 61.9 % (−11.3 pp).
 - Cada serie combina la tasa de electrificación de la zona con la
   participación renovable de la generación nacional.
-- **Gráficos:** `SOC3_RURAL_agregado_vs_promedio.png`,
-  `SOC3_URB_agregado_vs_promedio.png` y
-  `SOC3_brecha_rural_urbana_agregado.png`.
+- **Gráficos:** `SOC3_RURAL_bloque.png` y `SOC3_URB_bloque.png`.
 
 ## Ejemplo de cálculo — SOC1, año 2024
 
@@ -111,18 +115,14 @@ diferencia corresponde al peso poblacional de cada país en el agregado.
 
 Fuentes del cálculo: `data/raw_equipo/SOCs.xlsx` para las tasas nacionales y
 CEPALSTAT-CELADE para la población total. El pipeline conserva los resultados
-en `data/processed/indicadores_SOC_SIEPAC.xlsx` y
-`graficos/region/tabla_agregados.csv`.
+en `data/processed/indicadores_SOC_SIEPAC.xlsx`; el agregado de SOC2 queda
+además en `data/processed/soc2_regional.csv`.
 
-## Series representadas mediante promedio de países
+## Serie sin agregado regional
 
-- **ECO14:** presenta el promedio simple de las tarifas nacionales. Los
+- **ECO14:** presenta la mediana de las tarifas nacionales. Los
   valores calculados mediante CAGR se identifican en las tablas y los
   visualizadores. La razón de sumas requiere energía regulada vendida por
   país y año.
-- **SOC2:** presenta estadísticas descriptivas y promedio simple de los
-  resultados nacionales. Los insumos monetarios permanecen expresados en el
-  marco de cada país, por lo que no se construye una razón de sumas regional.
-
 La definición completa de cada indicador se mantiene en
 `docs/resumen_indicadores_SIEPAC.md` y en `src/viz_comun.py`.

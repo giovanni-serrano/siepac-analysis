@@ -179,8 +179,8 @@ Cada tabla cierra con dos resúmenes que responden preguntas distintas:
 
 Ambos son legítimos pero pueden divergir mucho (incluso en el signo de
 la tendencia, como en ECO15): al citar cifras regionales debe indicarse
-cuál de los dos se usa. ECO14 y SOC2 se representan mediante promedio de
-países; el criterio se especifica en la ficha de cada indicador.
+cuál de los dos se usa. ECO14 se representa mediante la mediana de países;
+SOC2 presenta razón de sumas regional a partir de magnitudes proxy en USD.
 """]
     filas_csv = []
 
