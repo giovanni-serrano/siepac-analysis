@@ -4,13 +4,12 @@ generar_figuras_tesis.py — Figuras oficiales de la fase cuantitativa
 Etapa del pipeline : presentación de resultados
 Entradas           : libros y CSV normalizados en data/processed/ y
                      data/raw_equipo/eco_cg_siepac.csv
-Salidas            : salidas/tesis/figuras/*.png y
-                     salidas/tesis/manifiesto_figuras.csv
+Salidas            : salidas/tesis/figuras/*.png
 Alimenta           : documento final de la monografía
 Fuente de datos    : salidas del pipeline; fichas en viz_comun.FICHAS
 
-Genera el inventario único de 22 figuras: 9 económicas, 5 sociales y
-8 ambientales. Todas usan el mismo lenguaje visual; ENV6 conserva un
+Genera las 22 figuras oficiales: 9 económicas, 5 sociales y 8 ambientales.
+Todas usan el mismo lenguaje visual; ENV6 conserva un
 tratamiento especial porque contrasta dos magnitudes observadas en GWh.
 
 Uso:  python src/generar_figuras_tesis.py   (desde la raíz)
@@ -18,7 +17,6 @@ Uso:  python src/generar_figuras_tesis.py   (desde la raíz)
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
 
-import csv
 import logging
 import sys
 from pathlib import Path
@@ -46,7 +44,6 @@ logging.basicConfig(
 log = logging.getLogger(Path(__file__).stem)
 
 DIR_FIGURAS = DIR_SALIDAS_TESIS / "figuras"
-RUTA_MANIFIESTO = DIR_SALIDAS_TESIS / "manifiesto_figuras.csv"
 
 ECO = ["ECO1", "ECO2", "ECO3", "ECO6", "ECO11", "ECO13", "ECO14",
        "ECO15"]
@@ -119,12 +116,11 @@ def _figura_env6(extra: dict) -> go.Figure:
 
 def main() -> None:
     DIR_FIGURAS.mkdir(parents=True, exist_ok=True)
-    manifiesto = []
+    generadas = []
 
     hojas = cargar_datos()
     eco_df = preparar_datos(hojas)
     agregados = agregados_eco(hojas["datos_base"])
-    numero = 1
     for codigo in ECO:
         ficha = FICHAS[codigo]
         piv = (eco_df.pivot(index="anio", columns="pais", values=codigo)
@@ -141,9 +137,7 @@ def main() -> None:
             franja_imputada=codigo == "ECO14")
         nombre = f"{codigo}_bloque.png"
         _exportar(fig, nombre)
-        manifiesto.append([numero, "eco", codigo, nombre, etiqueta,
-                           ficha["nombre"]])
-        numero += 1
+        generadas.append(nombre)
 
     eco_cg = cargar_eco_cg()
     piv_cg = (eco_cg.pivot(index="anio", columns="pais",
@@ -160,9 +154,7 @@ def main() -> None:
         etiqueta_banda="Mínimo–máximo entre países")
     nombre = f"{CODIGO_ECO_CG}_bloque.png"
     _exportar(fig, nombre)
-    manifiesto.append([numero, "eco", ETIQUETA_ECO_CG, nombre,
-                       "Mediana descriptiva", FICHA_ECO_CG["nombre"]])
-    numero += 1
+    generadas.append(nombre)
 
     extra = leer_series_extra()
     catalogo = _catalogo_series()
@@ -178,28 +170,16 @@ def main() -> None:
             promedio=bloque["promedio"])
         nombre = f"{codigo}_bloque.png"
         _exportar(fig, nombre)
-        manifiesto.append([numero, info["dimension"], codigo, nombre,
-                           "Agregado regional (razón de sumas)",
-                           info["nombre"]])
-        numero += 1
+        generadas.append(nombre)
 
     nombre = "ENV6_bloque.png"
     _exportar(_figura_env6(extra), nombre)
-    manifiesto.append([numero, "env", "ENV6", nombre,
-                       "Totales regionales observados",
-                       FICHAS["ENV6"]["nombre"]])
+    generadas.append(nombre)
 
-    if len(manifiesto) != 22:
+    if len(generadas) != 22:
         raise ValueError(f"VALIDACIÓN FALLIDA: se esperaban 22 figuras; "
-                         f"se generaron {len(manifiesto)}")
-    DIR_SALIDAS_TESIS.mkdir(parents=True, exist_ok=True)
-    with open(RUTA_MANIFIESTO, "w", newline="", encoding="utf-8-sig") as f:
-        w = csv.writer(f)
-        w.writerow(["figura_sugerida", "dimension", "codigo", "archivo",
-                    "medida_principal", "titulo"])
-        w.writerows(manifiesto)
-    log.info("Listo: 22 figuras oficiales y manifiesto en %s",
-             DIR_SALIDAS_TESIS)
+                         f"se generaron {len(generadas)}")
+    log.info("Listo: 22 figuras oficiales en %s", DIR_FIGURAS)
 
 
 if __name__ == "__main__":

@@ -157,7 +157,7 @@ Hidro + geotermia + eólica + solar + biomasa como porcentaje de la generación 
 
 Ingresos por energía regulada vendida entre energía regulada consumida. En dólares corrientes de cada año.
 
-> Nota metodológica: La serie regional se representa mediante el promedio de países. La razón de sumas requiere la energía regulada vendida por país y año.
+> Nota metodológica: La serie se resume mediante la mediana de países, no mediante un agregado regional. La razón de sumas requiere la energía regulada vendida por país y año; 2023–2024 son totalmente imputados mediante CAGR.
 
 **ECO14** · Unidad: USD corrientes/MWh · Fórmula: Ingresos por energía regulada (USD) ÷ Energía regulada (MWh)
 

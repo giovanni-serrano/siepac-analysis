@@ -1,14 +1,13 @@
-# Arquitectura propuesta del visualizador regional SIEPAC
+# Arquitectura del visualizador regional SIEPAC
 
 ## Estado y propósito
 
-Este documento es el contrato de diseño para sustituir
-`graficos/panel_siepac.html` y `graficos/0_explorador_indicadores.html` por una
-sola aplicación pública. La primera implementación vive en
-`graficos/visualizador_siepac.html`; las aplicaciones anteriores permanecen
-temporalmente para comprobar paridad antes de retirarlas. El contrato preserva
-las decisiones útiles de la antigua exploración `version-alt/` sin conservar
-su código, sus gráficos duplicados ni sus supuestos desactualizados.
+Este documento es el contrato de diseño de la aplicación pública única,
+`graficos/visualizador_siepac.html`. El visualizador regional sustituyó el
+panel y el explorador anteriores después de alcanzar paridad funcional. El
+contrato preserva las decisiones útiles de la antigua exploración
+`version-alt/` sin conservar su código, sus gráficos duplicados ni sus
+supuestos desactualizados.
 
 La aplicación debe comunicar la misma lectura cuantitativa que la tesis:
 evaluar el SIEPAC como bloque en 2020–2024, permitir la comparación entre los
@@ -22,7 +21,8 @@ fórmulas ni notas directamente en el HTML.
 - `src/viz_comun.py`, diccionario `FICHAS`: nombres, unidades, fórmulas y notas
   metodológicas de los 15 indicadores IEDS.
 - `data/processed/`: matrices y series que alimentan los cálculos.
-- `salidas/tesis/manifiesto.csv`: vínculo con las figuras y tablas oficiales.
+- `salidas/tesis/figuras/` y `salidas/tesis/tablas/`: productos oficiales
+  enlazados mediante nombres deterministas e índice de tablas.
 - Documento final de la tesis: autoridad sobre la selección, interpretación y
   numeración definitiva de las salidas que aparecen en el texto.
 - ECO-CG se presentará como serie económica complementaria, separada de los 15
@@ -39,10 +39,8 @@ graficos/visualizador_siepac.html
 ```
 
 Ese producto absorbe la función ejecutiva del panel y la función documental
-del explorador. Los dos HTML anteriores se conservarán solo hasta que el nuevo
-producto alcance paridad de contenido y pase las comprobaciones de aceptación.
-No se recomienda crear otro repositorio: el historial y la trazabilidad de este
-proyecto son activos profesionales y la migración puede hacerse en una rama.
+del explorador. No se recomienda crear otro repositorio: el historial y la
+trazabilidad de este proyecto son activos profesionales.
 
 ## Arquitectura de información
 
@@ -50,7 +48,8 @@ proyecto son activos profesionales y la migración puede hacerse en una rama.
 2. **Dimensión.** Económica, social o ambiental, con sus indicadores y lectura
    sintética de nivel, tendencia y heterogeneidad.
 3. **Detalle del indicador.** Tres vistas coordinadas:
-   - **Región:** agregado del bloque, promedio de países y banda mínimo–máximo.
+   - **Región:** agregado del bloque, promedio de países, banda mínimo–máximo
+     y una conclusión sintética tomada de los resultados de la tesis.
    - **Países:** comparación nacional y, cuando aporte valor, pequeños
      múltiplos con igual prominencia visual.
    - **Datos y método:** tabla accesible, fórmula, unidad, fuente, cobertura,
@@ -123,8 +122,8 @@ componentes.
   dependerá de copias manuales de JSON, PNG o texto.
 - Un solo paquete de la biblioteca gráfica se incluirá en el HTML.
 - El HTML autocontenido será apto para GitHub Pages y para consulta sin conexión.
-- Antes de sustituir las aplicaciones existentes se archivarán capturas de
-  comprobación, no una copia paralela de todo el código generado.
+- GitHub Pages publica mediante una lista permitida únicamente el visualizador
+  y sus salidas documentales; el despliegue no ejecuta los ETL sin las fuentes.
 
 ## Criterios de aceptación
 
@@ -143,8 +142,10 @@ componentes.
 1. **Completado:** crear el contrato de datos y comprobaciones estructurales.
 2. **Completado:** implementar navegación regional y detalle para los 15 IEDS
    y ECO-CG, con vistas de región, países, datos y método.
-3. **Pendiente:** validar visualmente accesibilidad y paridad con la tesis;
-   después retirar el panel y el explorador anteriores.
+3. **Completado:** validar la paridad con la tesis y retirar el panel y el
+   explorador anteriores.
+4. **Completado:** añadir conclusiones regionales y preparar la publicación
+   controlada en GitHub Pages.
 
 Las decisiones rescatadas de `version-alt/` son la prioridad regional, la banda
 mínimo–máximo, la separación entre agregado y promedio, los pequeños múltiplos

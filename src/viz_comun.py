@@ -5,16 +5,15 @@ Etapa del pipeline : visualización (módulo común, no se ejecuta directo)
 Entradas           : data/processed/indicadores_ECO_valores.csv,
                      data/processed/indicadores_ECO_SIEPAC.xlsx (Datos_Base)
                      y, opcionales, los libros ENV/SOC
-Salidas            : — (lo importan generar_explorador.py y generar_panel.py)
-Alimenta           : — (fichas y datos de las 3 dimensiones para las apps)
+Salidas            : — (lo importa el visualizador regional y los productos
+                     documentales)
+Alimenta           : — (fichas y datos de las 3 dimensiones)
 Fuente de datos    : salidas del pipeline
 
-Módulo común de generar_visualizador.py, generar_explorador.py y
-generar_panel.py: rutas de insumos, constantes de estética, fichas
-descriptivas de los indicadores y las funciones de carga/empaquetado. Antes
-este código estaba
-duplicado en bloque en ambos scripts (herencia del extinto
-visualizaciones_siepac.py); aquí vive una sola copia.
+Módulo común de generar_visualizador.py y de los productos documentales:
+rutas de insumos, constantes de estética, fichas descriptivas de los
+indicadores y funciones de carga/empaquetado. Aquí vive la fuente única de
+metadatos que consumen las salidas públicas.
 
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
@@ -191,8 +190,7 @@ def leer_series_extra() -> dict:
     Los valores faltantes quedan como None para que JSON los serialice
     como null."""
     paquete = {}
-    for ruta, claves, clave_base in [(RUTA_ENV, SERIES_ENV, "base_env"),
-                                     (RUTA_SOC, SERIES_SOC, "base_soc")]:
+    for ruta, claves in [(RUTA_ENV, SERIES_ENV), (RUTA_SOC, SERIES_SOC)]:
         if not ruta.exists():
             log.warning("No encontrado: %s — se omite esa dimensión "
                         "(la app se genera igual).", ruta.name)
@@ -213,18 +211,6 @@ def leer_series_extra() -> dict:
                             for v in fila_agr.iloc[0, 1:1 + len(ANIOS)]]
             paquete[clave] = {"paises": por_pais, "promedio": promedio,
                               "agregado": agregado}
-        # Hoja Datos_Base (variables de entrada) para la vista de tabla.
-        try:
-            b = pd.read_excel(ruta, sheet_name="Datos_Base", skiprows=2)
-            paquete[clave_base] = {
-                "columnas": [str(c) for c in b.columns],
-                "filas": [[(None if pd.isna(v) else v) for v in fila]
-                          for fila in b.itertuples(index=False)],
-            }
-        except Exception:
-            log.warning("%s sin hoja Datos_Base; la vista de datos base "
-                        "de esa dimensión no estará disponible.", ruta.name)
-
     if RUTA_ENV.exists():
         e6 = pd.read_excel(RUTA_ENV, sheet_name="ENV6", skiprows=2)
         env6 = {}
@@ -302,9 +288,10 @@ FICHAS = {
         nota_figura="Los puntos huecos identifican valores calculados vía CAGR "
                     "(2023–2024 en cinco países; 2022–2024 en El "
                     "Salvador).",
-        nota="La serie regional se representa mediante el promedio de "
-             "países. La razón de sumas requiere la energía regulada "
-             "vendida por país y año."),
+        nota="La serie se resume mediante la mediana de países, no mediante "
+             "un agregado regional. La razón de sumas requiere la energía "
+             "regulada vendida por país y año; 2023–2024 son totalmente "
+             "imputados mediante CAGR."),
     "ECO15": dict(
         nombre="Dependencia de importaciones netas",
         unidad="%",
@@ -469,6 +456,87 @@ FICHAS["SOC3"] = dict(
          "Tasa de electrificación urbana × % renovable de la generación"],
     ])
 
+# Lectura sintética tomada de la sección de resultados de la tesis. Se
+# conserva como metadato canónico para que el HTML sea siempre regenerable y
+# no acumule interpretaciones editadas a mano.
+HALLAZGOS_REGIONALES = {
+    "ECO1": (
+        "El consumo eléctrico por habitante del bloque aumentó 10,9 % entre "
+        "2020 y 2024, mientras disminuyó la heterogeneidad relativa entre "
+        "países."
+    ),
+    "ECO2": (
+        "La intensidad eléctrica regional disminuyó 8,3 % entre 2020 y "
+        "2024, aunque las diferencias relativas entre las economías "
+        "nacionales se ampliaron."
+    ),
+    "ECO3": (
+        "La razón regional de conversión y distribución permaneció "
+        "prácticamente estable, de 82,4 % a 82,6 %, sin una mejora "
+        "sustantiva del nivel del bloque."
+    ),
+    "ECO6": (
+        "La intensidad eléctrica industrial del bloque aumentó 34,4 % "
+        "entre 2020 y 2024, en contraste con la reducción observada en la "
+        "intensidad de la economía total."
+    ),
+    "ECO11": (
+        "La participación fósil en la generación regional aumentó de "
+        "25,0 % a 33,0 % entre 2020 y 2024 y las diferencias relativas "
+        "entre países se redujeron."
+    ),
+    "ECO13": (
+        "La participación renovable del bloque disminuyó de 75,0 % a "
+        "67,0 % entre 2020 y 2024, lo que describe un cambio de composición "
+        "y no necesariamente una caída del volumen renovable."
+    ),
+    "ECO14": (
+        "En el tramo con mayor respaldo observacional, la mediana de países "
+        "subió de 178,3 a 188,7 USD/MWh entre 2020 y 2022; los valores de "
+        "2023–2024 son extrapolaciones."
+    ),
+    "ECO15": (
+        "La dependencia neta extrarregional aumentó de 1,7 % a 2,2 %, pero "
+        "se mantuvo reducida frente a la oferta eléctrica total del bloque."
+    ),
+    "SOC1": (
+        "La población sin acceso a electricidad descendió hasta 6,72 % en "
+        "2024, aunque todavía representó aproximadamente 3,5 millones de "
+        "personas en el SIEPAC."
+    ),
+    "SOC2": (
+        "La carga del hogar promedio permaneció cerca del 2 %, mientras la "
+        "del estrato vulnerable siguió siendo más de seis veces mayor, con "
+        "una amplia brecha de asequibilidad."
+    ),
+    "SOC3": (
+        "El acceso urbano a electricidad de origen renovable permaneció por "
+        "encima del rural, pero ambos agregados se contrajeron con fuerza "
+        "entre 2022 y 2024."
+    ),
+    "ENV1": (
+        "Las emisiones regionales de GEI disminuyeron hasta 2022 y luego "
+        "repuntaron, cerrando 2024 por encima de los niveles de 2020 tanto "
+        "por habitante como por unidad de PIB."
+    ),
+    "ENV2": (
+        "Los contaminantes atmosféricos regionales descendieron al inicio "
+        "de la ventana y aumentaron en 2023–2024, con una heterogeneidad "
+        "nacional todavía elevada."
+    ),
+    "ENV3": (
+        "La intensidad regional de emisiones atmosféricas cayó hasta 2022 y "
+        "repuntó a 1,728 g/kWh en 2024, por encima del nivel de 2020."
+    ),
+    "ENV6": (
+        "La biomasa sostuvo un aporte superior a 3.000 GWh durante la mayor "
+        "parte del período, mientras el saldo agregado del MER permaneció "
+        "cerca de cero por la compensación intrarregional."
+    ),
+}
+for _cod, _hallazgo in HALLAZGOS_REGIONALES.items():
+    FICHAS[_cod]["hallazgo_regional"] = _hallazgo
+
 # `nota_figura` describe convenciones visuales del gráfico; `nota` contiene
 # información metodológica común a todos los formatos. Las tablas APA usan
 # únicamente `nota` y los visualizadores presentan ambas.
@@ -506,12 +574,7 @@ def construir_datos_json(df, base_df, extra) -> str:
         for pais in PAISES
     }
 
-    # Matriz de datos base completa (para la vista de tabla y su CSV).
-    b = base_df.sort_values(["pais", "anio"]).reset_index(drop=True)
-    paquete["base"] = {
-        "columnas": [str(c) for c in b.columns],
-        "filas": [[(None if pd.isna(v) else v) for v in fila]
-                  for fila in b.itertuples(index=False)],
-    }
+    # El visualizador publica únicamente las series que realmente consume;
+    # las matrices base permanecen en los libros procesados y tablas APA.
     paquete.update(extra)   # series ENV/SOC + ENV6 (si existen)
     return json.dumps(paquete, ensure_ascii=False)

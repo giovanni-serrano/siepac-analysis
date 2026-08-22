@@ -1,6 +1,7 @@
 # siepac-analysis
 
-Pipeline reproducible de la fase cuantitativa de la tesis **«Evaluación del
+Repositorio trazable y reproducible con acceso a las fuentes de la fase
+cuantitativa de la tesis **«Evaluación del
 suministro de energía eléctrica en el SIEPAC: perspectivas económicas,
 sociales y ambientales»**, desarrollada en la Universidad Nacional de
 Ingeniería (UNI), Nicaragua.
@@ -10,33 +11,35 @@ El proyecto calcula 15 Indicadores Energéticos de Desarrollo Sostenible
 durante 2020–2024. Distingue explícitamente entre el promedio simple de países
 y el agregado regional del SIEPAC.
 
+**Visualizador público:**
+[giovanni-serrano.github.io/siepac-analysis](https://giovanni-serrano.github.io/siepac-analysis/)
+
 ## Productos
 
 - `graficos/visualizador_siepac.html`: producto regional único; integra
-  agregado, promedio, banda mínimo–máximo, países, datos y metodología.
-- `graficos/panel_siepac.html`: vista ejecutiva autocontenida.
-- `graficos/0_explorador_indicadores.html`: datos, fórmulas y series por
-  indicador. Estas dos aplicaciones se conservan temporalmente para comprobar
-  paridad antes de retirarlas.
+  agregado, promedio, banda mínimo–máximo, conclusiones regionales, países,
+  datos y metodología.
 - `salidas/tesis/figuras/`: las 22 figuras regionales oficiales usadas por la
   monografía.
 - `salidas/tesis/tablas/`: tablas en formato APA 7, incluida la Tabla 7
   regional de SOC2 del cuerpo de la tesis; el índice enlaza las 75 tablas
   dentro de un único HTML consolidado.
-- `salidas/tesis/manifiesto.csv`: inventario generado que relaciona cada
-  figura y tabla con su código, título y archivo.
 - `docs/resumen_indicadores_SIEPAC.md`: ficha metodológica y cifras completas.
-- `docs/arquitectura_visualizador_regional.md`: contrato para consolidar las
-  dos apps actuales en un único visualizador regional, sin perder el historial
-  del repositorio.
+- `docs/arquitectura_visualizador_regional.md`: contrato del visualizador
+  regional y sus criterios de aceptación.
 
-![Panel SIEPAC — portada con KPIs regionales](docs/Panel.png)
+![Visualizador regional SIEPAC — catálogo de indicadores](docs/Visualizador_Regional.png)
 
-![Explorador — detalle de un indicador](docs/Explorador_Indicadores.png)
+![Visualizador regional SIEPAC — conclusión y gráfico de un indicador](docs/Visualizador_Indicador.png)
 
-## Reproducción
+## Reproducción y límites de acceso
 
-Requiere Python 3.10 o posterior. Desde la raíz del proyecto:
+Un clon permite consultar y auditar los HTML, libros procesados, figuras y
+tablas versionados. La reproducción completa desde cero requiere obtener ocho
+archivos oficiales que no se redistribuyen por las condiciones de sus fuentes.
+
+Con esos archivos colocados en las rutas documentadas, requiere Python 3.10 o
+posterior y se ejecuta desde la raíz del proyecto:
 
 ```bash
 pip install -r requirements.txt
@@ -44,8 +47,8 @@ python src/run_pipeline.py
 ```
 
 El orquestador ejecuta los ETL, valida cobertura y unidades, consolida las
-matrices, calcula indicadores y regenera tablas, figuras, manifiesto y apps
-HTML. Se detiene ante cualquier validación obligatoria fallida.
+matrices, calcula indicadores y regenera el resumen, las tablas, las figuras y
+el visualizador HTML. Se detiene ante cualquier validación obligatoria fallida.
 
 El orden completo es:
 
@@ -58,9 +61,7 @@ El orden completo es:
 → generar_resumen_indicadores.py
 → generar_tablas_apa.py
 → generar_figuras_tesis.py
-→ generar_manifiesto_tesis.py
 → generar_visualizador.py
-→ generar_explorador.py y generar_panel.py (compatibilidad temporal)
 ```
 
 ## Flujo de datos
@@ -71,8 +72,8 @@ flowchart LR
     EQ["data/raw_equipo/<br>ENV, SOC y ECO-CG"] --> ETL
     ETL --> PROC["data/processed/<br>matrices e indicadores"]
     PROC --> DOC["docs/<br>resumen metodológico"]
-    PROC --> APPS["graficos/<br>apps HTML"]
-    PROC --> OUT["salidas/tesis/<br>22 figuras + 75 tablas + manifiesto"]
+    PROC --> APP["graficos/<br>visualizador regional"]
+    PROC --> OUT["salidas/tesis/<br>22 figuras + 75 tablas"]
 ```
 
 Las decisiones compartidas se concentran en:
@@ -110,11 +111,12 @@ siepac-analysis/
 │   ├── raw_equipo/                # insumos elaborados por el equipo
 │   └── processed/                 # matrices generadas y auditables
 ├── docs/                          # documentación y capturas del README
-├── graficos/                      # visualizador regional + apps transitorias
+├── graficos/                      # visualizador regional único
 ├── salidas/tesis/
 │   ├── figuras/                   # 22 PNG regionales oficiales
-│   ├── tablas/                    # tablas APA 7 e índice
-│   └── manifiesto.csv             # inventario de entrega
+│   └── tablas/                    # tablas APA 7 e índice
+├── .github/workflows/             # publicación controlada en GitHub Pages
+├── index.html                     # entrada del sitio público
 ├── src/                           # ETL y generadores
 ├── tests/                         # pruebas de regresión
 ├── requirements.txt

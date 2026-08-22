@@ -3,7 +3,7 @@ generar_visualizador.py — Visualizador regional único del SIEPAC
 ====================================================
 Etapa del pipeline : visualización y comunicación de resultados
 Entradas           : matrices de indicadores en data/processed/,
-                     data/raw_equipo/eco_cg_siepac.csv y manifiestos de
+                     data/raw_equipo/eco_cg_siepac.csv, figuras y tablas de
                      salidas/tesis/
 Salidas            : graficos/visualizador_siepac.html
 Alimenta           : consulta pública y defensa de la monografía
@@ -43,7 +43,7 @@ logging.basicConfig(
 log = logging.getLogger(Path(__file__).stem)
 
 RUTA_SALIDA = DIR_GRAFICOS / "visualizador_siepac.html"
-RUTA_FIGURAS = DIR_SALIDAS_TESIS / "manifiesto_figuras.csv"
+DIR_FIGURAS = DIR_SALIDAS_TESIS / "figuras"
 RUTA_TABLAS = DIR_SALIDAS_TESIS / "tablas" / "indice_tablas.csv"
 
 
@@ -99,26 +99,55 @@ def _fichas_visualizador() -> dict:
     return fichas
 
 
-def _enlaces_salidas() -> dict:
-    """Relaciona cada serie con su figura y tabla oficial versionada."""
-    if not RUTA_FIGURAS.exists() or not RUTA_TABLAS.exists():
+def _enlaces_salidas(fichas: dict) -> dict:
+    """Relaciona series con archivos oficiales sin generar un manifiesto."""
+    if not RUTA_TABLAS.exists():
         raise FileNotFoundError(
-            "VALIDACIÓN FALLIDA: genere antes figuras, tablas y manifiestos")
+            "VALIDACIÓN FALLIDA: genere antes las figuras y tablas APA")
 
-    figuras = pd.read_csv(RUTA_FIGURAS)
-    enlaces_figuras = {}
-    for fila in figuras.itertuples(index=False):
-        codigo = CODIGO_ECO_CG if fila.codigo == "ECO-CG" else fila.codigo
-        enlaces_figuras[codigo] = (
-            f"../salidas/tesis/figuras/{fila.archivo}")
+    archivos_figura = {}
+    for codigo, ficha in fichas.items():
+        if codigo == "ENV6":
+            archivos_figura.update({
+                "ENV6": "ENV6_bloque.png",
+                "ENV6_BIOMASA": "ENV6_bloque.png",
+                "ENV6_SALDO": "ENV6_bloque.png",
+            })
+        elif ficha.get("series"):
+            archivos_figura.update({
+                serie[0]: f"{serie[0]}_bloque.png"
+                for serie in ficha["series"]
+            })
+        else:
+            archivos_figura[codigo] = f"{codigo}_bloque.png"
+
+    faltantes = sorted({nombre for nombre in archivos_figura.values()
+                        if not (DIR_FIGURAS / nombre).exists()})
+    if faltantes:
+        raise FileNotFoundError(
+            "VALIDACIÓN FALLIDA: faltan figuras oficiales: " +
+            ", ".join(faltantes))
+    enlaces_figuras = {
+        codigo: f"../salidas/tesis/figuras/{archivo}"
+        for codigo, archivo in archivos_figura.items()
+    }
 
     tablas = pd.read_csv(RUTA_TABLAS)
+    claves_tabla = {
+        serie[0] for codigo, ficha in fichas.items()
+        if codigo != CODIGO_ECO_CG
+        for serie in (ficha.get("series") or [[codigo]])
+    }
+    claves_tabla.add("ENV6")
     enlaces_tablas = {
         str(fila.codigo): f"../salidas/tesis/tablas/{fila.archivo}"
         for fila in tablas.itertuples(index=False)
+        if str(fila.codigo) in claves_tabla
     }
-    if "eco_cg_usd_mwh" in enlaces_tablas:
-        enlaces_tablas[CODIGO_ECO_CG] = enlaces_tablas["eco_cg_usd_mwh"]
+    fila_cg = tablas[tablas["codigo"] == "eco_cg_usd_mwh"]
+    if not fila_cg.empty:
+        enlaces_tablas[CODIGO_ECO_CG] = (
+            f"../salidas/tesis/tablas/{fila_cg.iloc[0]['archivo']}")
     return {"figuras": enlaces_figuras, "tablas": enlaces_tablas}
 
 
@@ -133,6 +162,12 @@ def _validar(paquete: dict, fichas: dict, enlaces: dict) -> None:
         series = ficha.get("series") or [[codigo]]
         claves.extend(serie[0] for serie in series)
     errores = []
+    sin_hallazgo = sorted(
+        codigo for codigo, ficha in fichas.items()
+        if not str(ficha.get("hallazgo_regional", "")).strip()
+    )
+    if sin_hallazgo:
+        errores.append(f"hallazgos regionales ausentes: {sin_hallazgo}")
     for clave in claves:
         bloque = paquete.get(clave)
         if bloque is None:
@@ -268,6 +303,9 @@ PLANTILLA = r'''<!DOCTYPE html>
   #chart { width:100%; height:520px; }
   .chart-summary { margin:10px 4px 0; color:var(--gris); line-height:1.55;
     font-size:13px; }
+  .finding { margin:16px 4px 2px; border-left:4px solid var(--azul-2);
+    background:#eef4f8; border-radius:0 11px 11px 0; padding:13px 16px;
+    color:#20384c; font-size:15px; line-height:1.55; }
   .note { margin-top:16px; border-left:3px solid var(--naranja);
     background:#fff8f2; padding:12px 15px; color:#673417; line-height:1.5; }
   .method-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
@@ -327,7 +365,7 @@ PLANTILLA = r'''<!DOCTYPE html>
 <main id="app" tabindex="-1"></main>
 <footer>
   <div class="footer-in">
-    <div><strong>Tesis SIEPAC · UNI Nicaragua</strong><br>Fase cuantitativa reproducible</div>
+    <div><strong>Tesis SIEPAC · UNI Nicaragua</strong><br>Fase cuantitativa trazable y reproducible con acceso a las fuentes</div>
     <div>Luis Giovanni Serrano Bello · Mariángeles Aracelly Olivares López<br>Jonathan Noel García Mendoza</div>
   </div>
 </footer>
@@ -410,13 +448,13 @@ function kpis(cod,f,inf,b,p){return `<div class="kpis"><div class="kpi"><span>${
   <div class="kpi"><span>Cambio 2020–2024</span><b>${cambio(p.valores,f.delta)}</b></div>
   <div class="kpi"><span>Mínimo–máximo entre países · 2024</span><b>${rango2024(b,inf.formato,inf.sufijo)}</b></div></div>`;}
 function baseLayout(inf){return {paper_bgcolor:"#fff",plot_bgcolor:"#fff",font:{family:"Segoe UI, sans-serif",color:"#17212b",size:13},
-  margin:{l:72,r:28,t:28,b:80},hovermode:"x unified",legend:{orientation:"h",y:-.18,x:.5,xanchor:"center"},
-  xaxis:{tickvals:ANIOS,gridcolor:"#f1f3f4",fixedrange:true},yaxis:{gridcolor:"#e7ebee",ticksuffix:inf.sufijo,zerolinecolor:"#9aa4ad",fixedrange:true}};}
+  margin:{l:96,r:28,t:28,b:80},hovermode:"x unified",legend:{orientation:"h",y:-.18,x:.5,xanchor:"center"},
+  xaxis:{tickvals:ANIOS,gridcolor:"#f1f3f4",fixedrange:true},yaxis:{gridcolor:"#e7ebee",ticksuffix:inf.sufijo,zerolinecolor:"#9aa4ad",fixedrange:true,automargin:true}};}
 const plotCfg={responsive:true,displaylogo:false,modeBarButtonsToRemove:["select2d","lasso2d","autoScale2d"]};
 function extremos(b){return ANIOS.map((_,i)=>{const v=PAISES.map(p=>b.paises[p][i]).filter(x=>x!==null);return [Math.min(...v),Math.max(...v)];});}
 function resumenAccesible(p,inf,b){const i=ANIOS.length-1,e=extremos(b)[i];return `${p.etiqueta}: ${num(p.valores[i],inf.formato)}${inf.sufijo} en ${ANIOS[i]}. El rango nacional va de ${num(e[0],inf.formato)} a ${num(e[1],inf.formato)}${inf.sufijo}.`;}
 
-function vistaRegion(cod,f,inf,b,p){document.getElementById("vista").innerHTML=kpis(cod,f,inf,b,p)+`<div class="panel"><div id="chart" role="img" aria-label="Evolución regional de ${esc(f.nombre)}"></div><p class="chart-summary">${esc(resumenAccesible(p,inf,b))}</p></div>${f.nota?`<div class="note"><strong>Nota metodológica.</strong> ${esc(f.nota)}</div>`:""}`;
+function vistaRegion(cod,f,inf,b,p){document.getElementById("vista").innerHTML=kpis(cod,f,inf,b,p)+`<div class="panel"><div id="chart" role="img" aria-label="Evolución regional de ${esc(f.nombre)}"></div><p class="finding"><strong>Conclusión regional.</strong> ${esc(f.hallazgo_regional)}</p><p class="chart-summary"><strong>Resumen del gráfico.</strong> ${esc(resumenAccesible(p,inf,b))}</p></div>${f.nota?`<div class="note"><strong>Nota metodológica.</strong> ${esc(f.nota)}</div>`:""}`;
   const ex=extremos(b),tr=[{x:ANIOS,y:ex.map(x=>x[1]),mode:"lines",line:{width:0},hoverinfo:"skip",showlegend:false},
     {x:ANIOS,y:ex.map(x=>x[0]),mode:"lines",line:{width:0},fill:"tonexty",fillcolor:"rgba(95,107,118,.16)",name:"Mínimo–máximo entre países"},
     {x:ANIOS,y:b.promedio,mode:"lines+markers",name:"Promedio de países (media simple)",line:{color:"#7b8791",width:2,dash:"dash"},marker:{size:7}}];
@@ -452,7 +490,7 @@ function mostrarMetodo(){activarNav("metodo");app.innerHTML=`<section class="met
   <article class="method-card"><h3>Promedio de países</h3><p>Media aritmética de los seis valores nacionales. Cada país recibe el mismo peso.</p></article>
   <article class="method-card"><h3>Excepciones transparentes</h3><p>ECO14 y ECO-CG usan la mediana porque no existe un ponderador regional compatible. ENV6 suma dos magnitudes observadas y no calcula un cociente.</p></article>
   <article class="method-card"><h3>Reproducibilidad</h3><p>Las cifras, fórmulas, tablas y figuras proceden del mismo pipeline. Una corrección se realiza en el dato o generador de origen.</p></article></div>
-  <div class="links"><a class="link-btn" href="../docs/resumen_indicadores_SIEPAC.md">Resumen metodológico</a><a class="link-btn" href="../salidas/tesis/manifiesto.csv">Manifiesto de salidas</a></div></section>`;app.focus();window.scrollTo(0,0);}
+  <div class="links"><a class="link-btn" href="../docs/resumen_indicadores_SIEPAC.md">Resumen metodológico</a><a class="link-btn" href="../salidas/tesis/tablas/tablas_apa_SIEPAC.html">Tablas APA 7</a></div></section>`;app.focus();window.scrollTo(0,0);}
 mostrarInicio("all");
 </script>
 </body>
@@ -469,7 +507,7 @@ def main() -> None:
     _normalizar_env6(paquete)
     paquete[CODIGO_ECO_CG] = _serie_eco_cg()
     fichas = _fichas_visualizador()
-    enlaces = _enlaces_salidas()
+    enlaces = _enlaces_salidas(fichas)
     _validar(paquete, fichas, enlaces)
 
     html = (PLANTILLA

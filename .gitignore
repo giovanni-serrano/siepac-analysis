@@ -36,6 +36,9 @@ Thumbs.db
 desktop.ini
 .DS_Store
 
+# Registro transitorio que Chromium/Kaleido puede crear al exportar figuras.
+debug.log
+
 # Intermedios regenerables (los CSV de processed se reconstruyen con los ETL)
 data/processed/*.csv
 

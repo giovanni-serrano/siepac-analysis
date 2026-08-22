@@ -77,6 +77,11 @@ FICHA_ECO_CG = dict(
     descripcion=("Aproximación al costo medio unitario mediante el mejor "
                  "proxy oficial disponible para cada país y año; serie "
                  "económica complementaria al marco IEDS."),
+    hallazgo_regional=(
+        "Las medidas centrales de los proxies nacionales aumentaron entre "
+        "2020 y 2024, pero su heterogeneidad metodológica impide tratarlas "
+        "como un costo regional homogéneo."
+    ),
     nota=("Serie económica complementaria; no constituye un noveno indicador "
           "IEDS. Los proxies nacionales no son conceptualmente homólogos: "
           "la mediana, la media y la dispersión son descriptivas y no "

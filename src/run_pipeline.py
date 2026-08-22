@@ -6,10 +6,9 @@ Entradas           : — (cada script lee sus propias entradas)
 Salidas            : — (las de cada script: CSVs, Excel, HTML y PNG)
 
 Ejecuta los ETL, la consolidación, los generadores de indicadores, las
-tablas APA, las figuras oficiales, su manifiesto y los visualizadores en el
+tablas APA, las figuras oficiales y el visualizador regional único en el
 orden correcto de dependencias. Se detiene en el primer script con error
-(incluida una VALIDACIÓN FALLIDA). El visualizador regional único se genera
-junto a las dos aplicaciones anteriores mientras se verifica su paridad.
+(incluida una VALIDACIÓN FALLIDA).
 
 Uso:  python src/run_pipeline.py   (ejecutar desde la raíz del proyecto)
 
@@ -42,10 +41,7 @@ ORDEN = [
     "generar_resumen_indicadores.py",
     "generar_tablas_apa.py",
     "generar_figuras_tesis.py",
-    "generar_manifiesto_tesis.py",
     "generar_visualizador.py",
-    "generar_explorador.py",
-    "generar_panel.py",
 ]
 
 

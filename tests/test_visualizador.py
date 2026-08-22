@@ -22,13 +22,19 @@ class TestVisualizador(unittest.TestCase):
         self.assertEqual(len(fichas), 16)
         self.assertTrue(fichas[CODIGO_ECO_CG]["complementaria"])
         self.assertEqual(len(fichas["ENV6"]["series"]), 2)
+        self.assertTrue(all(f["hallazgo_regional"].strip()
+                            for f in fichas.values()))
 
     def test_html_autocontenido_generado(self):
         contenido = RUTA_SALIDA.read_text(encoding="utf-8")
         self.assertIn("Visualizador regional SIEPAC", contenido)
         self.assertIn("El SIEPAC como sistema", contenido)
         self.assertIn("Mínimo–máximo entre países", contenido)
+        self.assertIn("Conclusión regional.", contenido)
         self.assertIn("ECO_CG", contenido)
+        self.assertNotIn("Manifiesto de salidas", contenido)
+        self.assertNotIn('"base_env"', contenido)
+        self.assertNotIn('"base_soc"', contenido)
         self.assertNotIn("__DATOS__", contenido)
         self.assertNotIn("__PLOTLYJS__", contenido)
 

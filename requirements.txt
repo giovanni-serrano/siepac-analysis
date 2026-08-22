@@ -1,18 +1,19 @@
 # Dependencias del pipeline SIEPAC (versiones con las que se verificó
-# la reproducción completa; versiones posteriores deberían funcionar).
+# la reproducción completa). Se fijan para que instalaciones nuevas usen el
+# mismo entorno verificado.
 # Requiere Python 3.10 o superior.
 #
 # Verificado el 2026-08-22 con pandas 3.0.5, openpyxl 3.1.5, plotly 6.9.0,
-# kaleido 1.3.0 y playwright 1.61.0: pipeline completo 20/20 scripts OK y
+# kaleido 1.3.0 y playwright 1.61.0: pipeline completo 18/18 scripts OK y
 # salidas numéricamente idénticas a las de pandas 2.x.
-pandas>=2.0
-openpyxl>=3.1
-plotly>=5.18
+pandas==3.0.5
+openpyxl==3.1.5
+plotly==6.9.0
 
-# Capturas reproducibles de los visualizadores para el README.
+# Capturas reproducibles del visualizador para el README.
 # Tras instalarlo, descargar el navegador una sola vez con:
 #     python -m playwright install chromium
-playwright>=1.40
+playwright==1.61.0
 
 # Motor de exportación estática de Plotly usado por generar_figuras_tesis.py.
-kaleido>=0.2
+kaleido==1.3.0
