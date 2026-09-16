@@ -41,6 +41,8 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from config_siepac import PAISES_SIEPAC as PAISES, ANIOS_ANALISIS as ANIOS, DIR_PROCESSED
+from etl_comun import (fallar_validacion, validar_columnas, validar_panel,
+                       validar_numericos)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -223,11 +225,36 @@ def calcular_valores(wide: pd.DataFrame) -> pd.DataFrame:
     con los mismos valores que producirían las fórmulas del Excel. Es la
     salida legible por máquina que consumen los visualizadores.
     """
+    validar_panel(wide, "indicadores ECO")
+    validar_columnas(wide, ["tarifa_fuente_dato"], "ECO14")
+    banderas_invalidas = ~wide["tarifa_fuente_dato"].isin(["real", "imputado_CAGR"])
+    if banderas_invalidas.any():
+        fallar_validacion("ECO14", "tarifa_fuente_dato inválida: " +
+                          str(wide.loc[banderas_invalidas, ["pais", "anio", "tarifa_fuente_dato"]].to_dict("records")))
+    denominadores = {
+        "poblacion_habitantes": "ECO1", "pib_usd_const2015": "ECO2",
+        "produccion_bruta_kwh": "ECO3", "vai_usd_const2015": "ECO6",
+        "gen_total_kwh": "ECO11/ECO13",
+    }
+    columnas = [*denominadores, "consumo_final_total_kwh", "consumo_industrial_kwh",
+                "gen_fosil_kwh", "gen_hidro_kwh", "gen_geotermia_kwh",
+                "gen_eolica_kwh", "gen_solar_kwh", "gen_biomasa_kwh",
+                "importaciones_kwh", "exportaciones_kwh", "tarifa_usd_mwh"]
+    validar_numericos(wide, columnas, "insumos ECO")
+    for columna, codigo in denominadores.items():
+        validar_numericos(wide, [columna], codigo, positivos=True)
+    # El saldo puede ser negativo; el denominador de energía disponible
+    # debe ser positivo. No se altera el signo del numerador de ECO15.
+    disponibilidad = wide[["pais", "anio"]].assign(
+        disponibilidad_kwh=wide["produccion_bruta_kwh"]
+        + wide["importaciones_kwh"] - wide["exportaciones_kwh"])
+    validar_numericos(disponibilidad, ["disponibilidad_kwh"], "ECO15", positivos=True)
     valores = wide[["pais", "anio"]].copy()
     for codigo, info in INDICADORES.items():
         valores[codigo] = info["calculo"](wide)
     # Identificador del método aplicado a la tarifa.
     valores["tarifa_fuente_dato"] = wide["tarifa_fuente_dato"]
+    validar_numericos(valores, list(INDICADORES), "resultados ECO")
     return valores
 
 
@@ -400,6 +427,10 @@ def main() -> None:
     wide = wide.merge(fd, on=["pais", "anio"], how="left")
     wide = wide.sort_values(["pais", "anio"]).reset_index(drop=True)
 
+    # Validar y calcular antes de guardar cualquier representación, incluido
+    # el libro con fórmulas, para no publicar una salida parcial inválida.
+    valores = calcular_valores(wide)
+
     imputados = {(p, a) for p, a in
                  fd.loc[fd["tarifa_fuente_dato"] == "imputado_CAGR",
                         ["pais", "anio"]].itertuples(index=False)}
@@ -417,7 +448,6 @@ def main() -> None:
 
     # CSV de valores planos (mismos indicadores, calculados en pandas):
     # insumo de los visualizadores, que no pueden leer las fórmulas del xlsx.
-    valores = calcular_valores(wide)
     valores.to_csv(RUTA_VALORES, index=False, encoding="utf-8-sig")
     log.info("Guardado: %s (%d filas)", RUTA_VALORES, len(valores))
 

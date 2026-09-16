@@ -1,8 +1,15 @@
 # Pruebas de conservación científica
 
-Esta fase añade controles sin cambiar `src`, los insumos ni los productos.
+La fase 1 estableció la referencia sin cambiar `src`, los insumos ni los productos.
 La referencia está en `fixtures/baseline/resultados.json`; la explicación y
 las cifras regionales están en `../docs/BASELINE_RESULTADOS.md`.
+
+La fase 2 endurece las validaciones de entradas inválidas: 13 de los 14
+xfail originales son ahora pruebas normales. Permanece únicamente D06
+(escala del respaldo ENV1), fuera de alcance metodológico. El mapa completo,
+la comparación numérica y los resultados están en `../docs/FASE2_VALIDACIONES.md`.
+`test_validaciones_integridad.py` añade casos de borde y comprueba que una
+entrada inválida no sobrescribe las salidas ECO.
 
 ## Ejecutar
 

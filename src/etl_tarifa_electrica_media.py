@@ -27,7 +27,8 @@ from pathlib import Path
 import pandas as pd
 
 from config_siepac import PAISES_SIEPAC, ANIOS_ANALISIS, DIR_RAW, DIR_PROCESSED
-from etl_comun import encontrar_archivo_entrada
+from etl_comun import (encontrar_archivo_entrada, fallar_validacion,
+                       validar_columnas, validar_panel, validar_numericos)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -101,6 +102,10 @@ def proyectar_faltantes(df_tidy: pd.DataFrame) -> pd.DataFrame:
        valor = valor_ultimo * (1 + CAGR) ** (anio - anio_ultimo)
     5. Cada fila proyectada se marca con fuente_dato = "imputado_CAGR".
     """
+    # La historia puede ser irregular: no exigir aún los años que el CAGR
+    # debe completar, pero sí rechazar claves ambiguas antes de indexarla.
+    validar_panel(df_tidy, "tarifa histórica", anios=None)
+    validar_numericos(df_tidy, ["valor_usd_mwh"], "tarifa histórica")
     filas_finales = []
 
     for pais, grupo in df_tidy.groupby("pais"):
@@ -119,6 +124,9 @@ def proyectar_faltantes(df_tidy: pd.DataFrame) -> pd.DataFrame:
                 cagr = None
             else:
                 v_inicial, v_final = serie.loc[primer_anio], serie.loc[ultimo_anio]
+                validar_numericos(
+                    grupo[grupo["anio"] == primer_anio], ["valor_usd_mwh"],
+                    "tarifa histórica / base CAGR", positivos=True)
                 cagr = calcular_cagr(v_inicial, v_final, n_periodos)
                 log.info("%s: CAGR = %.4f%% (serie historica %d-%d, %d periodos)",
                          pais, cagr * 100, primer_anio, ultimo_anio, n_periodos)
@@ -160,6 +168,13 @@ def transformar(df_tidy: pd.DataFrame) -> pd.DataFrame:
 
 def validar(df_tidy: pd.DataFrame) -> None:
     """Valida cobertura, valores y países antes de escribir el CSV."""
+    validar_panel(df_tidy, "tarifa final / ECO14")
+    validar_numericos(df_tidy, ["valor_usd_mwh"], "tarifa final / ECO14")
+    validar_columnas(df_tidy, ["fuente_dato"], "tarifa final / ECO14")
+    invalidas = ~df_tidy["fuente_dato"].isin(["real", "imputado_CAGR"])
+    if invalidas.any():
+        fallar_validacion("tarifa final / ECO14", "fuente_dato inválida: " +
+                          str(df_tidy.loc[invalidas, ["pais", "anio", "fuente_dato"]].to_dict("records")))
     errores_graves = []
 
     n_esperado = len(PAISES_VALIDOS) * len(ANIOS_ANALISIS)

@@ -99,8 +99,6 @@ def test_etl_rechaza_pais_completamente_ausente(panel, modulo):
 
 @pytest.mark.parametrize("modulo", [consumo, industria, poblacion])
 @pytest.mark.parametrize("defecto", ["duplicado", "anio_ausente"])
-@pytest.mark.xfail(strict=True, raises=pytest.fail.Exception,
-                   reason="D01: estos ETL no rechazan duplicados ni un año entero ausente")
 def test_etl_debe_rechazar_cobertura_invalida(panel, modulo, defecto):
     df = (pd.concat([panel, panel.iloc[[0]]], ignore_index=True)
           if defecto == "duplicado" else panel[panel.anio != ANIOS[-1]])
@@ -109,8 +107,6 @@ def test_etl_debe_rechazar_cobertura_invalida(panel, modulo, defecto):
 
 
 @pytest.mark.parametrize("defecto", ["duplicado", "pais_ausente", "anio_ausente", "variable_ausente"])
-@pytest.mark.xfail(strict=True, raises=pytest.fail.Exception,
-                   reason="D02: consolidación avisa y continúa; pivot first oculta duplicados")
 def test_consolidacion_debe_rechazar_panel_incompleto(panel, defecto):
     datos = {}
     for nombre, columnas in consolidacion.MAPA_VARIABLES.items():
@@ -207,8 +203,6 @@ def test_cagr_usa_historia_y_no_modifica_observados():
     assert (observados.valor_usd_mwh_x == observados.valor_usd_mwh_y).all()
 
 
-@pytest.mark.xfail(strict=True, raises=pytest.fail.Exception,
-                   reason="D03: tarifa acepta un año ausente si no hay valores nulos")
 def test_tarifa_debe_rechazar_anio_ausente(base_eco):
     df = base_eco.rename(columns={"tarifa_usd_mwh": "valor_usd_mwh",
                                  "tarifa_fuente_dato": "fuente_dato"})
@@ -286,8 +280,6 @@ def test_dimensiones_usa_poblaciones_y_pib_propios(tmp_path, monkeypatch):
             libro.close()
 
 
-@pytest.mark.xfail(strict=True, raises=pytest.fail.Exception,
-                   reason="D04: indicadores ECO producen infinito ante denominador cero")
 def test_eco_debe_rechazar_denominador_cero(base_eco):
     base_eco.loc[0, "poblacion_habitantes"] = 0
     with pytest.raises((SystemExit, ValueError), match="VALIDACIÓN FALLIDA"):
@@ -321,15 +313,13 @@ def test_env_preserva_pib_del_libro_sin_sustituirlo(libro_env_sintetico):
 
 
 @pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="D06: respaldo ENV1 sin caché interpreta PIB en millones como USD")
+                   reason="FUERA DE ALCANCE (D06): respaldo ENV1 sin caché interpreta PIB en millones como USD")
 def test_env1_sin_cache_debe_conservar_escala(libro_env_sintetico):
     salida = dimensiones.leer_env(libro_env_sintetico)
     # 4 miles de t = 4 millones de kg; 2 millones de USD => 2 kg/USD.
     np.testing.assert_allclose(salida["ENV1_PIB"], 2.0, rtol=1e-12)
 
 
-@pytest.mark.xfail(strict=True, raises=pytest.fail.Exception,
-                   reason="D05: lectura ENV sobrescribe claves duplicadas con la última fila")
 def test_lectura_env_debe_rechazar_duplicados(libro_env_sintetico):
     libro = openpyxl.load_workbook(libro_env_sintetico)
     libro["ENV1"].append([PAISES[0], ANIOS[0], 999, 1000, 2, 0.999, None])

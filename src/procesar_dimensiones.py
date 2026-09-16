@@ -46,6 +46,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from config_siepac import (PAISES_SIEPAC as PAISES, ANIOS_ANALISIS as ANIOS,
                             RAIZ_PROYECTO, DIR_PROCESSED)
 from viz_comun import media_ponderada
+from etl_comun import fallar_validacion, validar_panel
 
 logging.basicConfig(
     level=logging.INFO,
@@ -80,6 +81,19 @@ BORDE = Border(*[Side(style="thin", color="BFBFBF")] * 4)
 def leer_env(ruta: Path) -> dict[str, pd.DataFrame]:
     """Devuelve {clave_serie: DataFrame pais x anio} + ENV6 especial."""
     wb = openpyxl.load_workbook(ruta, data_only=True)   # valores, no formulas
+    # Revisar las claves originales antes de int(), pivot o diccionarios:
+    # ninguna fila repetida puede sustituir a otra ni ocultar un hueco.
+    try:
+        for nombre in ("ENV1", "ENV2", "ENV3"):
+            if nombre not in wb.sheetnames:
+                fallar_validacion(f"ENV / {ruta.name}", f"hoja faltante: {nombre}")
+            claves = pd.DataFrame(
+                [(f[0], f[1]) for f in wb[nombre].iter_rows(min_row=2, values_only=True)],
+                columns=["pais", "anio"])
+            validar_panel(claves, f"{ruta.name} / {nombre}")
+    except BaseException:
+        wb.close()
+        raise
     series = {}
 
     def tabla(hoja, col_valor, recalcular=None):
@@ -140,6 +154,7 @@ def leer_env(ruta: Path) -> dict[str, pd.DataFrame]:
         [{"pais": p, "anio": a, **reg[(p, a)]}
          for p in PAISES for a in ANIOS])
     series["BASE"] = base
+    wb.close()
     return series
 
 

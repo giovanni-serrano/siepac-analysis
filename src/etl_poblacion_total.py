@@ -26,7 +26,8 @@ from pathlib import Path
 import pandas as pd
 
 from config_siepac import PAISES_SIEPAC, DIR_RAW, DIR_PROCESSED
-from etl_comun import encontrar_archivo_entrada
+from etl_comun import (encontrar_archivo_entrada, validar_panel,
+                       validar_numericos)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -86,30 +87,9 @@ def transformar(df_tidy: pd.DataFrame) -> pd.DataFrame:
 
 
 def validar(df_tidy: pd.DataFrame) -> None:
-    """Chequeos antes de guardar. Los problemas graves (nulos en el valor,
-    paises inesperados) abortan sin escribir el CSV; el conteo de filas
-    distinto al esperado solo avisa."""
-    errores_graves = []
-
-    n_esperado = len(PAISES_VALIDOS) * df_tidy["anio"].nunique()
-    if len(df_tidy) != n_esperado:
-        log.warning("Se esperaban %d filas, se obtuvieron %d. "
-                    "Revisar filas faltantes.", n_esperado, len(df_tidy))
-
-    faltantes = df_tidy["valor_habitantes"].isna().sum()
-    if faltantes:
-        errores_graves.append(
-            f"Hay {faltantes} valores nulos en valor_habitantes.")
-
-    paises_encontrados = set(df_tidy["pais"].unique())
-    if paises_encontrados != PAISES_VALIDOS:
-        errores_graves.append(
-            f"Paises distintos a los esperados: {paises_encontrados}")
-
-    if errores_graves:
-        for e in errores_graves:
-            log.error(e)
-        sys.exit("VALIDACIÓN FALLIDA — el CSV no fue escrito.")
+    """Exige el panel SIEPAC completo, claves únicas y valores finitos."""
+    validar_panel(df_tidy, "etl_poblacion_total")
+    validar_numericos(df_tidy, ["valor_habitantes"], "etl_poblacion_total")
 
 
 def main():
