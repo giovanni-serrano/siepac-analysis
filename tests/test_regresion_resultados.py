@@ -118,6 +118,25 @@ def test_lectura_env_y_pib_ambiental_independiente(referencia, raiz_resultados):
     assert not np.allclose(cruce.pib_usd_const2015_env, cruce.pib_usd_const2015_eco)
 
 
+def test_env1_respaldo_reproduce_30_precalculados_reales(raiz_resultados, monkeypatch):
+    ruta = raiz_resultados / "data" / "raw_equipo" / "ENVs.xlsx"
+    normal = leer_env(ruta)
+    libro = openpyxl.load_workbook(ruta, data_only=True)
+    try:
+        for fila in libro["ENV1"].iter_rows(min_row=2):
+            assert fila[6].value is not None
+            fila[6].value = None
+        # Fuerza el respaldo en memoria; el insumo original nunca se guarda.
+        monkeypatch.setattr(dimensiones.openpyxl, "load_workbook", lambda *a, **k: libro)
+        respaldo = leer_env(ruta)
+    finally:
+        libro.close()
+    np.testing.assert_allclose(respaldo["ENV1_PIB"], normal["ENV1_PIB"],
+                               rtol=1e-12, atol=0)
+    for clave in normal.keys() - {"ENV1_PIB"}:
+        pd.testing.assert_frame_equal(respaldo[clave], normal[clave], check_exact=True)
+
+
 def test_lectura_soc_preserva_proxy_mix_uniforme(referencia, raiz_resultados, tmp_path, monkeypatch):
     # Usa el SOC2 congelado para que funcione también sin CSV locales ignorados.
     ruta = tmp_path / "soc2.csv"

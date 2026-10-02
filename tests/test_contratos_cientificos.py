@@ -312,12 +312,24 @@ def test_env_preserva_pib_del_libro_sin_sustituirlo(libro_env_sintetico):
     assert (salida["BASE"].pib_usd_const2015 == 2).all()
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="FUERA DE ALCANCE (D06): respaldo ENV1 sin caché interpreta PIB en millones como USD")
 def test_env1_sin_cache_debe_conservar_escala(libro_env_sintetico):
     salida = dimensiones.leer_env(libro_env_sintetico)
     # 4 miles de t = 4 millones de kg; 2 millones de USD => 2 kg/USD.
     np.testing.assert_allclose(salida["ENV1_PIB"], 2.0, rtol=1e-12)
+
+
+@pytest.mark.parametrize("precalculado", [0.0, 7.5])
+def test_env1_valor_presente_no_activa_respaldo(libro_env_sintetico, precalculado):
+    libro = openpyxl.load_workbook(libro_env_sintetico)
+    for fila in libro["ENV1"].iter_rows(min_row=2):
+        # Denominador cero como detector: recalcular produciría una excepción.
+        # No representa un insumo admisible para calcular una intensidad nueva.
+        fila[4].value = 0
+        fila[6].value = precalculado
+    libro.save(libro_env_sintetico)
+    libro.close()
+    salida = dimensiones.leer_env(libro_env_sintetico)
+    np.testing.assert_array_equal(salida["ENV1_PIB"], precalculado)
 
 
 def test_lectura_env_debe_rechazar_duplicados(libro_env_sintetico):

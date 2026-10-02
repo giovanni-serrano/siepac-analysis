@@ -5,11 +5,18 @@ La referencia está en `fixtures/baseline/resultados.json`; la explicación y
 las cifras regionales están en `../docs/BASELINE_RESULTADOS.md`.
 
 La fase 2 endurece las validaciones de entradas inválidas: 13 de los 14
-xfail originales son ahora pruebas normales. Permanece únicamente D06
-(escala del respaldo ENV1), fuera de alcance metodológico. El mapa completo,
+xfail originales pasaron a pruebas normales. En esa fase quedó pendiente D06
+(escala del respaldo ENV1), fuera de su alcance metodológico. El mapa completo,
 la comparación numérica y los resultados están en `../docs/FASE2_VALIDACIONES.md`.
 `test_validaciones_integridad.py` añade casos de borde y comprueba que una
 entrada inválida no sobrescribe las salidas ECO.
+
+La fase 3 audita D06 y corrige únicamente el respaldo de ENV1: el PIB del
+libro ambiental está en millones de USD constantes. Los 30 valores actuales
+están precalculados y no activan esa ruta. Su prueba sintética pasa ahora sin
+`xfail`; se añaden la reproducción de las 30 observaciones sin precalculados
+y la conservación de valores presentes, incluido cero. Véase
+`../docs/AUDITORIA_ENV1_FALLBACK.md` para la demostración y la comparación exacta.
 
 ## Ejecutar
 
@@ -67,12 +74,9 @@ nuevas; las cuatro pruebas originales conservan su comportamiento y sus rutas.
 
 ## Fallos esperados
 
-Los `xfail` son estrictos y solo aceptan el fallo de la aserción específica
-(rechazo de insumos o equivalencia dimensional en el respaldo de ENV1):
-errores de preparación, `KeyError` u otras excepciones inesperadas no se ocultan.
-Una corrección futura que haga pasar esos casos produce `XPASS(strict)` y falla
-la suite hasta revisar y retirar la marca. No activar `--runxfail` en la
-ejecución normal; sirve para demostrar expresamente los defectos pendientes.
+No quedan marcas `xfail` activas tras la fase 3. Los casos que documentaban
+defectos siguen presentes como pruebas normales; no se han eliminado ni
+relajado sus aserciones para acomodar la implementación.
 
 ## Custodia de la referencia
 

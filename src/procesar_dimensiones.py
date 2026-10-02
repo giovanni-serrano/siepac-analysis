@@ -28,8 +28,8 @@ Reglas de transformación:
     razón de sumas de gasto e ingreso aproximados.
   - SOC3 combina electrificación y participación renovable. El agregado
     rural se pondera por población rural y el urbano por población urbana.
-  - ENV1 intensidad viene como fórmula de Excel -> se lee el valor en
-    caché y, si faltara, se recalcula con (A×10⁶)/PIB.
+  - ENV1 intensidad: se lee el valor almacenado (o caché de fórmula).
+    Si falta, se divide GEI en miles de t entre PIB en millones de USD.
 
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
@@ -111,10 +111,12 @@ def leer_env(ruta: Path) -> dict[str, pd.DataFrame]:
             index=PAISES, columns=ANIOS)
         return df
 
-    # ENV1: col F (idx 5) per capita; col G (idx 6) intensidad (formula)
+    # ENV1: col F (idx 5) per cápita; col G (idx 6) intensidad almacenada.
     series["ENV1_PC"] = tabla("ENV1", 5)
+    # Miles de t -> kg y millones de USD -> USD aportan ambos 10⁶:
+    # (f[2] × 10⁶) / (f[4] × 10⁶) = f[2] / f[4], en kg CO2eq/USD.
     series["ENV1_PIB"] = tabla("ENV1", 6,
-        recalcular=lambda f: (f[2] * 1_000_000) / f[4])
+        recalcular=lambda f: f[2] / f[4])
     # ENV2: 4 salidas (cols G..J -> idx 6..9)
     series["ENV2_SO2_PC"] = tabla("ENV2", 6)
     series["ENV2_PAR_PC"] = tabla("ENV2", 7)
