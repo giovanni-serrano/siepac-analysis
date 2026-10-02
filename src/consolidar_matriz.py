@@ -30,6 +30,8 @@ from pathlib import Path
 import pandas as pd
 
 from config_siepac import PAISES_SIEPAC, DIR_PROCESSED
+from etl_comun import (fallar_validacion, validar_columnas, validar_panel,
+                       validar_numericos)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -102,19 +104,31 @@ MAPA_VARIABLES = {
 def extraer_datos(dir_processed: Path) -> dict[str, pd.DataFrame]:
     """Lee los CSVs de data/processed/ definidos en MAPA_VARIABLES.
 
-    Devuelve un diccionario {nombre_archivo: DataFrame}. Si un archivo
-    del mapa no existe en disco, lo reporta y lo omite (así el script
-    sigue siendo útil aunque falte un ETL por completar).
+    Devuelve un diccionario {nombre_archivo: DataFrame}. Todos los insumos
+    del mapa son obligatorios para construir la matriz de la tesis.
     """
     datos = {}
     for nombre in MAPA_VARIABLES:
         ruta = dir_processed / nombre
         if not ruta.exists():
-            log.warning("No encontrado, se omite: %s", nombre)
-            continue
+            fallar_validacion("consolidación", f"archivo requerido ausente: {ruta}")
         datos[nombre] = pd.read_csv(ruta)
         log.info("Leído: %s (%d filas)", nombre, len(datos[nombre]))
     return datos
+
+
+def _validar_insumos(datos: dict) -> None:
+    faltantes = set(MAPA_VARIABLES) - set(datos)
+    inesperados = set(datos) - set(MAPA_VARIABLES)
+    if faltantes or inesperados:
+        fallar_validacion("consolidación", f"insumos faltantes: {sorted(faltantes)}; "
+                          f"inesperados: {sorted(inesperados)}")
+    for nombre, df in datos.items():
+        validar_columnas(df, ["pais", "anio", "fuente", *MAPA_VARIABLES[nombre]], nombre)
+        # El alias permitido debe normalizarse antes de detectar colisiones.
+        normalizado = df.assign(pais=df["pais"].replace(MAPEO_PAISES))
+        validar_panel(normalizado, nombre)
+        validar_numericos(normalizado, list(MAPA_VARIABLES[nombre]), nombre)
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +145,7 @@ def transformar(datos: dict[str, pd.DataFrame]) -> tuple[pd.DataFrame, pd.DataFr
       - Las celdas sin dato quedan como NaN (vacías). NO se rellenan
         con cero ni se interpolan: un hueco debe verse como hueco.
     """
+    _validar_insumos(datos)
     bloques = []
 
     for nombre, df in datos.items():
@@ -165,11 +180,10 @@ def transformar(datos: dict[str, pd.DataFrame]) -> tuple[pd.DataFrame, pd.DataFr
     tidy = tidy.sort_values(["variable", "pais", "anio"]).reset_index(drop=True)
 
     # 3. Matriz ancha: pivot pais-anio x variable.
-    wide = tidy.pivot_table(
+    wide = tidy.pivot(
         index=["pais", "anio"],
         columns="variable",
         values="valor",
-        aggfunc="first",  # la validación exige unicidad por país y año
     ).reset_index()
     wide.columns.name = None
     # Orden de columnas estable y legible.
@@ -185,52 +199,18 @@ def transformar(datos: dict[str, pd.DataFrame]) -> tuple[pd.DataFrame, pd.DataFr
 
 def validar(tidy: pd.DataFrame, wide: pd.DataFrame, datos: dict) -> None:
     """Reporta conteos esperados vs reales, celdas vacías y cobertura."""
-    n_variables = sum(len(v) for k, v in MAPA_VARIABLES.items() if k in datos)
-    anios = sorted(tidy["anio"].unique())
-    esperado_tidy = len(PAISES_SIEPAC) * len(anios) * n_variables
-    esperado_wide = len(PAISES_SIEPAC) * len(anios)
-
-    log.info("--- VALIDACIÓN ---")
-    log.info("Variables consolidadas: %d", n_variables)
-    log.info("Países: %s", sorted(tidy["pais"].unique()))
-    log.info("Años:   %s", anios)
-    if len(tidy) == esperado_tidy:
-        log.info("Filas tidy: %d (esperado %d)  OK", len(tidy), esperado_tidy)
-    else:
-        log.warning("Filas tidy: %d (esperado %d)  <-- REVISAR",
-                    len(tidy), esperado_tidy)
-    if len(wide) == esperado_wide:
-        log.info("Filas wide: %d (esperado %d)  OK", len(wide), esperado_wide)
-    else:
-        log.warning("Filas wide: %d (esperado %d)  <-- REVISAR",
-                    len(wide), esperado_wide)
-
-    # Países fuera del listado canónico (grafías no normalizadas).
-    extranos = set(tidy["pais"].unique()) - set(PAISES_SIEPAC)
-    if extranos:
-        log.error("Países fuera del listado canónico: %s", extranos)
-    else:
-        log.info("Nombres de país: todos canónicos, OK")
-
-    # Celdas vacías en la matriz ancha, por variable.
-    vacias = wide.drop(columns=["pais", "anio"]).isna().sum()
-    vacias = vacias[vacias > 0]
-    if len(vacias):
-        log.warning("Celdas vacías (NaN) por variable en la matriz wide:\n%s",
-                    vacias.to_string())
-    else:
-        log.info("Celdas vacías en la matriz wide: 0 "
-                 "(todas las variables completas)")
-
-    # Cobertura cruzada: combinaciones pais-anio ausentes por variable.
-    completo = pd.MultiIndex.from_product(
-        [PAISES_SIEPAC, anios], names=["pais", "anio"]
-    )
-    for var, grupo in tidy.groupby("variable"):
-        presentes = pd.MultiIndex.from_frame(grupo[["pais", "anio"]])
-        faltantes = completo.difference(presentes)
-        if len(faltantes):
-            log.warning("%s: faltan combinaciones %s", var, list(faltantes))
+    _validar_insumos(datos)
+    esperadas = {v for columnas in MAPA_VARIABLES.values() for v in columnas.values()}
+    validar_columnas(tidy, ["pais", "anio", "variable", "valor"], "matriz tidy")
+    presentes = set(tidy["variable"])
+    if presentes != esperadas:
+        fallar_validacion("matriz tidy", f"variables faltantes: {sorted(esperadas - presentes)}; "
+                          f"inesperadas: {sorted(presentes - esperadas, key=str)}")
+    for variable, grupo in tidy.groupby("variable"):
+        validar_panel(grupo, f"matriz tidy / {variable}")
+        validar_numericos(grupo, ["valor"], f"matriz tidy / {variable}")
+    validar_panel(wide, "matriz wide")
+    validar_numericos(wide, sorted(esperadas), "matriz wide")
 
     # Detalle de imputación en tarifa (transparencia metodológica).
     tarifa = tidy[tidy["variable"] == "tarifa_usd_mwh"]

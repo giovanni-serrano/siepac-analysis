@@ -4,9 +4,8 @@ generar_tablas_apa.py — Tablas en formato APA 7.ª edición, listas para Word
 Etapa del pipeline : presentación de resultados (posterior a
                      generar_resumen_indicadores.py)
 Entradas           : data/processed/indicadores_ECO_valores.csv,
-                     data/raw_equipo/eco_cg_siepac.csv y los libros
-                     indicadores_ECO/ENV/SOC_SIEPAC.xlsx (hojas Datos_Base y
-                     de indicadores), principalmente vía viz_comun
+                     data/raw_equipo/eco_cg_siepac.csv y
+                     resultados_ECO/ENV/SOC.json, vía resultados_indicadores
 Salidas            : salidas/tesis/tablas/tablas_apa_SIEPAC.docx (todas las
                      tablas con su nota metodológica),
                      tablas_apa_SIEPAC_sin_notas.docx
@@ -39,7 +38,7 @@ conversión automatizada produce archivos .docx con tablas nativas. El HTML
 permanece como formato de intercambio en las demás plataformas.
 
 Notas metodológicas:
-  - Los valores se leen de viz_comun, la misma fuente que alimenta los
+  - Los valores se leen de resultados_indicadores, la misma fuente que alimenta los
     visualizadores y el resumen en Markdown.
   - Cada tabla de indicador cierra con las dos filas de resumen del
     proyecto: promedio de países (media simple) y, cuando la serie tiene
@@ -52,6 +51,11 @@ Notas metodológicas:
 
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
+
+from calculos_indicadores import (_mediana, _de_poblacional, _cv_pct,
+                                  _estadisticos_paises)
+
+from resultados_indicadores import leer_bases, cargar_paquete
 
 import argparse
 import csv
@@ -73,9 +77,8 @@ from eco_cg_comun import (BANDERAS_ECO_CG, CODIGO_ECO_CG,
                           FUENTES_ECO_CG, NIVEL_ECO_CG,
                           NOTA_CALIDAD_ECO_CG, ORDEN_ECO_CG_DOCUMENTO,
                           cargar_eco_cg, serie_mediana_eco_cg)
-from viz_comun import (ANIOS, FICHAS, PAISES, RUTA_ENV, RUTA_EXCEL, RUTA_SOC,
-                       agregados_eco, cargar_datos, leer_series_extra,
-                       preparar_datos)
+from presentacion_indicadores import FICHAS, series_de as _series_de
+from config_siepac import ANIOS_ANALISIS as ANIOS, PAISES_SIEPAC as PAISES
 
 logging.basicConfig(
     level=logging.INFO,
@@ -418,21 +421,11 @@ def _exportar_tabla_soc2_tesis(datos: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def _leer_datos_base() -> dict[str, pd.DataFrame]:
-    """Hojas Datos_Base de los tres libros. La económica trae el
-    encabezado en la primera fila; las de ENV/SOC llevan dos líneas de
-    presentación antes (mismo criterio que viz_comun.leer_series_extra)."""
-    base_eco = pd.read_excel(RUTA_EXCEL, sheet_name="Datos_Base")
-    eco_cg = cargar_eco_cg().rename(
-        columns={CODIGO_ECO_CG: COLUMNA_ECO_CG})
-    base_eco = base_eco.merge(
+    """Bases comunes a libros y tablas, sin releer productos Excel."""
+    hojas = leer_bases()
+    eco_cg = cargar_eco_cg().rename(columns={CODIGO_ECO_CG: COLUMNA_ECO_CG})
+    hojas["eco"] = hojas["eco"].merge(
         eco_cg, on=["pais", "anio"], how="left", validate="one_to_one")
-    hojas = {"eco": base_eco}
-    for dim, ruta in [("env", RUTA_ENV), ("soc", RUTA_SOC)]:
-        if not ruta.exists():
-            log.warning("No encontrado: %s - se omiten las tablas de datos "
-                        "base de esa dimension.", ruta.name)
-            continue
-        hojas[dim] = pd.read_excel(ruta, sheet_name="Datos_Base", skiprows=2)
     return hojas
 
 
@@ -535,21 +528,8 @@ def _armar_datos() -> tuple[dict, dict]:
     {clave_serie: {paises, promedio, agregado}} + banderas de imputación
     de ECO14. El esquema compartido mantiene consistencia entre las tablas
     del documento y el resumen en Markdown."""
-    hojas = cargar_datos()
-    df = preparar_datos(hojas)
-    agregados = agregados_eco(hojas["datos_base"])
-    datos = {}
-    for codigo in [c for c, f in FICHAS.items() if f["dim"] == "eco"]:
-        por_pais = {}
-        for pais in PAISES:
-            serie = (df[df["pais"] == pais].sort_values("anio")[codigo]
-                     .round(6).tolist())
-            por_pais[pais] = [None if _es_nulo(v) else v for v in serie]
-        promedio = [None if math.isnan(v) else v
-                    for v in df.groupby("anio")[codigo].mean().sort_index()
-                    .round(6).tolist()]
-        datos[codigo] = {"paises": por_pais, "promedio": promedio,
-                         "agregado": agregados.get(codigo)}
+    datos = cargar_paquete()
+    imputados = datos.pop("imputados")
 
     # ECO_CG es una serie económica complementaria y por eso no se añade a
     # FICHAS (el catálogo reservado a los IEDS). Sí se empaqueta aquí para
@@ -568,22 +548,9 @@ def _armar_datos() -> tuple[dict, dict]:
         "mediana": serie_mediana_eco_cg(eco_cg),
         "agregado": None,
     }
-    datos.update(leer_series_extra())
-    imputados = {
-        pais: df[df["pais"] == pais].sort_values("anio")["tarifa_imputada"]
-              .tolist()
-        for pais in PAISES
-    }
     return datos, imputados
 
 
-def _series_de(ficha: dict, codigo: str) -> list[dict]:
-    """Sub-series de una ficha (las ECO tienen una sola salida)."""
-    if not ficha.get("series"):
-        return [dict(clave=codigo, etiqueta="", formato=ficha["formato"],
-                     unidad=ficha["unidad"], formula=ficha["formula"])]
-    return [dict(clave=s[0], etiqueta=s[1], formato=s[2], unidad=s[4],
-                 formula=s[5]) for s in ficha["series"]]
 
 
 def _fuente_indicador(codigo: str, dim: str) -> str:
@@ -839,22 +806,10 @@ def _valores_anio(datos: dict, codigo: str, i: int) -> list[float]:
             if not _es_nulo(datos[codigo]["paises"][p][i])]
 
 
-def _mediana(v: list[float]) -> float:
-    s = sorted(v)
-    m = len(s) // 2
-    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2
 
 
-def _de_poblacional(v: list[float]) -> float:
-    """Desviación estándar poblacional (denominador N): los seis países
-    son el universo del SIEPAC, no una muestra. Mismo criterio que
-    analisis-eco/analisis_descriptivo_eco.py."""
-    media = sum(v) / len(v)
-    return math.sqrt(sum((x - media) ** 2 for x in v) / len(v))
 
 
-def _cv_pct(v: list[float]) -> float:
-    return _de_poblacional(v) / abs(sum(v) / len(v)) * 100
 
 
 def _serie_bloque(datos: dict, codigo: str) -> list[float]:
@@ -1129,17 +1084,6 @@ def _bloque_heterogeneidad_social(numero: int, datos: dict) -> dict:
         filas=filas, resumen=[], nota=nota, cols_izq=2)
 
 
-def _estadisticos_paises(valores: list[float]) -> dict[str, float]:
-    """Estadísticos poblacionales del conjunto completo de países."""
-    return {
-        "n": len(valores),
-        "media": sum(valores) / len(valores),
-        "mediana": _mediana(valores),
-        "de": _de_poblacional(valores),
-        "minimo": min(valores),
-        "maximo": max(valores),
-        "rango": max(valores) - min(valores),
-    }
 
 
 def _bloque_soc2_anual(numero: int, datos: dict) -> dict:
@@ -1525,9 +1469,9 @@ def _exportar_docx(ruta_html: Path, ruta_docx: Path) -> bool:
                     error)
         return False
     if proceso.returncode != 0 or not ruta_temporal.exists():
-        log.warning("No se pudo convertir a .docx; probablemente Word no "
-                    "este instalado. Queda el HTML, que Word abre igual "
-                    "con Archivo > Abrir.")
+        log.warning("No se pudo automatizar Word para convertir a .docx "
+                    "en esta sesión. Queda el HTML, que Word abre con "
+                    "Archivo > Abrir; el detalle está en el log DEBUG.")
         log.debug("PowerShell: %s", proceso.stderr.strip()[:500])
         return False
     try:

@@ -2,11 +2,11 @@
 generar_figuras_tesis.py — Figuras oficiales de la fase cuantitativa
 ====================================================
 Etapa del pipeline : presentación de resultados
-Entradas           : libros y CSV normalizados en data/processed/ y
+Entradas           : resultados estructurados y CSV normalizados en data/processed/ y
                      data/raw_equipo/eco_cg_siepac.csv
 Salidas            : salidas/tesis/figuras/*.png
 Alimenta           : documento final de la monografía
-Fuente de datos    : salidas del pipeline; fichas en viz_comun.FICHAS
+Fuente de datos    : salidas del pipeline; fichas en metadatos_indicadores.FICHAS
 
 Genera las 22 figuras oficiales: 9 económicas, 5 sociales y 8 ambientales.
 Todas usan el mismo lenguaje visual; ENV6 conserva un
@@ -33,8 +33,9 @@ from eco_cg_comun import (CODIGO_ECO_CG, ETIQUETA_ECO_CG, FICHA_ECO_CG,
 from figuras_comun import (ALTO, ANCHO, AZUL, BANDA, BANDA_PROXY, ESCALA,
                            FUENTE, GRIS_GRILLA, GRIS_LINEA, NARANJA, TINTA,
                            crear_figura_bloque)
-from viz_comun import (FICHAS, agregados_eco, cargar_datos,
-                       leer_series_extra, preparar_datos)
+from presentacion_indicadores import (FICHAS)
+from calculos_indicadores import (agregados_eco)
+from resultados_indicadores import (cargar_datos, leer_series_extra, preparar_datos)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,11 +46,7 @@ log = logging.getLogger(Path(__file__).stem)
 
 DIR_FIGURAS = DIR_SALIDAS_TESIS / "figuras"
 
-ECO = ["ECO1", "ECO2", "ECO3", "ECO6", "ECO11", "ECO13", "ECO14",
-       "ECO15"]
-SOC = ["SOC1", "SOC2_PROM", "SOC2_VULNERABLE", "SOC3_RURAL", "SOC3_URB"]
-ENV = ["ENV1_PC", "ENV1_PIB", "ENV2_SO2_PC", "ENV2_PAR_PC",
-       "ENV2_SO2_PIB", "ENV2_PAR_PIB", "ENV3"]
+from metadatos_indicadores import CODIGOS_ECO as ECO, SERIES_SOC as SOC, SERIES_ENV as ENV
 
 
 def _catalogo_series() -> dict[str, dict]:

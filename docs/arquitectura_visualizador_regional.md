@@ -18,8 +18,12 @@ seis países y explicar con transparencia cómo se calculó cada indicador.
 El visualizador será una salida generada. No se editarán cifras, unidades,
 fórmulas ni notas directamente en el HTML.
 
-- `src/viz_comun.py`, diccionario `FICHAS`: nombres, unidades, fórmulas y notas
+- `src/metadatos_indicadores.py`, diccionario `FICHAS`: nombres, unidades, fórmulas y notas
   metodológicas de los 15 indicadores IEDS.
+- `src/presentacion_indicadores.py`: formato de las fichas públicas;
+  `viz_comun.py` conserva la paleta y las reexportaciones compatibles.
+- `src/resultados_indicadores.py`: lectura de CSV ECO y de los tres JSON
+  intermedios regenerables; no relee los libros Excel generados.
 - `data/processed/`: matrices y series que alimentan los cálculos.
 - `salidas/tesis/figuras/` y `salidas/tesis/tablas/`: productos oficiales
   enlazados mediante nombres deterministas e índice de tablas.
@@ -123,7 +127,8 @@ componentes.
 - Un solo paquete de la biblioteca gráfica se incluirá en el HTML.
 - El HTML autocontenido será apto para GitHub Pages y para consulta sin conexión.
 - GitHub Pages publica mediante una lista permitida únicamente el visualizador
-  y sus salidas documentales; el despliegue no ejecuta los ETL sin las fuentes.
+  y sus salidas documentales, después de aprobar las pruebas del clon público.
+  Solo `main` despliega; el workflow no ejecuta los ETL sin las fuentes.
 
 ## Criterios de aceptación
 

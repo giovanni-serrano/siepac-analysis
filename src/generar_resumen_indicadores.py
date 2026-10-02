@@ -4,8 +4,7 @@ generar_resumen_indicadores.py — Matriz consolidada de indicadores + fichas
 Etapa del pipeline : consolidación de resultados (posterior a
                      generar_matriz_indicadores.py y procesar_dimensiones.py)
 Entradas           : data/processed/indicadores_ECO_valores.csv,
-                     indicadores_ECO_SIEPAC.xlsx y, si existen, los libros
-                     ENV/SOC (todo vía viz_comun.cargar_datos/leer_series_extra)
+                     resultados_ECO/ENV/SOC.json, vía resultados_indicadores
 Salidas            : docs/resumen_indicadores_SIEPAC.md (fichas + tablas) y
                      data/processed/indicadores_consolidados_tidy.csv
                      (una fila por serie-país-año, formato máquina)
@@ -17,17 +16,19 @@ Uso:  python src/generar_resumen_indicadores.py   (ejecutar desde la raíz)
 Consolida en un solo documento los indicadores calculados de las tres
 dimensiones (ECO, ENV, SOC) junto con la ficha de cada uno (nombre,
 unidad, fórmula, descripción y notas metodológicas), tomándolo todo de
-viz_comun.py — la misma fuente única que alimenta los visualizadores —
+metadatos_indicadores.py y resultados_indicadores.py
 para que no exista riesgo de divergencia entre productos.
 
 Notas metodológicas:
-  - Las dimensiones cuyos libros no existan se omiten con aviso (igual
+  - Las dimensiones cuyos resultados estructurados no existan se omiten con aviso (igual
     que en los visualizadores).
   - En ECO14 los valores imputados vía CAGR se marcan con * en el MD y
     con fuente_dato = "imputado_CAGR" en el CSV.
 
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
+
+from resultados_indicadores import cargar_paquete
 
 import csv
 import logging
@@ -37,8 +38,8 @@ from datetime import date
 from pathlib import Path
 
 from config_siepac import RAIZ_PROYECTO, DIR_PROCESSED
-from viz_comun import (ANIOS, FICHAS, PAISES, agregados_eco,
-                       cargar_datos, leer_series_extra, preparar_datos)
+from presentacion_indicadores import FICHAS, series_de as _series_de
+from config_siepac import ANIOS_ANALISIS as ANIOS, PAISES_SIEPAC as PAISES
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,43 +74,14 @@ def _delta(v0, v4, tipo: str) -> str:
     return f"{(v4 / v0 - 1) * 100:+.1f} %"
 
 
-def _series_de(ficha: dict, codigo: str) -> list[dict]:
-    """Lista de sub-series de una ficha con el mismo esquema que usan
-    los visualizadores: clave de datos, etiqueta, formato, unidad y
-    fórmula. Las fichas ECO no tienen 'series' (una sola salida)."""
-    if not ficha.get("series"):
-        return [dict(clave=codigo, etiqueta="", formato=ficha["formato"],
-                     unidad=ficha["unidad"], formula=ficha["formula"])]
-    return [dict(clave=s[0], etiqueta=s[1], formato=s[2], unidad=s[4],
-                 formula=s[5]) for s in ficha["series"]]
+
+
 
 
 def _armar_datos() -> tuple[dict, dict]:
-    """Empaqueta {clave_serie: {paises: {...}, promedio: [...]}} para las
-    tres dimensiones (mismo layout que los visualizadores) + imputados."""
-    hojas = cargar_datos()
-    df = preparar_datos(hojas)
-    agregados = agregados_eco(hojas["datos_base"])
-    datos = {}
-    for codigo in [c for c, f in FICHAS.items() if f["dim"] == "eco"]:
-        por_pais = {}
-        for pais in PAISES:
-            serie = (df[df["pais"] == pais].sort_values("anio")[codigo]
-                     .round(6).tolist())
-            por_pais[pais] = [None if (isinstance(v, float) and math.isnan(v))
-                              else v for v in serie]
-        promedio = [None if math.isnan(v) else v
-                    for v in df.groupby("anio")[codigo].mean().sort_index()
-                    .round(6).tolist()]
-        datos[codigo] = {"paises": por_pais, "promedio": promedio,
-                         "agregado": agregados.get(codigo)}
-    datos.update(leer_series_extra())     # series ENV/SOC + ENV6
-    imputados = {
-        pais: df[df["pais"] == pais].sort_values("anio")["tarifa_imputada"]
-              .tolist()
-        for pais in PAISES
-    }
-    return datos, imputados
+    paquete = cargar_paquete()
+    imputados = paquete.pop("imputados")
+    return paquete, imputados
 
 
 def _tabla_md(bloque: dict, formato: str, delta_tipo: str,
