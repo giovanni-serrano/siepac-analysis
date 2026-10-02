@@ -280,7 +280,7 @@ def hoja_indicador(wb: Workbook, codigo: str, info: dict,
 
     # fila de agregado regional (razon de sumas Σnum/Σden): formulas SUM
     # hacia Datos_Base, tan auditables como las celdas por pais. En
-    # paridad con viz_comun.agregados_eco.
+    # paridad con calculos_indicadores.agregados_eco.
     fila_agr = fila_prom + 1
     if info.get("formula_agregado"):
         ca = ws.cell(row=fila_agr, column=1,

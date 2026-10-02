@@ -1469,9 +1469,9 @@ def _exportar_docx(ruta_html: Path, ruta_docx: Path) -> bool:
                     error)
         return False
     if proceso.returncode != 0 or not ruta_temporal.exists():
-        log.warning("No se pudo convertir a .docx; probablemente Word no "
-                    "este instalado. Queda el HTML, que Word abre igual "
-                    "con Archivo > Abrir.")
+        log.warning("No se pudo automatizar Word para convertir a .docx "
+                    "en esta sesión. Queda el HTML, que Word abre con "
+                    "Archivo > Abrir; el detalle está en el log DEBUG.")
         log.debug("PowerShell: %s", proceso.stderr.strip()[:500])
         return False
     try:

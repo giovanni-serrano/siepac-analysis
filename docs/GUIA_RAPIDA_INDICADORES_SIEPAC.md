@@ -2,8 +2,8 @@
 
 Este documento resume el criterio de agregación empleado para representar
 los seis países del SIEPAC como un bloque. Las cifras completas se encuentran
-en `docs/resumen_indicadores_SIEPAC.md`; las figuras oficiales y su inventario
-se generan en `salidas/tesis/`.
+en `docs/resumen_indicadores_SIEPAC.md`; las figuras oficiales se generan en
+`salidas/tesis/figuras/` y el índice de tablas en `salidas/tesis/tablas/`.
 
 ## Criterios de cálculo
 
@@ -125,4 +125,4 @@ además en `data/processed/soc2_regional.csv`.
   visualizadores. La razón de sumas requiere energía regulada vendida por
   país y año.
 La definición completa de cada indicador se mantiene en
-`docs/resumen_indicadores_SIEPAC.md` y en `src/viz_comun.py`.
+`docs/resumen_indicadores_SIEPAC.md` y en `src/metadatos_indicadores.py`.

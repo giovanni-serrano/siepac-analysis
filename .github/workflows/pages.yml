@@ -1,21 +1,53 @@
-name: Publicar visualizador en GitHub Pages
+name: Pruebas y publicación en GitHub Pages
 
 on:
   push:
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  tests:
+    name: Pruebas del clon público
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v7
+
+      - name: Preparar Python verificado
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13.5'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-test.txt
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install -r requirements.txt -r requirements-test.txt
+          python -m pip check
+
+      # Se prueban fixtures, insumos redistribuibles y productos versionados.
+      # Los ocho CSV locales ausentes se omiten explícitamente; no se ejecutan
+      # ETL que requieren las fuentes oficiales excluidas del repositorio.
+      - name: Ejecutar suite pública
+        run: python -B -m pytest tests -q -rs
+
   deploy:
+    needs: tests
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

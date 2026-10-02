@@ -8,7 +8,8 @@ Ingeniería (UNI), Nicaragua.
 
 El proyecto calcula 15 Indicadores Energéticos de Desarrollo Sostenible
 (IEDS) para Guatemala, El Salvador, Honduras, Nicaragua, Costa Rica y Panamá
-durante 2020–2024. Distingue explícitamente entre el promedio simple de países
+durante 2020–2024, en las dimensiones económica, social y ambiental.
+Distingue explícitamente entre el promedio simple de países
 y el agregado regional del SIEPAC.
 
 **Visualizador público:**
@@ -38,13 +39,45 @@ Un clon permite consultar y auditar los HTML, libros procesados, figuras y
 tablas versionados. La reproducción completa desde cero requiere obtener ocho
 archivos oficiales que no se redistribuyen por las condiciones de sus fuentes.
 
-Con esos archivos colocados en las rutas documentadas, requiere Python 3.10 o
-posterior y se ejecuta desde la raíz del proyecto:
+El entorno verificado usa **Python 3.13.5** (los requisitos fijados requieren
+Python ≥3.12). Desde la raíz, crear un entorno e instalar las dependencias:
 
 ```bash
-pip install -r requirements.txt
+python -m venv .venv
+```
+
+Activarlo con `.\.venv\Scripts\Activate.ps1` en PowerShell o
+`source .venv/bin/activate` en Linux/macOS. Después:
+
+```bash
+python -m pip install -r requirements.txt -r requirements-test.txt
+python -m pytest tests -q -rs
+```
+
+Las pruebas funcionan con los archivos públicos. En un clon limpio se omiten
+explícitamente ocho comparaciones de CSV locales regenerables; las demás
+pruebas usan fixtures, datos sintéticos, insumos del equipo y productos
+versionados. No hace falta ejecutar el pipeline ni instalar un navegador
+para esa suite.
+
+Con las ocho fuentes oficiales colocadas según `data/raw/MANIFIESTO.md`:
+
+```bash
+python src/verificar_datos_raw.py
 python src/run_pipeline.py
 ```
+
+La exportación PNG de Kaleido requiere Chrome/Chromium disponible en el
+entorno; si falta, puede instalarse con `plotly_get_chrome`. Las capturas
+opcionales del README usan Playwright y requieren
+`python -m playwright install chromium` antes de ejecutar
+`python src/generar_capturas_readme.py`.
+
+Los HTML APA siempre se generan. La conversión opcional a DOCX requiere
+Windows, PowerShell y Microsoft Word de escritorio con automatización COM
+funcional; no requiere `pywin32`. Si falla, se avisa y continúa el pipeline
+con los HTML. Para omitirla expresamente:
+`python src/generar_tablas_apa.py --sin-docx`.
 
 El orquestador ejecuta los ETL, valida cobertura y unidades, consolida las
 matrices, calcula indicadores y regenera el resumen, las tablas, las figuras y
@@ -90,9 +123,19 @@ Las decisiones compartidas se concentran en:
 - `src/viz_comun.py`: paleta y compatibilidad de imports anteriores.
 - `src/figuras_comun.py`: estilo común de las figuras de la tesis.
 
-Las etapas existentes producen también `data/processed/resultados_ECO.json`,
-`resultados_ENV.json` y `resultados_SOC.json`. Son intermedios regenerables,
-ignorados por Git, que comparten las bases y series con los productos finales.
+Las etapas existentes producen tres JSON en `data/processed/`:
+
+| Intermedio | Productor | Contenido |
+| --- | --- | --- |
+| `resultados_ECO.json` | `generar_matriz_indicadores.py` | Base ECO; valores nacionales en el CSV ECO existente |
+| `resultados_ENV.json` | `procesar_dimensiones.py` | Base, series y agregados ENV, incluidas las dos magnitudes ENV6 |
+| `resultados_SOC.json` | `procesar_dimensiones.py` | Base, series y agregados SOC |
+
+Son **productos intermedios regenerables, no nuevas fuentes científicas**.
+Permanecen ignorados por Git y son consumidos mediante
+`resultados_indicadores.py` por resumen, tablas, figuras y visualizador.
+Su regeneración requiere los insumos originales, incluidas las fuentes
+oficiales que el clon público no distribuye.
 Al actualizar desde una versión anterior, ejecutar el mismo pipeline completo
 para crearlos antes de invocar por separado los generadores. Los libros siguen
 siendo productos auditables; los consumidores ya no dependen de sus hojas ni de
@@ -150,6 +193,9 @@ siepac-analysis/
 - **SOC2:** el agregado usa clientes residenciales como proxy de unidades
   consumidoras y calcula una razón de sumas para el ingreso promedio y el
   estrato vulnerable. No equivale a una estimación censal de hogares.
+- **SOC3:** los agregados rural y urbano ponderan por sus poblaciones
+  respectivas; aproximan el acceso renovable con el mix nacional y no
+  observan directamente el consumo de cada hogar.
 - **ECO14:** se resume con la mediana de países porque falta el denominador
   regional; 2023–2024 es imputación mediante CAGR.
 - **ECO-CG:** serie complementaria, no un noveno indicador económico; sus
@@ -163,6 +209,25 @@ de `src/metadatos_indicadores.py`. El formato visual se agrega en
 anterior como reexportación. Los HTML, Excel, PNG, Markdown y tablas son productos
 generados: una corrección debe hacerse en el dato o script de origen y luego
 regenerarse.
+
+## Pruebas, publicación y trazabilidad
+
+GitHub Actions ejecuta la suite pública en pushes, pull requests dirigidos a
+`main` y ejecuciones manuales. Pages solo despliega desde `main` después de
+aprobar esas pruebas. Publica los productos versionados mediante una lista
+permitida; no reconstruye el pipeline con fuentes ausentes.
+
+La reproducción completa puede verificarse sin sobrescribir productos locales:
+
+```bash
+python tests/ejecutar_pipeline_aislado.py --destino .venv/pipeline-verificacion-NUEVA
+python -m pytest tests -q --resultados-dir .venv/pipeline-verificacion-NUEVA
+```
+
+El destino debe ser nuevo. Consulta [tests/README.md](tests/README.md) para
+los contratos de prueba, [la guía metodológica](docs/GUIA_RAPIDA_INDICADORES_SIEPAC.md)
+para las agregaciones y [el informe final](docs/FASE5_CIERRE.md) para la
+revisión acumulada, la conservación del baseline y los límites de reproducción.
 
 ## Autores
 

@@ -25,8 +25,12 @@ analisis-eco/
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
 .venv/
 venv/
+
+# Directorio de empaquetado de GitHub Pages; nunca contiene fuentes.
+_site/
 
 # Temporales de Excel
 ~$*.xlsx
@@ -90,7 +94,9 @@ data/raw/valor_agregado_industrial/*.xlsx
 data/raw/**/*.pdf
 #
 # El CSV del Banco Mundial (data/raw/pib/) es CC-BY 4.0 y SÍ se versiona:
-# es la única fuente cruda redistribuible del proyecto.
+# junto con el extracto de población rural/urbana, también versionado.
 
 # Resultados estructurados regenerables de las tres dimensiones
-data/processed/resultados_*.json
+data/processed/resultados_ECO.json
+data/processed/resultados_ENV.json
+data/processed/resultados_SOC.json

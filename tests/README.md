@@ -25,13 +25,35 @@ estructurados con `read_excel` prohibido, y conservación íntegra de la plantil
 web. No cambia la referencia. El informe está en
 `../docs/FASE4_REFACTOR_ARQUITECTURA.md`.
 
+## CI y clon público
+
+`.github/workflows/pages.yml` ejecuta la suite en Python 3.13.5 con los dos
+archivos de requisitos fijados, en pushes, pull requests hacia `main` y
+ejecuciones manuales. El trabajo de publicación tiene `needs: tests`: solo
+despliega `main` si las pruebas terminan correctamente. No hay
+`continue-on-error` ni se ejecutan los ETL con fuentes ausentes.
+
+En un clon que contiene únicamente archivos versionados, el resultado esperado
+es **132 passed, 8 skipped**: se omiten solo las ocho comparaciones de CSV de
+`data/processed/`, ausentes por diseño. Sus cálculos siguen cubiertos mediante
+la referencia fija y casos sintéticos. Los libros y HTML versionados, los
+insumos ENV/SOC y SOC2 del equipo y los fixtures sí se comprueban.
+Con todos los CSV locales presentes, se esperan **140 passed, 0 xfailed**.
+
+La exportación de PNG está sustituida por captura de figuras en memoria en
+las pruebas; CI no necesita instalar Chrome ni iniciar Word. Este trabajo
+no certifica una reconstrucción completa desde las ocho fuentes oficiales
+excluidas. Esa verificación se ejecuta localmente con la copia aislada.
+Los JSON de fase 4 se prueban en temporales, sin copiar intermedios privados
+al clon público ni convertirlos en nuevas fuentes científicas.
+
 ## Ejecutar
 
 En un entorno con las dependencias del proyecto:
 
 ```powershell
 python -m pip install -r requirements-test.txt
-python -B -m pytest tests -q -rx --tb=no -p no:cacheprovider
+python -B -m pytest tests -q -rs -p no:cacheprovider
 ```
 
 Para aislar las dependencias de pruebas de un entorno científico existente:
