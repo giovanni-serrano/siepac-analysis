@@ -91,3 +91,6 @@ data/raw/**/*.pdf
 #
 # El CSV del Banco Mundial (data/raw/pib/) es CC-BY 4.0 y SÍ se versiona:
 # es la única fuente cruda redistribuible del proyecto.
+
+# Resultados estructurados regenerables de las tres dimensiones
+data/processed/resultados_*.json

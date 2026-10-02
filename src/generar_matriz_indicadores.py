@@ -7,7 +7,7 @@ Entradas           : data/processed/matriz_consolidada_wide.csv y
 Salidas            : data/processed/indicadores_ECO_SIEPAC.xlsx (fórmulas
                      auditables) y
                      data/processed/indicadores_ECO_valores.csv (valores
-                     planos para los visualizadores)
+                     planos para los visualizadores) y resultados_ECO.json
 Alimenta           : ECO1, ECO2, ECO3, ECO6, ECO11, ECO13, ECO14, ECO15
 Fuente de datos    : matriz consolidada (OLADE, CEPAL, Banco Mundial)
 
@@ -31,6 +31,10 @@ Estructura del libro:
 Autor: Luis Giovanni Serrano Bello — Tesis SIEPAC, UNI Nicaragua
 """
 
+from resultados_indicadores import guardar_base_eco
+from metadatos_indicadores import TEXTOS_EXCEL_ECO
+from calculos_indicadores import CALCULOS_ECO, calcular_valores
+
 import logging
 import sys
 from pathlib import Path
@@ -41,8 +45,6 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from config_siepac import PAISES_SIEPAC as PAISES, ANIOS_ANALISIS as ANIOS, DIR_PROCESSED
-from etl_comun import (fallar_validacion, validar_columnas, validar_panel,
-                       validar_numericos)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -101,112 +103,89 @@ COLS_BASE = [
 # formula_agregado: plantilla de la fila "Agregado regional (razon de
 # sumas)" — cada {X} se expande a SUM(...) de la columna X de Datos_Base
 # sobre los 6 paises del anio. Es el agregado Σnum/Σden (pondera cada
-# pais por su denominador), en paridad con viz_comun.agregados_eco.
+# pais por su denominador), en paridad con calculos_indicadores.agregados_eco.
 # ECO14 no la tiene: sin energia regulada vendida (MWh) por pais no hay
 # denominador con el que ponderar la tarifa.
 INDICADORES = {
     "ECO1": dict(
-        titulo="Uso de energía per cápita",
-        unidad="kWh/habitante",
+        titulo=TEXTOS_EXCEL_ECO['ECO1']['titulo'],
+        unidad=TEXTOS_EXCEL_ECO['ECO1']['unidad'],
         formula="=Datos_Base!C{r}/Datos_Base!P{r}",
         formula_agregado="={C}/{P}",
-        calculo=lambda d: d["consumo_final_total_kwh"] / d["poblacion_habitantes"],
-        descripcion="Consumo Final Total (kWh) ÷ Población Total (habitantes)",
-        fuentes="SIELAC-OLADE (consumo); CEPAL-CELADE (población)",
+        calculo=CALCULOS_ECO['ECO1'],
+        descripcion=TEXTOS_EXCEL_ECO['ECO1']['descripcion'],
+        fuentes=TEXTOS_EXCEL_ECO['ECO1']['fuentes'],
         num_fmt="#,##0",
     ),
     "ECO2": dict(
-        titulo="Uso de energía por unidad de PIB",
-        unidad="kWh/USD const. 2015",
+        titulo=TEXTOS_EXCEL_ECO['ECO2']['titulo'],
+        unidad=TEXTOS_EXCEL_ECO['ECO2']['unidad'],
         formula="=Datos_Base!C{r}/Datos_Base!O{r}",
         formula_agregado="={C}/{O}",
-        calculo=lambda d: d["consumo_final_total_kwh"] / d["pib_usd_const2015"],
-        descripcion="Consumo Final Total (kWh) ÷ PIB Real (USD constantes 2015)",
-        fuentes="SIELAC-OLADE (consumo); Banco Mundial NY.GDP.MKTP.KD (PIB)",
+        calculo=CALCULOS_ECO['ECO2'],
+        descripcion=TEXTOS_EXCEL_ECO['ECO2']['descripcion'],
+        fuentes=TEXTOS_EXCEL_ECO['ECO2']['fuentes'],
         num_fmt="0.0000",
     ),
     "ECO3": dict(
-        titulo="Eficiencia de la conversión y distribución de energía",
-        unidad="%",
+        titulo=TEXTOS_EXCEL_ECO['ECO3']['titulo'],
+        unidad=TEXTOS_EXCEL_ECO['ECO3']['unidad'],
         formula="=Datos_Base!C{r}/Datos_Base!Q{r}*100",
         formula_agregado="={C}/{Q}*100",
-        calculo=lambda d: d["consumo_final_total_kwh"]
-                          / d["produccion_bruta_kwh"] * 100,
-        descripcion="(Consumo Final Total ÷ Producción Bruta Total) × 100. "
-                     "Aproxima la eficiencia del sistema eléctrico desde "
-                     "generación hasta consumo final; no representa la cadena "
-                     "energética primaria completa.",
-        fuentes="SIELAC-OLADE (ambas variables)",
+        calculo=CALCULOS_ECO['ECO3'],
+        descripcion=TEXTOS_EXCEL_ECO['ECO3']['descripcion'],
+        fuentes=TEXTOS_EXCEL_ECO['ECO3']['fuentes'],
         num_fmt='0.0"%"',
     ),
     "ECO6": dict(
-        titulo="Intensidades energéticas de la industria",
-        unidad="kWh/USD const. 2015",
+        titulo=TEXTOS_EXCEL_ECO['ECO6']['titulo'],
+        unidad=TEXTOS_EXCEL_ECO['ECO6']['unidad'],
         formula="=Datos_Base!D{r}/Datos_Base!T{r}",
         formula_agregado="={D}/{T}",
-        calculo=lambda d: d["consumo_industrial_kwh"] / d["vai_usd_const2015"],
-        descripcion="Consumo Final Industrial (kWh) ÷ Valor Agregado "
-                     "Manufacturero (USD constantes 2015). El VAM en USD ya fue "
-                     "calculado en el ETL como VAM%% (ODS 9.2.1) × PIB real.",
-        fuentes="SIELAC-OLADE (consumo industrial); CEPALSTAT ODS 9.2.1 × "
-                "Banco Mundial (VAM)",
+        calculo=CALCULOS_ECO['ECO6'],
+        descripcion=TEXTOS_EXCEL_ECO['ECO6']['descripcion'],
+        fuentes=TEXTOS_EXCEL_ECO['ECO6']['fuentes'],
         num_fmt="0.0000",
     ),
     "ECO11": dict(
-        titulo="Porcentaje de combustibles fósiles en la electricidad",
-        unidad="%",
+        titulo=TEXTOS_EXCEL_ECO['ECO11']['titulo'],
+        unidad=TEXTOS_EXCEL_ECO['ECO11']['unidad'],
         formula="=Datos_Base!H{r}/Datos_Base!M{r}*100",
         formula_agregado="={H}/{M}*100",
-        calculo=lambda d: d["gen_fosil_kwh"] / d["gen_total_kwh"] * 100,
-        descripcion="(Generación Térmica Fósil ÷ Generación Total) × 100",
-        fuentes="SIELAC-OLADE (generación por tipo de fuente)",
+        calculo=CALCULOS_ECO['ECO11'],
+        descripcion=TEXTOS_EXCEL_ECO['ECO11']['descripcion'],
+        fuentes=TEXTOS_EXCEL_ECO['ECO11']['fuentes'],
         num_fmt='0.0"%"',
     ),
     "ECO13": dict(
-        titulo="Porcentaje de energías renovables en la electricidad",
-        unidad="%",
+        titulo=TEXTOS_EXCEL_ECO['ECO13']['titulo'],
+        unidad=TEXTOS_EXCEL_ECO['ECO13']['unidad'],
         formula="=(Datos_Base!J{r}+Datos_Base!I{r}+Datos_Base!G{r}"
                 "+Datos_Base!L{r}+Datos_Base!F{r})/Datos_Base!M{r}*100",
         formula_agregado="=({J}+{I}+{G}+{L}+{F})/{M}*100",
-        calculo=lambda d: (d["gen_hidro_kwh"] + d["gen_geotermia_kwh"]
-                           + d["gen_eolica_kwh"] + d["gen_solar_kwh"]
-                           + d["gen_biomasa_kwh"]) / d["gen_total_kwh"] * 100,
-        descripcion="(Hidro + Geotermia + Eólica + Solar + Biomasa) ÷ "
-                     "Generación Total × 100. La fórmula suma las cinco fuentes "
-                     "renovables explícitamente (no usa la columna agregada) "
-                     "para que el cálculo sea auditable componente a componente.",
-        fuentes="SIELAC-OLADE (generación por tipo de fuente)",
+        calculo=CALCULOS_ECO['ECO13'],
+        descripcion=TEXTOS_EXCEL_ECO['ECO13']['descripcion'],
+        fuentes=TEXTOS_EXCEL_ECO['ECO13']['fuentes'],
         num_fmt='0.0"%"',
     ),
     "ECO14": dict(
-        titulo="Precios de la energía de uso final por sector",
-        unidad="USD corrientes/MWh",
+        titulo=TEXTOS_EXCEL_ECO['ECO14']['titulo'],
+        unidad=TEXTOS_EXCEL_ECO['ECO14']['unidad'],
         formula="=Datos_Base!R{r}",
-        calculo=lambda d: d["tarifa_usd_mwh"],
-        descripcion="Ingresos por energía regulada vendida (USD) ÷ energía "
-                     "regulada consumida (MWh), calculado en el ETL. En USD "
-                     "corrientes del año bajo análisis (no constantes). Las "
-                     "celdas sombreadas en amarillo son valores calculados "
-                     "mediante CAGR de la serie histórica 2015+ (ver Datos_Base, "
-                     "columna tarifa_fuente_dato).",
-        fuentes="CEPAL-SIECA (serie histórica); cálculo CAGR documentado "
-                "en el ETL",
+        calculo=CALCULOS_ECO['ECO14'],
+        descripcion=TEXTOS_EXCEL_ECO['ECO14']['descripcion'],
+        fuentes=TEXTOS_EXCEL_ECO['ECO14']['fuentes'],
         num_fmt="0.00",
     ),
     "ECO15": dict(
-        titulo="Dependencia de las importaciones netas de energía",
-        unidad="%",
+        titulo=TEXTOS_EXCEL_ECO['ECO15']['titulo'],
+        unidad=TEXTOS_EXCEL_ECO['ECO15']['unidad'],
         formula="=(Datos_Base!N{r}-Datos_Base!E{r})/"
                 "(Datos_Base!Q{r}+Datos_Base!N{r}-Datos_Base!E{r})*100",
         formula_agregado="=({N}-{E})/({Q}+{N}-{E})*100",
-        calculo=lambda d: (d["importaciones_kwh"] - d["exportaciones_kwh"])
-                          / (d["produccion_bruta_kwh"]
-                             + d["importaciones_kwh"]
-                             - d["exportaciones_kwh"]) * 100,
-        descripcion="((Importaciones − Exportaciones) ÷ (Producción Bruta + "
-                     "Importaciones − Exportaciones)) × 100. Positivo = "
-                     "importador neto; negativo = exportador neto.",
-        fuentes="SIELAC-OLADE (matriz de balance energético; producción bruta)",
+        calculo=CALCULOS_ECO['ECO15'],
+        descripcion=TEXTOS_EXCEL_ECO['ECO15']['descripcion'],
+        fuentes=TEXTOS_EXCEL_ECO['ECO15']['fuentes'],
         num_fmt='0.0"%"',
     ),
 }
@@ -216,46 +195,6 @@ def fila_base(pais: str, anio: int) -> int:
     """Fila en Datos_Base para (pais, anio). Datos ordenados pais→anio,
     encabezado en fila 1, datos desde la fila 2."""
     return 2 + PAISES.index(pais) * len(ANIOS) + ANIOS.index(anio)
-
-
-def calcular_valores(wide: pd.DataFrame) -> pd.DataFrame:
-    """Evalúa en pandas el `calculo` de cada indicador sobre la matriz wide.
-
-    Devuelve un DataFrame pais | anio | ECO1..ECO15 | tarifa_fuente_dato,
-    con los mismos valores que producirían las fórmulas del Excel. Es la
-    salida legible por máquina que consumen los visualizadores.
-    """
-    validar_panel(wide, "indicadores ECO")
-    validar_columnas(wide, ["tarifa_fuente_dato"], "ECO14")
-    banderas_invalidas = ~wide["tarifa_fuente_dato"].isin(["real", "imputado_CAGR"])
-    if banderas_invalidas.any():
-        fallar_validacion("ECO14", "tarifa_fuente_dato inválida: " +
-                          str(wide.loc[banderas_invalidas, ["pais", "anio", "tarifa_fuente_dato"]].to_dict("records")))
-    denominadores = {
-        "poblacion_habitantes": "ECO1", "pib_usd_const2015": "ECO2",
-        "produccion_bruta_kwh": "ECO3", "vai_usd_const2015": "ECO6",
-        "gen_total_kwh": "ECO11/ECO13",
-    }
-    columnas = [*denominadores, "consumo_final_total_kwh", "consumo_industrial_kwh",
-                "gen_fosil_kwh", "gen_hidro_kwh", "gen_geotermia_kwh",
-                "gen_eolica_kwh", "gen_solar_kwh", "gen_biomasa_kwh",
-                "importaciones_kwh", "exportaciones_kwh", "tarifa_usd_mwh"]
-    validar_numericos(wide, columnas, "insumos ECO")
-    for columna, codigo in denominadores.items():
-        validar_numericos(wide, [columna], codigo, positivos=True)
-    # El saldo puede ser negativo; el denominador de energía disponible
-    # debe ser positivo. No se altera el signo del numerador de ECO15.
-    disponibilidad = wide[["pais", "anio"]].assign(
-        disponibilidad_kwh=wide["produccion_bruta_kwh"]
-        + wide["importaciones_kwh"] - wide["exportaciones_kwh"])
-    validar_numericos(disponibilidad, ["disponibilidad_kwh"], "ECO15", positivos=True)
-    valores = wide[["pais", "anio"]].copy()
-    for codigo, info in INDICADORES.items():
-        valores[codigo] = info["calculo"](wide)
-    # Identificador del método aplicado a la tarifa.
-    valores["tarifa_fuente_dato"] = wide["tarifa_fuente_dato"]
-    validar_numericos(valores, list(INDICADORES), "resultados ECO")
-    return valores
 
 
 def hoja_datos_base(wb: Workbook, wide: pd.DataFrame) -> None:
@@ -442,6 +381,7 @@ def main() -> None:
         hoja_indicador(wb, codigo, info, imputados)
     hoja_metodologia(wb)  # se inserta en posicion 0
 
+    guardar_base_eco(RUTA_SALIDA.with_name("resultados_ECO.json"), wide[COLS_BASE])
     wb.save(RUTA_SALIDA)
     log.info("Guardado: %s", RUTA_SALIDA)
     log.info("Hojas: %s", wb.sheetnames)

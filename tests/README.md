@@ -18,6 +18,13 @@ están precalculados y no activan esa ruta. Su prueba sintética pasa ahora sin
 y la conservación de valores presentes, incluido cero. Véase
 `../docs/AUDITORIA_ENV1_FALLBACK.md` para la demostración y la comparación exacta.
 
+La fase 4 mantiene las 136 pruebas anteriores y añade cuatro contratos en
+`test_arquitectura.py`: capas científicas sin dependencias de presentación ni
+ciclos locales, reexportaciones y fichas sin duplicación, consumo de resultados
+estructurados con `read_excel` prohibido, y conservación íntegra de la plantilla
+web. No cambia la referencia. El informe está en
+`../docs/FASE4_REFACTOR_ARQUITECTURA.md`.
+
 ## Ejecutar
 
 En un entorno con las dependencias del proyecto:

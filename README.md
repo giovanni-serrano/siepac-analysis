@@ -80,8 +80,28 @@ Las decisiones compartidas se concentran en:
 
 - `src/config_siepac.py`: rutas, países, años y conversiones.
 - `src/etl_comun.py`: utilidades comunes de extracción y validación.
-- `src/viz_comun.py`: fichas metodológicas (`FICHAS`), agregados y paleta.
+- `src/metadatos_indicadores.py`: fichas científicas (`FICHAS`), ponderadores
+  y variantes editoriales conservadas en los libros.
+- `src/calculos_indicadores.py`: cálculos ECO, agregados y estadísticos.
+- `src/datos_dimensiones.py`: lectura de fuentes y preparación ENV/SOC.
+- `src/resultados_indicadores.py`: intercambio de resultados comunes sin
+  releer los Excel generados.
+- `src/presentacion_indicadores.py`: formato y composición de fichas públicas.
+- `src/viz_comun.py`: paleta y compatibilidad de imports anteriores.
 - `src/figuras_comun.py`: estilo común de las figuras de la tesis.
+
+Las etapas existentes producen también `data/processed/resultados_ECO.json`,
+`resultados_ENV.json` y `resultados_SOC.json`. Son intermedios regenerables,
+ignorados por Git, que comparten las bases y series con los productos finales.
+Al actualizar desde una versión anterior, ejecutar el mismo pipeline completo
+para crearlos antes de invocar por separado los generadores. Los libros siguen
+siendo productos auditables; los consumidores ya no dependen de sus hojas ni de
+su disposición visual. Los insumos originales del equipo siguen siendo Excel.
+
+La plantilla del visualizador vive en `src/plantillas/visualizador.html`; el
+generador incorpora todo su contenido y Plotly al HTML final autocontenido.
+El alcance y la validación del refactor están en
+[`docs/FASE4_REFACTOR_ARQUITECTURA.md`](docs/FASE4_REFACTOR_ARQUITECTURA.md).
 
 ## Datos de entrada
 
@@ -138,7 +158,9 @@ siepac-analysis/
 - **ENV6:** contrasta dos magnitudes observadas; no calcula un cociente.
 
 La definición de cada indicador se mantiene una sola vez en `FICHAS`, dentro
-de `src/viz_comun.py`. Los HTML, Excel, PNG, Markdown y tablas son productos
+de `src/metadatos_indicadores.py`. El formato visual se agrega en
+`src/presentacion_indicadores.py`, y `viz_comun.FICHAS` conserva el contrato
+anterior como reexportación. Los HTML, Excel, PNG, Markdown y tablas son productos
 generados: una corrección debe hacerse en el dato o script de origen y luego
 regenerarse.
 
