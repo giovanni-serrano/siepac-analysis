@@ -20,4 +20,4 @@
 graficos/*.html linguist-generated=true
 
 # Las tablas APA también son HTML generado, no código escrito a mano.
-tablas-apa/*.html linguist-generated=true
+salidas/tesis/tablas/*.html linguist-generated=true

@@ -100,3 +100,6 @@ data/raw/**/*.pdf
 data/processed/resultados_ECO.json
 data/processed/resultados_ENV.json
 data/processed/resultados_SOC.json
+
+# Auditoría local de tesis; no versionar
+/_auditoria/

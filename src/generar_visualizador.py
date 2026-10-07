@@ -30,7 +30,7 @@ import plotly.offline as pyo
 from config_siepac import (ANIOS_ANALISIS as ANIOS, DIR_GRAFICOS,
                            DIR_SALIDAS_TESIS, PAISES_SIEPAC as PAISES)
 from eco_cg_comun import (CODIGO_ECO_CG, FICHA_ECO_CG, cargar_eco_cg,
-                          serie_mediana_eco_cg)
+                          serie_mediana_eco_cg, NOTA_CALIDAD_ECO_CG)
 from viz_comun import (COLORES_PAIS)
 from presentacion_indicadores import FICHAS
 from resultados_indicadores import (cargar_datos, construir_datos_json, leer_series_extra, preparar_datos)
@@ -217,6 +217,7 @@ def main() -> None:
 
     html = (PLANTILLA
             .replace("__PLOTLYJS__", _sanear_plotly_js(pyo.get_plotlyjs()))
+            .replace("__NOTA_CALIDAD_CG__", json.dumps(NOTA_CALIDAD_ECO_CG, ensure_ascii=False))
             .replace("__DATOS__", json.dumps(paquete, ensure_ascii=False))
             .replace("__FICHAS__", json.dumps(fichas, ensure_ascii=False))
             .replace("__ANIOS__", json.dumps(ANIOS))
@@ -227,7 +228,7 @@ def main() -> None:
                                                 ensure_ascii=False)))
     marcadores = [m for m in ("__PLOTLYJS__", "__DATOS__", "__FICHAS__",
                                "__ANIOS__", "__PAISES__", "__COLORES__",
-                               "__SALIDAS__") if m in html]
+                               "__SALIDAS__", "__NOTA_CALIDAD_CG__") if m in html]
     if marcadores:
         raise ValueError(
             f"VALIDACIÓN FALLIDA: marcadores sin sustituir: {marcadores}")

@@ -17,9 +17,9 @@ from config_siepac import ANIOS_ANALISIS as ANIOS, PAISES_SIEPAC as PAISES
 
 def test_plantilla_web_conserva_texto_anterior():
     from generar_visualizador import PLANTILLA
-    # SHA-256 del literal previo a la extracción; excluye datos dinámicos.
+    # SHA-256 del parche público autorizado; conserva el control literal completo.
     assert hashlib.sha256(PLANTILLA.encode("utf-8")).hexdigest() == (
-        "989faef93dfb81a0f544045f880decf7e65b53b8cfee3f477dc1c5a8c925e1d7")
+        "a3642239f69c89c0fa507d38b1ed811d301663f8ce6a554ddba1f6716d80adf1")
 
 
 def test_capas_cientificas_no_importan_presentacion_y_no_hay_ciclos():
