@@ -2,7 +2,7 @@
 
 Este conjunto proviene de `SOC2_SIEPAC_BASE_UNICA_2020_2024.xlsx`. El libro
 original mezclaba títulos, párrafos y varias subtablas por hoja. La carpeta
-conserva únicamente los cuatro insumos canónicos que no se derivan entre sí;
+conserva únicamente los tres insumos canónicos que no se derivan entre sí;
 los cálculos, auditorías y sensibilidades se regeneran con `src/etl_soc2.py`.
 
 ## Propósito del dataset
